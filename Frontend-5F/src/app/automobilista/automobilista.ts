@@ -1,10 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router'; 
 import { NuovoSinistroComponent } from '../nuovo-sinistro/nuovo-sinistro.component';
 import { sinistro } from '../models/sinistro.model';
 import { VeicoliService } from '../services/veicoli'; 
 import { Veicolo } from '../models/veicolo.model';
+import { AuthService } from '../services/auth';
+import { User } from '../models/user.model';
 
 @Component({
   selector: 'app-automobilista', // Nome del tag HTML del componente
@@ -14,7 +16,7 @@ import { Veicolo } from '../models/veicolo.model';
   templateUrl: './automobilista.html',
   styleUrl: './automobilista.css',
 })
-export class Automobilista {
+export class Automobilista implements OnInit{
   // Proprietà Booleana per gestire la visibilità del form "Nuovo Sinistro" tramite *ngIf
   showNewSinistro = false;
   
@@ -24,8 +26,11 @@ export class Automobilista {
   // Variabile per memorizzare un singolo veicolo cercato. Può essere nullo all'inizio.
   veicoloSelezionato: Veicolo | null = null;
 
+  user?: User
+
   // DEPENDENCY INJECTION: Angular inietta il Service dei veicoli e il Router
   constructor(
+    public auth: AuthService,
     public veicoliService: VeicoliService, // Public per usarlo direttamente nell'HTML
     private router: Router // Private perché serve solo nella logica TS
   ) {}
@@ -73,5 +78,9 @@ export class Automobilista {
   // Chiude il componente del form riportando la variabile a false
   closeNewSinistro(): void {
     this.showNewSinistro = false;
+  }
+
+  ngOnInit(): void {
+    this.user = this.auth.currentUser
   }
 }

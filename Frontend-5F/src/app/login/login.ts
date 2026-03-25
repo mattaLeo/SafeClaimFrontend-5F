@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
+import { AuthService } from '../services/auth';
 
 @Component({
   selector: 'app-login',
@@ -17,13 +18,13 @@ export class Login {
   loading = false;
   errorMessage = '';
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private authService: AuthService) {}
 
   togglePassword(): void {
     this.showPassword = !this.showPassword;
   }
 
-  async onSubmit(): Promise<void> {
+  onSubmit(): void {
     this.errorMessage = '';
 
     if (!this.email || !this.password) {
@@ -33,19 +34,27 @@ export class Login {
 
     this.loading = true;
 
-    try {
-      // TODO: sostituisci con la tua chiamata al servizio di autenticazione
-      // es: await this.authService.login(this.email, this.password);
+    this.authService.login(this.email, this.password).subscribe({
+      next: (res) => {
+        if (res.status === 'success') {
+          const routeMap: Record<string, string> = {
+            automobilista: '/automobilista',
+            perito: '/perito',
+            assicurazione: '/assicurazione',
+          };
 
-      // Simulazione attesa (rimuovi quando integri il backend)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Naviga alla home dopo il login
-      this.router.navigate(['/']);
-    } catch (error: any) {
-      this.errorMessage = error?.message ?? 'Credenziali non valide. Riprova.';
-    } finally {
-      this.loading = false;
-    }
+          const route = routeMap[res.user.ruolo] ?? '/';
+          this.router.navigate([route]);
+        } else {
+          this.errorMessage = 'Credenziali non valide. Riprova.';
+        }
+      },
+      error: (err: any) => {
+        this.errorMessage = err?.error?.message ?? 'Errore di connessione. Riprova.';
+      },
+      complete: () => {
+        this.loading = false;
+      }
+    });
   }
 }

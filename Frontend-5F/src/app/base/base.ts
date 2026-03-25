@@ -1,8 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { RouterOutlet, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { AuthService } from '../services/auth';
+import { User } from '../models/user.model';
 
 export type UserRole = 'perito' | 'automobilista' | 'assicurazione';
 
@@ -15,76 +17,53 @@ export type UserRole = 'perito' | 'automobilista' | 'assicurazione';
 })
 export class Base implements OnInit {
   sidebarOpen = false;
-
-  userName = 'Leonardo Matta';
-  userCode = 'P-9928';
   currentRole: UserRole = 'perito';
+  isAuthPage = false;
 
-  isHomePage = false;
-
-  get initials(): string {
-    return this.userName
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  }
-
-  get isAuthPage(): boolean {
-    const authRoutes = ['/signin', '/signup'];
-    return authRoutes.some(r => this.router.url.startsWith(r));
-  }
-
-  constructor(private router: Router) {}
+  constructor(private router: Router, private cdr: ChangeDetectorRef, public auth: AuthService) {}
 
   ngOnInit(): void {
-    const savedRole = localStorage.getItem('userRole') as UserRole;
-    if (savedRole) {
-      this.currentRole = savedRole;
-    }
-
-    this.checkHomePage(this.router.url);
+    this.isAuthPage = this.checkAuthPage(this.router.url);
 
     this.router.events
       .pipe(filter(e => e instanceof NavigationEnd))
       .subscribe((e: any) => {
-        this.checkHomePage(e.urlAfterRedirects || e.url);
+        this.isAuthPage = this.checkAuthPage(e.urlAfterRedirects || e.url);
+        this.cdr.detectChanges();
       });
+
+    const savedRole = localStorage.getItem('userRole') as UserRole;
+    if (!savedRole) {
+      this.router.navigate(['/signin']);
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.currentRole = savedRole;
   }
 
-  private checkHomePage(url: string): void {
-    this.isHomePage = url === '/' || url === '';
+  get user() {
+    return this.auth.currentUser;
   }
 
-  openSidebar(): void {
-    this.sidebarOpen = true;
+  private checkAuthPage(url: string): boolean {
+    const authRoutes = ['/signin', '/signup'];
+    return authRoutes.some(r => url.startsWith(r));
   }
 
-  closeSidebar(): void {
-    this.sidebarOpen = false;
-  }
+  openSidebar(): void { this.sidebarOpen = true; }
+  closeSidebar(): void { this.sidebarOpen = false; }
 
   switchRole(role: UserRole): void {
     this.currentRole = role;
     localStorage.setItem('userRole', role);
-
     const routeMap: Record<UserRole, string> = {
       perito: '/perito',
       automobilista: '/automobilista',
       assicurazione: '/assicurazione',
     };
-
     this.router.navigate([routeMap[role]]);
     this.closeSidebar();
-  }
-
-  navigateToSignup(role: UserRole): void {
-    this.router.navigate(['/signup'], { queryParams: { role } });
-  }
-
-  navigateToSignin(): void {
-    this.router.navigate(['/signin']);
   }
 
   goHome(): void {
