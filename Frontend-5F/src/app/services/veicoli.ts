@@ -8,13 +8,22 @@ import { Veicolo } from '../models/veicolo.model';
   providedIn: 'root',
 })
 export class VeicoliService {
-  private link = 'https://opulent-halibut-wrrww9x5qw5q35g54-5000.app.github.dev/'; 
+  private link = 'https://animated-space-trout-977ppqwvr6742p9qj-7000.app.github.dev/'; 
 
   // Variabile pubblica che memorizza i veicoli scaricati, rendendoli accessibili a tutti i componenti
   public veicoli: Veicolo[] = [];
 
   // Il costruttore inietta HttpClient tramite Dependency Injection 
   constructor(private http: HttpClient) {}
+
+  getVeicoliUtente(userId: number): Observable<Veicolo[]> {
+    return this.http.get<Veicolo[]>(`${this.link}veicoli-utente/${userId}`).pipe(
+      tap((data) => {
+        this.veicoli = data;
+        console.log("Veicoli utente:", this.veicoli);
+      })
+    );
+  }
 
   /**
    * Metodo per recuperare la lista completa dei veicoli dal database

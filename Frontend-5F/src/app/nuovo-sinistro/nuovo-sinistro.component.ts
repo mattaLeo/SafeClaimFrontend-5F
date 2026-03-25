@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Sinistri } from '../services/sinistri';
 import { VeicoliService } from '../services/veicoli';
+import { AuthService } from '../services/auth';
 import { sinistro } from '../models/sinistro.model';
 
 @Component({
@@ -28,13 +29,24 @@ export class NuovoSinistroComponent implements OnInit {
   errorMessage = '';
 
   constructor(
-    private sinistriService: Sinistri, 
-    public veicoliService: VeicoliService 
+    private sinistriService: Sinistri,
+    public veicoliService: VeicoliService,
+    private auth: AuthService
   ) {}
 
   ngOnInit(): void {
-    // Carichiamo i veicoli dal database all'avvio del componente
-    this.veicoliService.askVeicoli().subscribe({
+    const userId = this.auth.currentUser?.id;
+
+    if (!userId) {
+      this.errorMessage = "Utente non autenticato.";
+      return;
+    }
+
+    // Impostiamo automaticamente l'id dell'utente loggato
+    this.formData.automobilista_id = userId;
+
+    // Carichiamo solo i veicoli dell'utente loggato
+    this.veicoliService.getVeicoliUtente(userId).subscribe({
       error: (err) => {
         console.error("Errore nel caricamento veicoli", err);
         this.errorMessage = "Impossibile caricare la lista veicoli.";
@@ -44,11 +56,10 @@ export class NuovoSinistroComponent implements OnInit {
 
   selectVehicle(targa: string) {
     this.formData.targa = targa;
-    this.errorMessage = ''; // Puliamo eventuali errori precedenti
+    this.errorMessage = '';
   }
 
   submit(): void {
-    // Validazione base
     if (!this.formData.targa || !this.formData.data_evento || !this.formData.descrizione) {
       this.errorMessage = "Tutti i campi sono obbligatori.";
       return;
@@ -58,7 +69,6 @@ export class NuovoSinistroComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
-    // Convertiamo la stringa data_evento in oggetto Date per il service
     const dataConvertita = new Date(this.formData.data_evento);
 
     this.sinistriService.createSinistro(
@@ -70,11 +80,7 @@ export class NuovoSinistroComponent implements OnInit {
       next: (res) => {
         this.loading = false;
         this.successMessage = 'Sinistro creato con successo!';
-        
-        // Notifichiamo il successo e passiamo il nuovo oggetto creato
         this.created.emit(res);
-
-        // Aspettiamo 1.5 secondi per far leggere il messaggio e poi chiudiamo
         setTimeout(() => {
           this.resetForm();
           this.close();
@@ -93,11 +99,11 @@ export class NuovoSinistroComponent implements OnInit {
   }
 
   resetForm(): void {
-    this.formData = { 
-      automobilista_id: 0, 
-      targa: '', 
-      data_evento: '', 
-      descrizione: '' 
+    this.formData = {
+      automobilista_id: this.auth.currentUser?.id ?? 0,
+      targa: '',
+      data_evento: '',
+      descrizione: ''
     };
     this.successMessage = '';
     this.errorMessage = '';

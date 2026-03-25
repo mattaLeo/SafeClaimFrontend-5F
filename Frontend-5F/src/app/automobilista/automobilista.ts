@@ -81,6 +81,14 @@ export class Automobilista implements OnInit{
   }
 
   ngOnInit(): void {
-    this.user = this.auth.currentUser
+    this.user = this.auth.currentUser;
+    
+    const userId = this.auth.currentUser?.id;
+    if (userId) {
+      this.veicoliService.getVeicoliUtente(userId).subscribe({
+        next: (veicoli) => console.log("Veicoli utente:", veicoli),
+        error: (err) => console.error("Errore caricamento veicoli:", err)
+      });
+    }
   }
 }

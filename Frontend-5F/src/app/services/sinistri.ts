@@ -7,7 +7,7 @@ import { HttpClient } from '@angular/common/http';
   providedIn: 'root',
 })
 export class Sinistri {
-  link = "https://opulent-halibut-wrrww9x5qw5q35g54-7000.app.github.dev/"
+  link = "https://animated-space-trout-977ppqwvr6742p9qj-7000.app.github.dev/"
 
   obsSinistri!: Observable<sinistro[]>
   obsSinistroId!: Observable<sinistro>
