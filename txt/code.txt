@@ -1,0 +1,25 @@
+---------Eseguibili terminale angular--------------
+
+npm install -g @angular/cli
+
+npm install
+
+ng serve     ng serve --host 0.0.0.0
+
+ng g m "modulo"
+
+ng g c "componente"
+
+----------Esegiobili GitHub-------------------------
+
+git status
+
+git add . / *
+
+git commit -m "Descrizione"
+
+git push
+
+git pull (Sincronizza il Codespace con quello che c'è su GitHub)
+
+git checkout "nome-file.ts"

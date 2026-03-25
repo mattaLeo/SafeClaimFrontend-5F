@@ -1,0 +1,34 @@
+WBS  ATTIVITA                     DUR(h)  INIZIO      PRED.  PROGR.  RISORSE                       |  RISORSE     PRES.  GIORNI      ORE
+---------------------------------------------------------------------------------------------------|--------------------------------------
+1    P.Web automobilista          30      06/02/2026  0      FALSE   Graziano                      |  Matta       14     LUN         3/h
+1.1  mock-up                      4                   1      FALSE   Marro, Graziano, D'ambrogi    |  Graziano    13     MAR         3/h
+1.2  scheletro pagina + routing   5                   1.1    FALSE   Graziano                      |  Marro       13     MER         1/h
+1.3  integrazione key-cloak       3                   1.2    FALSE   Graziano, Matta               |  Mergane     6      GIO         1/h
+1.4  chiamate http                4                   1.3    FALSE   Matta, Marro, Moustafa        |  Moustafa    4      VEN         2/h
+1.5  integrazione grafica         8                   1.4    FALSE   Graziano, D'ambrogi           |  Aisha       3      SET:        10/h
+1.6  responsive                   6                   1.5    FALSE   Graziano, D'ambrogi, Matta    |  Karla       3      
+---------------------------------------------------------------------------------------------------|--------------------------------------
+2    P.Web perito                 30      06/02/2026  0      FALSE   Marro                         |  D'ambrogi   3      TOT GIORNI  45
+2.1  mock-up                      4                   2      FALSE   Marro, Karla                  |  
+2.2  scheletro pagina + routing   5                   2.1    FALSE   Marro                         |  TOT ORE (apr):      85/h
+2.3  integrazione key-cloak       3                   2.2    FALSE   Marro, Matta                  |  
+2.4  chiamate http                4                   2.3    FALSE   Matta, Marro, Moustafa        |  TOT ORE PREVISTE:   56
+2.5  integrazione grafica         8                   2.4    FALSE   Marro, Karla                  |  
+2.6  responsive                   6                   2.5    FALSE   Marro, Karla, Matta           |  
+---------------------------------------------------------------------------------------------------|--------------------------------------
+3    P.Web assicuratore           30      06/02/2026  0      FALSE   Mergane                       |  IMPREVISTI
+3.1  mock-up                      4                   3      FALSE   Marro, Mergane, Aisha         |  20/02/2026
+3.2  scheletro pagina + routing   5                   3.1    FALSE   Mergane                       |  23/02/2026
+3.3  integrazione key-cloak       3                   3.2    FALSE   Mergane, Matta                |  09/03/2026
+3.4  chiamate http                4                   3.3    FALSE   Matta, Marro, Moustafa        |  16/03/2026
+3.5  integrazione grafica         8                   3.4    FALSE   Mergane, Aisha                |  17/03/2026
+3.6  responsive                   6                   3.5    FALSE   Mergane, Aisha, Matta         |  18/03/2026
+---------------------------------------------------------------------------------------------------|  19/03/2026
+4    Mobile automobilista         26                  1      FALSE   Graziano, Matta               |  30/03/2026
+4.1  adattamento mobile           4                   4      FALSE   Marro, Graziano               |  31/03/2026
+4.2  base ionix                   4                   4.1    FALSE   Graziano, Matta               |  01/04/2026
+4.3  scheletro pagina + routing   3                   4.2    FALSE   Graziano                      |  02/04/2026
+4.4  integrazione key-cloak       3                   4.3    FALSE   Graziano, Matta               |  03/04/2026
+4.5  chiamate http                4                   4.4    FALSE   Matta, Marro, Moustafa        |  06/04/2026
+4.6  integrazione grafica         8                   4.5    FALSE   Graziano                      |  07/04/2026
+4.7  responsive                   6                   4.6    FALSE   Graziano, Matta, Papagni      |  14/04/2026
