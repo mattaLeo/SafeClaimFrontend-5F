@@ -40,7 +40,7 @@ export class Login {
           const routeMap: Record<string, string> = {
             automobilista: '/automobilista',
             perito: '/perito',
-            assicurazione: '/assicurazione',
+            assicuratore: '/assicurazione',
           };
 
           const route = routeMap[res.user.ruolo] ?? '/';

@@ -7,7 +7,7 @@ import { User } from '../models/user.model';
   providedIn: 'root',
 })
 export class AuthService {
-  link = "https://animated-space-trout-977ppqwvr6742p9qj-6000.app.github.dev/";
+  link = "https://organic-palm-tree-7vvggrx45j993x5pg-6000.app.github.dev/";
 
   currentUser?: User
 
@@ -22,6 +22,7 @@ export class AuthService {
         console.log("Risposta API Login:", res);
         if (res.status === "success") {
           this.currentUser = res.user;
+          localStorage.setItem('userRole', res.user.ruolo); // <-- aggiungi questa riga
           console.log("Utente loggato:", this.currentUser);
         }
       })

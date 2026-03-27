@@ -6,7 +6,7 @@ import { filter } from 'rxjs/operators';
 import { AuthService } from '../services/auth';
 import { User } from '../models/user.model';
 
-export type UserRole = 'perito' | 'automobilista' | 'assicurazione';
+export type UserRole = 'perito' | 'automobilista' | 'assicuratore';
 
 @Component({
   selector: 'app-base',
@@ -60,7 +60,7 @@ export class Base implements OnInit {
     const routeMap: Record<UserRole, string> = {
       perito: '/perito',
       automobilista: '/automobilista',
-      assicurazione: '/assicurazione',
+      assicuratore: '/assicurazione',
     };
     this.router.navigate([routeMap[role]]);
     this.closeSidebar();
