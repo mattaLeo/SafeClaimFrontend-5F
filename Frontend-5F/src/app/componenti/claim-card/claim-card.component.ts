@@ -11,17 +11,12 @@ import { Claim, VehicleType } from '../../perito/perito';
 })
 export class ClaimCardComponent {
 
-  /** La perizia da visualizzare (obbligatorio) */
   @Input({ required: true }) claim!: Claim;
-
-  /** Emette la perizia quando l'utente clicca sulla card */
   @Output() cardClick = new EventEmitter<Claim>();
 
   onCardClick(): void {
     this.cardClick.emit(this.claim);
   }
-
-  // ─── Vehicle type ──────────────────────────────────────────────────────────
 
   get vehicleType(): VehicleType {
     const v = this.claim.vehicle.toLowerCase();
@@ -58,8 +53,6 @@ export class ClaimCardComponent {
 
     return 'car';
   }
-
-  // ─── Status helpers ────────────────────────────────────────────────────────
 
   get statusLabel(): string {
     const map: Record<string, string> = {

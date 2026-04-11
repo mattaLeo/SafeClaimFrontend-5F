@@ -10,6 +10,8 @@ ng g m "modulo"
 
 ng g c "componente"
 
+npm install jspdf
+
 ----------Esegiobili GitHub-------------------------
 
 git status
