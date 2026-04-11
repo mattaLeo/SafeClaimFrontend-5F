@@ -1,4 +1,4 @@
-// ── Tipi condivisi ─────────────────────────────────────────────────────────
+// ── Tipi condivisi ──────────────────────────────────────────────────────────
 
 export type VehicleType = 'car' | 'motorcycle' | 'truck' | 'van' | 'suv';
 
@@ -19,8 +19,9 @@ export interface Claim {
 }
 
 export interface Relazione {
-  id?:              number;
+  id?:              string;
   claimCode:        string;
+  sinistroId?:      string;
   title:            string;
   vehicle:          string;
   tipoDanno:        string;
@@ -32,7 +33,7 @@ export interface Relazione {
   createdAt?:       string;
 }
 
-// ── Componente ─────────────────────────────────────────────────────────────
+// ── Componente ──────────────────────────────────────────────────────────────
 
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -59,8 +60,10 @@ export class Perito implements OnInit {
   isRelazioneOpen     = false;
   isContactModalOpen  = false;
   isLoading           = true;
+  isRelazioniLoading  = false;
   contactSent         = false;
   settingsSaved       = false;
+  relazioneError      = '';
 
   selectedClaim: Claim | null = null;
 
@@ -83,7 +86,7 @@ export class Perito implements OnInit {
     });
   }
 
-  // ── Stats reattive ─────────────────────────────────────────────────────────
+  // ── Stats ───────────────────────────────────────────────────────────────────
 
   get activeClaimsCount(): number {
     return this.claims.filter(c =>
@@ -99,25 +102,17 @@ export class Perito implements OnInit {
     return this.relazioni.length;
   }
 
-  // ── Dati utente dall'API ───────────────────────────────────────────────────
+  // ── Utente ──────────────────────────────────────────────────────────────────
 
-  user = {
-    full_name: '',
-    id:        '',
-    email:     '',
-    phone:     '',
-    ruolo:     '',
-  };
+  user = { full_name: '', id: '', email: '', phone: '', ruolo: '' };
 
   settings = {
-    full_name:           '',
-    email:               '',
-    phone:               '',
+    full_name: '', email: '', phone: '',
     notifications_email: true,
     notifications_sms:   false,
   };
 
-  // ── Relazioni ──────────────────────────────────────────────────────────────
+  // ── Relazioni ────────────────────────────────────────────────────────────────
 
   relazioni: Relazione[] = [];
 
@@ -126,7 +121,9 @@ export class Perito implements OnInit {
     status: 'Bozza',
   };
 
-  tipiDanno        = ['Collisione', 'Grandine', 'Furto', 'Incendio', 'Vandalismo', 'Altro'];
+  tipiDanno = [
+    'Collisione', 'Grandine', 'Furto', 'Incendio', 'Vandalismo', 'Altro'
+  ];
   partiDisponibili = [
     'Paraurti anteriore', 'Paraurti posteriore', 'Cofano', 'Portiera SX',
     'Portiera DX', 'Tetto', 'Parabrezza', 'Lunotto', 'Fiancata SX', 'Fiancata DX'
@@ -141,14 +138,8 @@ export class Perito implements OnInit {
   currentRole = 'Perito';
 
   contactForm: any = {
-    claimCode: '',
-    insurance: '',
-    priority:  'normale',
-    subject:   '',
-    message:   '',
+    claimCode: '', insurance: '', priority: 'normale', subject: '', message: '',
   };
-
-  // ── Confirm delete ─────────────────────────────────────────────────────────
 
   confirmDeleteClaim:     Claim | null     = null;
   confirmDeleteRelazione: Relazione | null = null;
@@ -162,14 +153,14 @@ export class Perito implements OnInit {
   ngOnInit(): void {
     this.loadUser();
     this.loadClaims();
+    this.loadRelazioni();
   }
 
-  // ── Caricamento utente ─────────────────────────────────────────────────────
+  // ── Caricamento utente ──────────────────────────────────────────────────────
 
   private loadUser(): void {
     const u = this.auth.currentUser as any;
     if (!u) return;
-
     this.user = {
       full_name: `${u.nome ?? ''} ${u.cognome ?? ''}`.trim(),
       id:        String(u.id ?? ''),
@@ -177,7 +168,6 @@ export class Perito implements OnInit {
       phone:     u.telefono ?? u.phone ?? '',
       ruolo:     u.ruolo ?? '',
     };
-
     this.settings = {
       full_name:           this.user.full_name,
       email:               this.user.email,
@@ -185,11 +175,10 @@ export class Perito implements OnInit {
       notifications_email: true,
       notifications_sms:   false,
     };
-
     this.currentRole = this.user.ruolo || 'Perito';
   }
 
-  // ── Caricamento perizie ────────────────────────────────────────────────────
+  // ── Caricamento sinistri ────────────────────────────────────────────────────
 
   private loadClaims(): void {
     this.isLoading = true;
@@ -205,8 +194,9 @@ export class Perito implements OnInit {
       },
       error: () => {
         this.perizie.askTuttiSinistri().subscribe({
-          next: (data) => {
-            this.claims    = data.map(s => this.perizie.mapSinistreToClaim(s));
+          next: (data: any) => {
+            const lista = Array.isArray(data) ? data : (data.data ?? []);
+            this.claims    = lista.map((s: any) => this.perizie.mapSinistreToClaim(s));
             this.allClaims = [...this.claims];
             this.isLoading = false;
             this.cdr.detectChanges();
@@ -220,13 +210,60 @@ export class Perito implements OnInit {
     });
   }
 
-  // ── Navigazione ────────────────────────────────────────────────────────────
+  // ── Caricamento relazioni ───────────────────────────────────────────────────
+
+  private loadRelazioni(): void {
+    const u = this.auth.currentUser as any;
+    const peritoId = String(u?.id ?? '');
+    if (!peritoId) {
+      this.isRelazioniLoading = false;
+      return;
+    }
+
+    this.isRelazioniLoading = true;
+    this.perizie.getRelazioniPerito(peritoId).subscribe({
+      next: (data: any[]) => {
+        this.relazioni = data.map(d => this.mapBackendToRelazione(d));
+        this.isRelazioniLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.relazioni = [];
+        this.isRelazioniLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private mapBackendToRelazione(d: any): Relazione {
+    return {
+      id:               String(d._id ?? d.id ?? ''),
+      sinistroId:       String(d.sinistro_id ?? ''),
+      claimCode:        d.claim_code ?? d.claimCode ?? '',
+      title:            d.titolo ?? d.title ?? '',
+      vehicle:          d.veicolo ?? d.vehicle ?? '',
+      tipoDanno:        d.tipo_danno ?? d.tipoDanno ?? '',
+      estimatedDamage:  d.stima_danno ?? d.estimatedDamage ?? undefined,
+      partiDanneggiate: d.parti_danneggiate ?? d.partiDanneggiate ?? [],
+      description:      d.descrizione ?? d.description ?? '',
+      conclusione:      d.conclusione ?? '',
+      status:           d.stato ?? d.status ?? 'Bozza',
+      createdAt:        d.data_inserimento
+                          ? new Date(d.data_inserimento).toLocaleDateString('it-IT', {
+                              day: '2-digit', month: 'long', year: 'numeric'
+                            })
+                          : undefined,
+    };
+  }
+
+  // ── Navigazione ─────────────────────────────────────────────────────────────
 
   setView(v: 'dashboard' | 'archivio' | 'relazioni'): void {
     this.currentView = v;
+    if (v === 'relazioni') this.loadRelazioni();
   }
 
-  // ── Claim detail ───────────────────────────────────────────────────────────
+  // ── Claim detail ─────────────────────────────────────────────────────────────
 
   openClaimDetail(c: Claim): void {
     this.selectedClaim     = c;
@@ -238,7 +275,7 @@ export class Perito implements OnInit {
     this.selectedClaim     = null;
   }
 
-  // ── Delete perizia ─────────────────────────────────────────────────────────
+  // ── Delete perizia ────────────────────────────────────────────────────────────
 
   askDeleteClaim(c: Claim, event?: Event): void {
     event?.stopPropagation();
@@ -258,7 +295,7 @@ export class Perito implements OnInit {
     this.confirmDeleteClaim = null;
   }
 
-  // ── Delete relazione ───────────────────────────────────────────────────────
+  // ── Delete relazione ──────────────────────────────────────────────────────────
 
   askDeleteRelazione(rel: Relazione, event?: Event): void {
     event?.stopPropagation();
@@ -267,72 +304,135 @@ export class Perito implements OnInit {
 
   confirmDeleteRel(): void {
     if (!this.confirmDeleteRelazione) return;
-    this.relazioni = this.relazioni.filter(r => r.id !== this.confirmDeleteRelazione!.id);
-    this.confirmDeleteRelazione = null;
+    const rel = this.confirmDeleteRelazione;
+
+    if (rel.id) {
+      this.perizie.eliminaRelazione(rel.id).subscribe({
+        next: () => {
+          this.relazioni = this.relazioni.filter(r => r.id !== rel.id);
+          this.confirmDeleteRelazione = null;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.relazioni = this.relazioni.filter(r => r.id !== rel.id);
+          this.confirmDeleteRelazione = null;
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      this.relazioni = this.relazioni.filter(r => r !== rel);
+      this.confirmDeleteRelazione = null;
+    }
   }
 
   cancelDeleteRel(): void {
     this.confirmDeleteRelazione = null;
   }
 
-  // ── Relazione CRUD ─────────────────────────────────────────────────────────
+  // ── Relazione CRUD ───────────────────────────────────────────────────────────
 
   openNewRelazione(): void {
     this.editingRelazione = { partiDanneggiate: [], status: 'Bozza' };
+    this.relazioneError   = '';
     this.isRelazioneOpen  = true;
   }
 
   openRelazioneFromClaim(c: Claim): void {
     this.editingRelazione = {
       claimCode:        c.code,
+      sinistroId:       c.id,
       vehicle:          c.vehicle,
       partiDanneggiate: [],
       status:           'Bozza',
     };
+    this.relazioneError    = '';
     this.isClaimDetailOpen = false;
     this.isRelazioneOpen   = true;
   }
 
   openRelazioneDetail(rel: Relazione): void {
-    this.editingRelazione = { ...rel, partiDanneggiate: [...(rel.partiDanneggiate ?? [])] };
-    this.isRelazioneOpen  = true;
+    this.editingRelazione = {
+      ...rel,
+      partiDanneggiate: [...(rel.partiDanneggiate ?? [])],
+    };
+    this.relazioneError  = '';
+    this.isRelazioneOpen = true;
   }
 
   closeRelazione(): void {
     this.isRelazioneOpen = false;
+    this.relazioneError  = '';
   }
 
   saveRelazione(): void {
-    if (!this.editingRelazione.vehicle && this.editingRelazione.claimCode) {
-      const claim = this.allClaims.find(c => c.code === this.editingRelazione.claimCode);
-      if (claim) this.editingRelazione.vehicle = claim.vehicle;
+    this.relazioneError = '';
+
+    // Trova sempre il claim dal claimCode selezionato
+    const claim = this.allClaims.find(c => c.code === this.editingRelazione.claimCode);
+
+    if (!claim) {
+      this.relazioneError = 'Seleziona un sinistro valido prima di salvare.';
+      return;
     }
+
+    // Aggiorna sinistroId e vehicle dal claim trovato
+    this.editingRelazione.sinistroId = claim.id;
+    this.editingRelazione.vehicle    = claim.vehicle;
+
+    const u        = this.auth.currentUser as any;
+    const peritoId = String(u?.id ?? '');
+
+    if (!peritoId) {
+      this.relazioneError = 'Sessione scaduta. Rieffettua il login.';
+      return;
+    }
+
+    const sinistroId = this.editingRelazione.sinistroId;
 
     const now = new Date().toLocaleDateString('it-IT', {
       day: '2-digit', month: 'long', year: 'numeric'
     });
 
     if (this.editingRelazione.id) {
-      const idx = this.relazioni.findIndex(r => r.id === this.editingRelazione.id);
-      if (idx !== -1) {
-        this.relazioni = [
-          ...this.relazioni.slice(0, idx),
-          { ...(this.editingRelazione as Relazione) },
-          ...this.relazioni.slice(idx + 1),
-        ];
-      }
-    } else {
-      this.relazioni = [
-        ...this.relazioni,
-        {
-          ...(this.editingRelazione as Relazione),
-          id:        Date.now(),
-          status:    'Bozza',
-          createdAt: now,
+      // ── UPDATE ──
+      this.perizie.aggiornaRelazione(sinistroId, peritoId, this.editingRelazione).subscribe({
+        next: () => {
+          const idx = this.relazioni.findIndex(r => r.id === this.editingRelazione.id);
+          if (idx !== -1) {
+            this.relazioni = [
+              ...this.relazioni.slice(0, idx),
+              { ...(this.editingRelazione as Relazione) },
+              ...this.relazioni.slice(idx + 1),
+            ];
+          }
+          this.isRelazioneOpen = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.relazioneError = 'Errore durante il salvataggio. Riprova.';
+          console.error(err);
         }
-      ];
+      });
+    } else {
+      // ── CREATE ──
+      this.perizie.creaRelazione(sinistroId, peritoId, this.editingRelazione).subscribe({
+        next: (res: any) => {
+          const nuova: Relazione = {
+            ...(this.editingRelazione as Relazione),
+            id:        res.id_perizia ?? String(Date.now()),
+            status:    'Bozza',
+            createdAt: now,
+          };
+          this.relazioni       = [...this.relazioni, nuova];
+          this.isRelazioneOpen = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          this.relazioneError = 'Errore durante il salvataggio. Riprova.';
+          console.error(err);
+        }
+      });
     }
-    this.isRelazioneOpen = false;
   }
 
   addParte(p: string): void {
@@ -345,7 +445,7 @@ export class Perito implements OnInit {
       this.editingRelazione.partiDanneggiate?.filter((_, idx) => idx !== i);
   }
 
-  // ── Export PDF ─────────────────────────────────────────────────────────────
+  // ── Export PDF ───────────────────────────────────────────────────────────────
 
   exportRelazione(rel: Relazione): void {
     const doc    = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -445,7 +545,7 @@ export class Perito implements OnInit {
     doc.save(`Relazione_${rel.claimCode ?? 'perizia'}_${Date.now()}.pdf`);
   }
 
-  // ── Filtri archivio ────────────────────────────────────────────────────────
+  // ── Filtri ───────────────────────────────────────────────────────────────────
 
   resetFilters(): void {
     this.filterSearch   = '';
@@ -453,7 +553,7 @@ export class Perito implements OnInit {
     this.filterPriority = '';
   }
 
-  // ── Contatto ───────────────────────────────────────────────────────────────
+  // ── Contatto ─────────────────────────────────────────────────────────────────
 
   openContactModal(code: string): void {
     this.contactForm = {
@@ -470,7 +570,7 @@ export class Perito implements OnInit {
     setTimeout(() => this.closeContactModal(), 2000);
   }
 
-  // ── Sidebar / Settings ─────────────────────────────────────────────────────
+  // ── Sidebar / Settings ───────────────────────────────────────────────────────
 
   toggleSidebar(): void { this.isSidebarOpen = !this.isSidebarOpen; }
 
@@ -493,7 +593,7 @@ export class Perito implements OnInit {
 
   switchRole(role: string): void { this.currentRole = role; }
 
-  // ── Template helpers ───────────────────────────────────────────────────────
+  // ── Template helpers ─────────────────────────────────────────────────────────
 
   getVehicleType(vehicle: string): VehicleType {
     const v = vehicle.toLowerCase();

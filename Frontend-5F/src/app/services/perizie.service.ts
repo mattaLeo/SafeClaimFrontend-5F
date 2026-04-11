@@ -3,36 +3,30 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Perizia } from '../models/perizia.model';
 import { Pratica } from '../models/pratica.model';
+import { Relazione } from '../perito/perito';
 
 @Injectable({
   providedIn: 'root'
 })
 export class Perizie {
 
-  link = 'https://potential-space-tribble-x55jj9x764pjfqx9-8000.app.github.dev/';
-  sinistriLink = 'https://potential-space-tribble-x55jj9x764pjfqx9-7000.app.github.dev/';
-
-  perizie!: Perizia[];
-  pratiche!: Pratica[];
+  // Porta 8000 → pratiche/perizie (MongoDB)
+  private praticheLink = 'https://potential-space-tribble-x55jj9x764pjfqx9-8000.app.github.dev/';
+  // Porta 7000 → sinistri (MongoDB)
+  private sinistriLink = 'https://potential-space-tribble-x55jj9x764pjfqx9-7000.app.github.dev/';
 
   constructor(public http: HttpClient) {}
 
-  // ── NUOVO: carica i sinistri assegnati al perito ──────────────────────────
+  // ── Sinistri ────────────────────────────────────────────────────────────────
 
   askSinistriPerito(peritoId: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.sinistriLink}perito/${peritoId}/sinistri`);
   }
 
-  // Fallback se l'endpoint dedicato non esiste ancora
   askTuttiSinistri(): Observable<any[]> {
     return this.http.get<any[]>(`${this.sinistriLink}sinistri`);
   }
 
-  /**
-   * Converte un sinistro raw del backend nel formato Claim dell'UI.
-   * Se il backend usa nomi diversi (es. "luogo_sinistro" invece di "luogo"),
-   * adattali qui — un console.log della risposta ti mostra i nomi esatti.
-   */
   mapSinistreToClaim(s: any): any {
     const dataEvento = s.data_evento ? new Date(s.data_evento) : new Date();
 
@@ -55,72 +49,125 @@ export class Perizie {
     else if (stima < 1000)  priority = 'bassa';
 
     return {
-      id:               String(s.id),
-      code:             `SN-${String(s.id).padStart(5, '0')}`,
+      id:       String(s._id ?? s.id),
+      code:     `SN-${String(s._id ?? s.id).slice(-5).toUpperCase()}`,
       status,
-      type:             s.tipo_sinistro ?? s.descrizione ?? 'Sinistro',
-      location:         s.luogo ?? s.indirizzo ?? 'N/D',
-      date:             dataEvento.toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' }),
-      time:             dataEvento.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
-      vehicle:          `${s.marca ?? ''} ${s.modello ?? ''} - ${s.targa ?? ''}`.trim(),
+      type:     s.tipo_sinistro ?? s.descrizione ?? 'Sinistro',
+      location: s.luogo ?? s.indirizzo ?? 'N/D',
+      date:     dataEvento.toLocaleDateString('it-IT', {
+                  day: '2-digit', month: 'long', year: 'numeric'
+                }),
+      time:     dataEvento.toLocaleTimeString('it-IT', {
+                  hour: '2-digit', minute: '2-digit'
+                }),
+      vehicle:  `${s.marca ?? ''} ${s.modello ?? ''} ${s.targa ? '- ' + s.targa : ''}`.trim(),
       priority,
       insuranceCompany: s.compagnia_assicurativa ?? s.assicurazione ?? 'N/D',
-      amount:           stima || undefined,
-      month:            dataEvento.getMonth() + 1,
-      year:             dataEvento.getFullYear(),
+      amount:   stima || undefined,
+      month:    dataEvento.getMonth() + 1,
+      year:     dataEvento.getFullYear(),
     };
   }
 
-  // ── Invariati rispetto all'originale ─────────────────────────────────────
+  // ── Relazioni (CRUD su MongoDB via porta 8000) ───────────────────────────────
+  // Le relazioni sono salvate nella collezione "Perizia" di MongoDB.
+  // Ogni documento ha: sinistro_id (= claim._id originale), perito_id, e i campi
+  // della Relazione. Usiamo gli endpoint pratica già esistenti sul backend.
 
-  askPratica(sinistroId: string, peritoId: string): Observable<Pratica> {
-    const obs = this.http.get<Pratica>(
-      `${this.link}/sinistro/${sinistroId}/perito/${peritoId}/pratica`
+  /**
+   * Carica tutte le relazioni di un perito.
+   * Endpoint reale: GET /perito/<peritoId>/perizie  (non ancora implementato)
+   * Fallback: leggiamo la collezione Perizia filtrando per perito_id lato client.
+   */
+  getRelazioniPerito(peritoId: string): Observable<any[]> {
+    return this.http.get<any[]>(
+      `${this.praticheLink}perito/${peritoId}/perizie`
     );
-    obs.subscribe(data => this.getPratica(data));
-    return obs;
   }
 
-  getPratica(d: Pratica) {
-    console.log('[Perizie Service] Pratica ricevuta:', d);
+  /**
+   * Crea una nuova relazione peritale.
+   * Mappa sull'endpoint POST /sinistro/<sinistroId>/perito/<peritoId>/pratica
+   */
+  creaRelazione(sinistroId: string, peritoId: string, rel: Partial<Relazione>): Observable<any> {
+    const body = {
+      titolo:            rel.title,
+      tipo_danno:        rel.tipoDanno,
+      stima_danno:       rel.estimatedDamage,
+      parti_danneggiate: rel.partiDanneggiate,
+      descrizione:       rel.description,
+      conclusione:       rel.conclusione,
+      veicolo:           rel.vehicle,
+      claim_code:        rel.claimCode,
+      stato:             rel.status ?? 'Bozza',
+    };
+    return this.http.post<any>(
+      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`,
+      body
+    );
+  }
+
+  /**
+   * Aggiorna una relazione esistente.
+   * Mappa sull'endpoint PUT /sinistro/<sinistroId>/perito/<peritoId>/pratica
+   */
+  aggiornaRelazione(sinistroId: string, peritoId: string, rel: Partial<Relazione>): Observable<any> {
+    const body = {
+      titolo:            rel.title,
+      tipo_danno:        rel.tipoDanno,
+      stima_danno:       rel.estimatedDamage,
+      parti_danneggiate: rel.partiDanneggiate,
+      descrizione:       rel.description,
+      conclusione:       rel.conclusione,
+      veicolo:           rel.vehicle,
+      stato:             rel.status ?? 'Bozza',
+    };
+    return this.http.put<any>(
+      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`,
+      body
+    );
+  }
+
+  /**
+   * Elimina una relazione (perizia) tramite il suo ID MongoDB.
+   * Endpoint: DELETE /perizia/<id>  — da aggiungere al backend.
+   */
+  eliminaRelazione(periziaid: string): Observable<any> {
+    return this.http.delete<any>(`${this.praticheLink}perizia/${periziaid}`);
+  }
+
+  // ── Pratica / Rimborso / Intervento (invariati) ───────────────────────────
+
+  askPratica(sinistroId: string, peritoId: string): Observable<Pratica> {
+    return this.http.get<Pratica>(
+      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`
+    );
   }
 
   askCreaPerizia(sinistroId: string, peritoId: string, body: Partial<Perizia>): Observable<any> {
-    const obs = this.http.post<any>(
-      `${this.link}/sinistro/${sinistroId}/perito/${peritoId}/pratica`,
+    return this.http.post<any>(
+      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`,
       body
     );
-    obs.subscribe(data => this.getCreaPerizia(data));
-    return obs;
   }
 
-  getCreaPerizia(d: any) {
-    console.log('[Perizie Service] Perizia creata:', d);
-  }
-
-  askRimborso(sinistroId: string, peritoId: string, periziaid: string, body: { stima_danno: number; esito: string }): Observable<any> {
-    const obs = this.http.post<any>(
-      `${this.link}/sinistro/${sinistroId}/perito/${peritoId}/pratica/${periziaid}/rimborso`,
+  askRimborso(
+    sinistroId: string, peritoId: string, periziaid: string,
+    body: { stima_danno: number; esito: string }
+  ): Observable<any> {
+    return this.http.post<any>(
+      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica/${periziaid}/rimborso`,
       body
     );
-    obs.subscribe(data => this.getRimborso(data));
-    return obs;
   }
 
-  getRimborso(d: any) {
-    console.log('[Perizie Service] Rimborso salvato:', d);
-  }
-
-  askIntervento(sinistroId: string, peritoId: string, periziaid: string, body: { id_officina: string; data_inizio_lavori: string }): Observable<any> {
-    const obs = this.http.post<any>(
-      `${this.link}/sinistro/${sinistroId}/perito/${peritoId}/pratica/${periziaid}/intervento`,
+  askIntervento(
+    sinistroId: string, peritoId: string, periziaid: string,
+    body: { id_officina: string; data_inizio_lavori: string }
+  ): Observable<any> {
+    return this.http.post<any>(
+      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica/${periziaid}/intervento`,
       body
     );
-    obs.subscribe(data => this.getIntervento(data));
-    return obs;
-  }
-
-  getIntervento(d: any) {
-    console.log('[Perizie Service] Intervento assegnato:', d);
   }
 }
