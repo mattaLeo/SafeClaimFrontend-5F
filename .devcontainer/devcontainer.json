@@ -1,0 +1,20 @@
+{
+  "name": "SafeClaim Full Stack",
+  "image": "mcr.microsoft.com/devcontainers/python:3.11",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" },
+    "ghcr.io/devcontainers/features/mysql:1": {}
+  },
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "postStartCommand": "bash .devcontainer/start_backend.sh",
+  "forwardPorts": [4200, 5000, 6000, 7000, 8000, 9000, 10000],
+  "portsAttributes": {
+    "4200": { "label": "Angular Dev Server", "onAutoForward": "openBrowser" },
+    "5000": { "label": "API Assicurazioni" },
+    "6000": { "label": "API Login / Registrazione" },
+    "7000": { "label": "API Sinistri Utente" },
+    "8000": { "label": "API Periti" },
+    "9000": { "label": "API Polizze" },
+    "10000": { "label": "API Veicoli" }
+  }
+}
