@@ -2,8 +2,7 @@
   "name": "SafeClaim Full Stack",
   "image": "mcr.microsoft.com/devcontainers/python:3.11",
   "features": {
-    "ghcr.io/devcontainers/features/node:1": { "version": "20" },
-    "ghcr.io/devcontainers/features/mysql:1": {}
+    "ghcr.io/devcontainers/features/node:1": { "version": "20" }
   },
   "postCreateCommand": "bash .devcontainer/setup.sh",
   "postStartCommand": "bash .devcontainer/start_backend.sh",
