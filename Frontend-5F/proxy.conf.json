@@ -1,0 +1,44 @@
+{
+  "/auth-api": {
+    "target": "http://localhost:6000",
+    "pathRewrite": { "^/auth-api": "" },
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "warn"
+  },
+  "/sinistri-api": {
+    "target": "http://localhost:7000",
+    "pathRewrite": { "^/sinistri-api": "" },
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "warn"
+  },
+  "/periti-api": {
+    "target": "http://localhost:8000",
+    "pathRewrite": { "^/periti-api": "" },
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "warn"
+  },
+  "/polizze-api": {
+    "target": "http://localhost:9000",
+    "pathRewrite": { "^/polizze-api": "" },
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "warn"
+  },
+  "/assicurazioni-api": {
+    "target": "http://localhost:5000",
+    "pathRewrite": { "^/assicurazioni-api": "" },
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "warn"
+  },
+  "/veicoli-api": {
+    "target": "http://localhost:10000",
+    "pathRewrite": { "^/veicoli-api": "" },
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "warn"
+  }
+}
