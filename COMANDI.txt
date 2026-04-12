@@ -1,0 +1,107 @@
+================================================================
+  SAFECLAIM 5F — COMANDI TERMINALE COMPLETI
+  (Codespace / Linux / Ubuntu)
+================================================================
+
+⚡ PRIMA VOLTA (setup iniziale — eseguire una sola volta)
+----------------------------------------------------------------
+
+# 1. Installa MariaDB
+sudo apt-get update
+sudo apt-get install -y mariadb-server
+
+# 2. Avvia MariaDB
+sudo service mariadb start
+
+# 3. Crea utente MySQL
+sudo mariadb -e "CREATE USER 'pythonuser'@'localhost' IDENTIFIED BY 'password123';"
+sudo mariadb -e "GRANT ALL PRIVILEGES ON *.* TO 'pythonuser'@'localhost' WITH GRANT OPTION;"
+sudo mariadb -e "FLUSH PRIVILEGES;"
+
+# 4. Installa dipendenze Python
+pip install flask flask-cors mysql-connector-python "pymongo[srv]"
+
+# 5. Crea database e inserisci dati iniziali
+python db_locale.py
+
+# 6. Installa dipendenze Angular (eseguire dentro la cartella Frontend-5F)
+cd Frontend-5F
+npm install
+cd ..
+
+
+================================================================
+🔁 OGNI VOLTA CHE RIAPRI IL CODESPACE
+================================================================
+
+# Avvia MariaDB
+sudo service mariadb start
+
+# Avvia tutti i server backend (ognuno in un terminale separato)
+python endpoint_5F_log_reg.py
+python endpoint_5F_Assicurazione.py
+python endpoint_5F_Sinistri_User.py
+python endpoint_5F_Periti.py
+python endpoint_5F_Polizze.py
+python endpoint_5F_Veicoli.py
+
+# Avvia Angular (in un terminale separato, dentro Frontend-5F)
+cd Frontend-5F
+ng serve
+
+
+================================================================
+🚀 AVVIO RAPIDO — tutto in background con un copia-incolla
+================================================================
+
+sudo service mariadb start && \
+pkill -f "python endpoint_5F" 2>/dev/null; sleep 1 && \
+cd $(dirname $(find . -name "endpoint_5F_log_reg.py" | head -1)) && \
+nohup python endpoint_5F_log_reg.py       > /tmp/api_log_reg.log       2>&1 & \
+nohup python endpoint_5F_Assicurazione.py > /tmp/api_assicurazione.log 2>&1 & \
+nohup python endpoint_5F_Sinistri_User.py > /tmp/api_sinistri.log      2>&1 & \
+nohup python endpoint_5F_Periti.py        > /tmp/api_periti.log        2>&1 & \
+nohup python endpoint_5F_Polizze.py       > /tmp/api_polizze.log       2>&1 & \
+nohup python endpoint_5F_Veicoli.py       > /tmp/api_veicoli.log       2>&1 & \
+echo "Backend avviato!" && cd -
+
+
+================================================================
+🌐 PORTE DEI SERVER
+================================================================
+
+  :4200  → Angular (Frontend)
+  :5000  → API Assicurazioni
+  :6000  → API Login / Registrazione
+  :7000  → API Sinistri Utente
+  :8000  → API Periti
+  :9000  → API Polizze
+  :10000 → API Veicoli
+
+
+================================================================
+🔍 UTILITÀ — comandi extra
+================================================================
+
+# Controlla se i server Flask sono in ascolto
+ss -tlnp | grep -E '5000|6000|7000|8000|9000|10000'
+
+# Leggi i log di un server specifico
+tail -f /tmp/api_log_reg.log
+tail -f /tmp/api_assicurazione.log
+tail -f /tmp/api_sinistri.log
+tail -f /tmp/api_periti.log
+tail -f /tmp/api_polizze.log
+tail -f /tmp/api_veicoli.log
+
+# Ferma tutti i server Flask
+pkill -f "python endpoint_5F"
+
+# Accedi al database MySQL manualmente
+sudo mariadb gestione_assicurazioni
+
+# Ricrea il database da zero (ATTENZIONE: cancella tutti i dati)
+sudo mariadb -e "DROP DATABASE IF EXISTS gestione_assicurazioni;"
+python db_locale.py
+
+================================================================
