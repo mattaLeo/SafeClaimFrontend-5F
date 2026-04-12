@@ -1,0 +1,336 @@
+<div class="min-h-screen bg-slate-50 flex items-center justify-center px-4">
+  <div class="w-full max-w-sm bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-10">
+
+    <!-- Logo & header -->
+    <div class="flex flex-col items-center mb-6">
+      <div class="bg-[#1E40AF] p-3.5 rounded-2xl shadow-lg shadow-blue-200 mb-4">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      </div>
+      <h1 class="text-2xl font-black tracking-tight text-[#0F172A]">SafeClaim</h1>
+      <p class="text-sm text-slate-400 font-medium mt-1">Crea il tuo account</p>
+    </div>
+
+    <!-- Role selector -->
+    <div class="flex justify-center gap-2 mb-6">
+      <button
+        type="button"
+        (click)="selectRole('user')"
+        [ngClass]="role === 'user'
+          ? 'bg-[#1E40AF] text-white'
+          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+        class="px-4 py-2 rounded-full text-sm font-semibold transition"
+      >
+        Utente
+      </button>
+      <button
+        type="button"
+        (click)="selectRole('perito')"
+        [ngClass]="role === 'perito'
+          ? 'bg-[#1E40AF] text-white'
+          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+        class="px-4 py-2 rounded-full text-sm font-semibold transition"
+      >
+        Perito
+      </button>
+      <button
+        type="button"
+        (click)="selectRole('assicuratore')"
+        [ngClass]="role === 'assicuratore'
+          ? 'bg-[#1E40AF] text-white'
+          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
+        class="px-4 py-2 rounded-full text-sm font-semibold transition"
+      >
+        Assicuratore
+      </button>
+    </div>
+
+    <!-- Form -->
+    <form (ngSubmit)="onSubmit()" class="flex flex-col gap-5">
+      <ng-container [ngSwitch]="role">
+
+        <!-- Utente -->
+        <ng-container *ngSwitchCase="'user'">
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Nome -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Nome</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                  <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A4 4 0 015 13V7a4 4 0 118 0v6a4 4 0 01-.121 4.804" />
+                  </svg>
+                </span>
+                <input
+                  type="text"
+                  [(ngModel)]="user.nome"
+                  name="nome"
+                  placeholder="Nome"
+                  required
+                  class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-300 font-medium
+                         focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 focus:border-[#1E40AF] transition-all"
+                />
+              </div>
+            </div>
+            <!-- Cognome -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Cognome</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                  <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A4 4 0 015 13V7a4 4 0 118 0v6a4 4 0 01-.121 4.804" />
+                  </svg>
+                </span>
+                <input
+                  type="text"
+                  [(ngModel)]="user.cognome"
+                  name="cognome"
+                  placeholder="Cognome"
+                  required
+                  class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-300 font-medium
+                         focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 focus:border-[#1E40AF] transition-all"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Codice Fiscale -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Codice Fiscale</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                [(ngModel)]="user.cf"
+                name="cf"
+                placeholder="CF"
+                required
+                class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-300 font-medium
+                       focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 focus:border-[#1E40AF] transition-all"
+              />
+            </div>
+          </div>
+
+          <!-- Targa -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Targa</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 13h2l1 2h10l1-2h2" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                [(ngModel)]="user.targa"
+                name="targa"
+                placeholder="Targa"
+                required
+                class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-300 font-medium
+                       focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 focus:border-[#1E40AF] transition-all"
+              />
+            </div>
+          </div>
+
+          <!-- Email - utente -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Email</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </span>
+              <input
+                type="email"
+                [(ngModel)]="user.email"
+                name="emailUser"
+                placeholder="you@example.com"
+                required
+                class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-300 font-medium
+                       focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 focus:border-[#1E40AF] transition-all"
+              />
+            </div>
+          </div>
+
+          <!-- Password - utente -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Password</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </span>
+              <input
+                type="password"
+                [(ngModel)]="user.password"
+                name="passwordUser"
+                placeholder="••••••••"
+                required
+                class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-300 font-medium
+                       focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 focus:border-[#1E40AF] transition-all"
+              />
+            </div>
+          </div>
+        </ng-container>
+
+
+
+        <!-- Perito -->
+        <ng-container *ngSwitchCase="'perito'">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Codice Fiscale</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                [(ngModel)]="perito.cf"
+                name="cfPerito"
+                placeholder="CF"
+                required
+                class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-300 font-medium
+                       focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 focus:border-[#1E40AF] transition-all"
+              />
+            </div>
+          </div>
+
+          <!-- Email - perito -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Email</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </span>
+              <input
+                type="email"
+                [(ngModel)]="perito.email"
+                name="emailPerito"
+                placeholder="you@example.com"
+                required
+                class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-300 font-medium
+                       focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 focus:border-[#1E40AF] transition-all"
+              />
+            </div>
+          </div>
+
+          <!-- Password - perito -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Password</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </span>
+              <input
+                type="password"
+                [(ngModel)]="perito.password"
+                name="passwordPerito"
+                placeholder="••••••••"
+                required
+                class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-300 font-medium
+                       focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 focus:border-[#1E40AF] transition-all"
+              />
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Assicuratore -->
+        <ng-container *ngSwitchCase="'assicuratore'">
+          <!-- Email - assicuratore -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Email</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </span>
+              <input
+                type="email"
+                [(ngModel)]="assicuratore.email"
+                name="emailAssicuratore"
+                placeholder="you@example.com"
+                required
+                class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-300 font-medium
+                       focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 focus:border-[#1E40AF] transition-all"
+              />
+            </div>
+          </div>
+
+          <!-- Password - assicuratore -->
+          <div class="flex flex-col gap-1.5">
+            <label class="text-xs font-black text-slate-500 uppercase tracking-widest">Password</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </span>
+              <input
+                type="password"
+                [(ngModel)]="assicuratore.password"
+                name="passwordAssicuratore"
+                placeholder="••••••••"
+                required
+                class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 placeholder-slate-300 font-medium
+                       focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 focus:border-[#1E40AF] transition-all"
+              />
+            </div>
+          </div>
+        </ng-container>
+      </ng-container>
+
+
+
+      <!-- Error message -->
+      <div *ngIf="errorMessage"
+        class="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-semibold">
+        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        {{ errorMessage }}
+      </div>
+
+      <!-- Submit -->
+      <button
+        type="submit"
+        [disabled]="loading"
+        class="w-full py-3 bg-[#1E40AF] hover:bg-[#1d3a9e] active:bg-[#1a337a] text-white text-sm font-black rounded-xl
+               shadow-lg shadow-blue-200 hover:shadow-blue-300 transition-all duration-200 tracking-wide
+               disabled:opacity-60 disabled:cursor-not-allowed"
+      >
+        {{ loading ? 'Registrazione in corso...' : 'Registrati' }}
+      </button>
+    </form>
+
+    <!-- Footer -->
+    <p class="text-center text-xs text-slate-400 font-medium mt-8">
+      Hai già un account?
+      <a routerLink="/signin" class="text-[#1E40AF] font-black hover:text-blue-800 transition-colors ml-1">
+        Accedi
+      </a>
+    </p>
+
+  </div>
+</div>

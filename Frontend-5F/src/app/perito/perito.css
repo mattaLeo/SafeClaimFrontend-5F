@@ -1,0 +1,102 @@
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideOutRight {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(40px); }
+}
+
+@keyframes sidebarIn {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes settingSectionIn {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* --- Animation utility classes (usate nel template) --- */
+
+.animate-fade-down {
+  animation: slideDown 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.delay-1 { animation-delay: 0.08s; }
+.delay-2 { animation-delay: 0.16s; }
+.delay-3 { animation-delay: 0.24s; }
+.delay-4 { animation-delay: 0.32s; }
+
+.sidebar-slide-in {
+  animation: sidebarIn 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.settings-panel-in {
+  animation: slideInRight 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.settings-panel-out {
+  animation: slideOutRight 0.3s cubic-bezier(0.55, 0, 0.1, 1) forwards;
+}
+
+.modal-pop {
+  animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.settings-section {
+  animation: settingSectionIn 0.4s ease-out both;
+}
+
+.delay-s1 { animation-delay: 0.1s; }
+.delay-s2 { animation-delay: 0.2s; }
+.delay-s3 { animation-delay: 0.3s; }
+.delay-s4 { animation-delay: 0.4s; }
+
+/* --- settings-header ::after pseudo-element (gradient border) ---
+   Impossibile in Tailwind senza plugin personalizzati.             */
+
+.settings-header {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  position: relative;
+}
+
+.settings-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #1e40af 0%, #3b82f6 50%, transparent 100%);
+}
+
+/* ============================================
+   NOTE PER IL COMPONENT TYPESCRIPT
+   ============================================
+
+   getStatusClass(status) deve restituire classi Tailwind per il colore:
+     'in_valutazione' → 'bg-orange-50 text-orange-700 border-orange-200'
+     'assegnato'      → 'bg-blue-50 text-blue-700 border-blue-200'
+     'approvato'      → 'bg-green-50 text-green-700 border-green-200'
+     'chiuso'         → 'bg-slate-50 text-slate-500 border-slate-200'
+     'in_attesa'      → 'bg-yellow-50 text-yellow-700 border-yellow-100'
+
+   getPriorityClass(priority) deve restituire:
+     'alta'   → 'bg-red-50 text-rose-600'
+     'media'  → 'bg-orange-50 text-orange-600'
+     'bassa'  → 'bg-green-50 text-green-600'
+*/
