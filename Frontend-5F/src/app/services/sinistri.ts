@@ -1,54 +1,37 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
 import { sinistro } from '../models/sinistro.model';
 import { HttpClient } from '@angular/common/http';
+import { tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root',
 })
-export class Sinistri {
-  link = "https://animated-space-trout-977ppqwvr6742p9qj-7000.app.github.dev/"
+export class SinistriService {
+  link = "https://zany-orbit-977ppqw5gg6xfp9w9-5000.app.github.dev/";
 
-  obsSinistri!: Observable<sinistro[]>
-  obsSinistroId!: Observable<sinistro>
-  obsCreateSinistro!: Observable<any>
-
+  private sinistriSubject = new BehaviorSubject<sinistro[]>([]);
+  obsSinistri = this.sinistriSubject.asObservable();
   sinistri: sinistro[] = [];
-  sinistroById!: sinistro
 
   constructor(public http: HttpClient) {}
 
-  askSinistri() {
-    this.obsSinistri = this.http.get<sinistro[]>(`${this.link}sinistri`)
-    this.obsSinistri.subscribe(data => this.getSinistri(data))
+  askSinistri(userId?: number) {
+    this.http.get<any>(`${this.link}sinistri`).subscribe({
+      next: (res) => {
+        // Gestisce sia array diretto che {count, data: [...]}
+        const data: sinistro[] = Array.isArray(res) ? res : res.data || [];
+        const filtrati = userId ? data.filter(s => s.id_automobilista == userId) : data;
+        this.sinistri = filtrati;
+        this.sinistriSubject.next(filtrati);
+      },
+      error: (err) => console.error("Errore download sinistri:", err)
+    });
   }
 
-  getSinistri(d: sinistro[]) {
-    this.sinistri = d
-    console.log(this.sinistri)
-  }
-
-  askSinistroById(id: number) {
-    this.obsSinistroId = this.http.get<sinistro>(`${this.link}sinistri/${id}`)
-    this.obsSinistroId.subscribe(data => this.getSinistroById(data))
-  }
-
-  getSinistroById(d: sinistro) {
-    this.sinistroById = d
-    console.log(this.sinistroById)
-  }
-
-  createSinistro(automobilista_id: number, targa: string, data_evento: Date, descrizione: string): Observable<any> {
-    const newSinistro = {
-      // CAMBIA QUI: usa lo stesso nome che si aspetta il backend
-      automobilista_id: automobilista_id, 
-      targa: targa,
-      data_evento: data_evento,
-      descrizione: descrizione
-    };
-
-    console.log("Sto inviando questo oggetto:", newSinistro); // Utile per il debug
-
-    return this.http.post(`${this.link}sinistro`, newSinistro);
+  createSinistro(nuovoSinistro: sinistro): Observable<any> {
+    return this.http.post(`${this.link}sinistro`, nuovoSinistro).pipe(
+      tap(() => this.askSinistri())
+    );
   }
 }
