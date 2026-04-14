@@ -16,14 +16,12 @@ export class SinistriService {
 
   constructor(public http: HttpClient) {}
 
-  askSinistri(userId?: number) {
-    this.http.get<any>(`${this.link}sinistri`).subscribe({
-      next: (res) => {
-        // Gestisce sia array diretto che {count, data: [...]}
-        const data: sinistro[] = Array.isArray(res) ? res : res.data || [];
-        const filtrati = userId ? data.filter(s => s.id_automobilista == userId) : data;
-        this.sinistri = filtrati;
-        this.sinistriSubject.next(filtrati);
+  askSinistri() {
+    this.http.get<sinistro[]>(`${this.link}sinistri`).subscribe({
+      next: (data) => {
+        this.sinistri = data;
+        this.sinistriSubject.next(data);
+        console.log("Sinistri caricati:", data);
       },
       error: (err) => console.error("Errore download sinistri:", err)
     });
