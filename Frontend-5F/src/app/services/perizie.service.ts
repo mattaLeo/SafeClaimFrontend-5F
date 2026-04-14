@@ -11,9 +11,9 @@ import { Relazione } from '../perito/perito';
 export class Perizie {
 
   // Porta 8000 → pratiche/perizie (MongoDB)
-  private praticheLink = 'https://potential-space-tribble-x55jj9x764pjfqx9-8000.app.github.dev/';
+  private praticheLink = 'https://redesigned-zebra-977ppqwrvvww274w5-8000.app.github.dev/';
   // Porta 7000 → sinistri (MongoDB)
-  private sinistriLink = 'https://potential-space-tribble-x55jj9x764pjfqx9-7000.app.github.dev/';
+  private sinistriLink = 'https://redesigned-zebra-977ppqwrvvww274w5-7000.app.github.dev/';
 
   constructor(public http: HttpClient) {}
 

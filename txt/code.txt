@@ -12,6 +12,8 @@ ng g c "componente"
 
 npm install jspdf
 
+nvm install 22
+
 ----------Esegiobili GitHub-------------------------
 
 git status

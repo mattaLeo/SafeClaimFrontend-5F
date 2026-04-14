@@ -149,7 +149,7 @@
           </div>
 
           <!-- Filtri -->
-          <div class="bg-white border border-slate-200 rounded-xl p-5 mb-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-white border border-slate-200 rounded-xl p-5 mb-6 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
             <div class="col-span-2">
               <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400 mb-1.5">Cerca</label>
               <div class="relative">
@@ -182,9 +182,19 @@
                 <option value="bassa">Bassa</option>
               </select>
             </div>
+            <div>
+              <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400 mb-1.5">Dal</label>
+              <input [(ngModel)]="filterDateFrom" type="date"
+                class="w-full px-3 py-2 text-[0.8rem] font-semibold border-[1.5px] border-slate-200 rounded-lg bg-slate-50 text-slate-900 outline-none transition-all focus:border-[#09637E] focus:bg-white focus:ring-[3px] focus:ring-[#09637E]/[0.08]" />
+            </div>
+            <div>
+              <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400 mb-1.5">Al</label>
+              <input [(ngModel)]="filterDateTo" type="date"
+                class="w-full px-3 py-2 text-[0.8rem] font-semibold border-[1.5px] border-slate-200 rounded-lg bg-slate-50 text-slate-900 outline-none transition-all focus:border-[#09637E] focus:bg-white focus:ring-[3px] focus:ring-[#09637E]/[0.08]" />
+            </div>
           </div>
 
-          <!-- Tabella senza scrollbar orizzontale -->
+          <!-- Tabella -->
           <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
             <table class="w-full table-fixed">
               <thead>

@@ -73,6 +73,8 @@ export class Perito implements OnInit {
   filterSearch   = '';
   filterStatus   = '';
   filterPriority = '';
+  filterDateFrom = '';
+  filterDateTo   = '';
 
   get filteredClaims(): Claim[] {
     return this.allClaims.filter(c => {
@@ -82,7 +84,24 @@ export class Perito implements OnInit {
         c.location.toLowerCase().includes(this.filterSearch.toLowerCase());
       const matchStatus   = !this.filterStatus   || c.status   === this.filterStatus;
       const matchPriority = !this.filterPriority || c.priority === this.filterPriority;
-      return matchSearch && matchStatus && matchPriority;
+
+      // Converte la data italiana (es. "14 aprile 2026") in oggetto Date
+      const parts = c.date?.split(' ');
+      const mesi: Record<string, number> = {
+        'gennaio': 1, 'febbraio': 2, 'marzo': 3, 'aprile': 4,
+        'maggio': 5, 'giugno': 6, 'luglio': 7, 'agosto': 8,
+        'settembre': 9, 'ottobre': 10, 'novembre': 11, 'dicembre': 12
+      };
+      const claimDate = parts?.length === 3
+        ? new Date(+parts[2], (mesi[parts[1].toLowerCase()] ?? 1) - 1, +parts[0])
+        : null;
+
+      const matchFrom = !this.filterDateFrom || !claimDate ||
+        claimDate >= new Date(this.filterDateFrom);
+      const matchTo   = !this.filterDateTo   || !claimDate ||
+        claimDate <= new Date(this.filterDateTo);
+
+      return matchSearch && matchStatus && matchPriority && matchFrom && matchTo;
     });
   }
 
@@ -367,7 +386,6 @@ export class Perito implements OnInit {
   saveRelazione(): void {
     this.relazioneError = '';
 
-    // Trova sempre il claim dal claimCode selezionato
     const claim = this.allClaims.find(c => c.code === this.editingRelazione.claimCode);
 
     if (!claim) {
@@ -375,7 +393,6 @@ export class Perito implements OnInit {
       return;
     }
 
-    // Aggiorna sinistroId e vehicle dal claim trovato
     this.editingRelazione.sinistroId = claim.id;
     this.editingRelazione.vehicle    = claim.vehicle;
 
@@ -394,7 +411,6 @@ export class Perito implements OnInit {
     });
 
     if (this.editingRelazione.id) {
-      // ── UPDATE ──
       this.perizie.aggiornaRelazione(sinistroId, peritoId, this.editingRelazione).subscribe({
         next: () => {
           const idx = this.relazioni.findIndex(r => r.id === this.editingRelazione.id);
@@ -414,7 +430,6 @@ export class Perito implements OnInit {
         }
       });
     } else {
-      // ── CREATE ──
       this.perizie.creaRelazione(sinistroId, peritoId, this.editingRelazione).subscribe({
         next: (res: any) => {
           const nuova: Relazione = {
@@ -551,6 +566,8 @@ export class Perito implements OnInit {
     this.filterSearch   = '';
     this.filterStatus   = '';
     this.filterPriority = '';
+    this.filterDateFrom = '';
+    this.filterDateTo   = '';
   }
 
   // ── Contatto ─────────────────────────────────────────────────────────────────
