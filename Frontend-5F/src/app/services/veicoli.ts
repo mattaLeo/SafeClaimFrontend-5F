@@ -8,7 +8,7 @@ import { Veicolo } from '../models/veicolo.model';
 })
 export class VeicoliService {
   // ATTENZIONE: Assicurati che l'URL punti alla porta 5000 (MySQL/Python)
-  private link = 'https://zany-orbit-977ppqw5gg6xfp9w9-5000.app.github.dev/'; 
+  private link = 'https://laughing-meme-jjjxx497pp642v4q-5000.app.github.dev/'; 
 
   public veicoli: Veicolo[] = [];
 
