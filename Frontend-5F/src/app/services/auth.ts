@@ -7,11 +7,17 @@ import { User } from '../models/user.model';
   providedIn: 'root',
 })
 export class AuthService {
-  link = "https://organic-palm-tree-7vvggrx45j993x5pg-6000.app.github.dev/";
+  link = "https://laughing-meme-jjjxx497pp642v4q-6000.app.github.dev/";
 
-  currentUser?: User
+  currentUser?: User;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {
+    // Ripristina utente dal localStorage all'avvio
+    const saved = localStorage.getItem('currentUser');
+    if (saved) {
+      this.currentUser = JSON.parse(saved);
+    }
+  }
 
   login(email_in: string, psw_in: string): Observable<any> {
     return this.http.post<any>(`${this.link}login`, {
@@ -22,7 +28,8 @@ export class AuthService {
         console.log("Risposta API Login:", res);
         if (res.status === "success") {
           this.currentUser = res.user;
-          localStorage.setItem('userRole', res.user.ruolo); // <-- aggiungi questa riga
+          localStorage.setItem('currentUser', JSON.stringify(res.user));
+          localStorage.setItem('userRole', res.user.ruolo);
           console.log("Utente loggato:", this.currentUser);
         }
       })
@@ -31,5 +38,11 @@ export class AuthService {
 
   signup(nuovoUtente: User): Observable<any> {
     return this.http.post<any>(`${this.link}registrazione`, nuovoUtente);
+  }
+
+  logout(): void {
+    this.currentUser = undefined;
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('userRole');
   }
 }

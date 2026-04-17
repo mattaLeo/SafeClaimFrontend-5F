@@ -1,94 +1,82 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router'; 
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { NuovoSinistroComponent } from '../nuovo-sinistro/nuovo-sinistro.component';
+import { DettaglioSinistroComponent } from '../dettagli-sinistro/dettagli-sinistro';
 import { sinistro } from '../models/sinistro.model';
-import { VeicoliService } from '../services/veicoli'; 
-import { Veicolo } from '../models/veicolo.model';
+import { VeicoliService } from '../services/veicoli';
+import { SinistriService } from '../services/sinistri';
 import { AuthService } from '../services/auth';
 import { User } from '../models/user.model';
 
 @Component({
-  selector: 'app-automobilista', // Nome del tag HTML del componente
-  standalone: true, // Indica che il componente si gestisce i propri import
-  // Registriamo il componente figlio 'NuovoSinistro' per poterlo mostrare nella dashboard
-  imports: [CommonModule, NuovoSinistroComponent],
+  selector: 'app-automobilista',
+  standalone: true,
+  imports: [CommonModule, NuovoSinistroComponent, DettaglioSinistroComponent, FormsModule],
   templateUrl: './automobilista.html',
   styleUrl: './automobilista.css',
 })
-export class Automobilista implements OnInit{
-  // Proprietà Booleana per gestire la visibilità del form "Nuovo Sinistro" tramite *ngIf
+export class Automobilista implements OnInit {
   showNewSinistro = false;
-  
-  // Array locale per memorizzare i sinistri (inizialmente vuoto)
   sinistri: sinistro[] = [];
-  
-  // Variabile per memorizzare un singolo veicolo cercato. Può essere nullo all'inizio.
-  veicoloSelezionato: Veicolo | null = null;
+  searchTerm: string = '';
+  user?: User;
+  sinistroSelezionato?: sinistro;
 
-  user?: User
-
-  // DEPENDENCY INJECTION: Angular inietta il Service dei veicoli e il Router
   constructor(
     public auth: AuthService,
-    public veicoliService: VeicoliService, // Public per usarlo direttamente nell'HTML
-    private router: Router // Private perché serve solo nella logica TS
+    public veicoliService: VeicoliService,
+    private sinistriService: SinistriService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
-
-  /**
-   * NAVIGAZIONE: Metodo per cambiare pagina.
-   * Il Router prende l'indirizzo configurato nelle 'routes' e cambia il contenuto della vista.
-   */
-  vaiAVeicoli(): void {
-    this.router.navigate(['/veicoli']);
-  }
-
-  /**
-   * COMUNICAZIONE ASINCRONA: Recupera i dati di un veicolo specifico dal backend.
-   * id: numero identificativo del veicolo
-   */
-  cercaSingoloVeicolo(id: number): void {
-    // Chiamata al service che restituisce un Observable
-    this.veicoliService.getVeicoloById(id).subscribe({
-      // Caso successo (next): il dato 'v' arriva da Python/Flask
-      next: (v) => {
-        this.veicoloSelezionato = v; // Aggiorniamo la variabile locale
-        console.log("Dettaglio veicolo caricato:", v);
-      },
-      // Caso errore: gestione dell'eccezione se il server non risponde o l'id non esiste
-      error: (err) => console.error("Errore nel recupero del singolo veicolo", err)
-    });
-  }
-
-  // Gestione apertura MODALE/FORM
-  openNewSinistro(): void {
-    this.showNewSinistro = true;
-  }
-
-  /**
-   * EVENTO @OUTPUT: Metodo richiamato quando il componente figlio (NuovoSinistro) 
-   * emette un evento di creazione avvenuta.
-   * s: l'oggetto sinistro appena creato dal form
-   */
-  onCreated(s: sinistro): void {
-    this.sinistri.push(s); // Aggiungiamo il nuovo sinistro alla lista in tempo reale
-    this.closeNewSinistro(); // Chiudiamo il form
-  }
-
-  // Chiude il componente del form riportando la variabile a false
-  closeNewSinistro(): void {
-    this.showNewSinistro = false;
-  }
 
   ngOnInit(): void {
     this.user = this.auth.currentUser;
-    
+    this.caricaDati();
+  }
+
+  caricaDati(): void {
+    this.sinistriService.obsSinistri.subscribe({
+      next: (data: any) => {
+        this.sinistri = Array.isArray(data) ? data : data.data || [];
+        this.cdr.detectChanges();
+      }
+    });
+    this.sinistriService.askSinistri();
+
     const userId = this.auth.currentUser?.id;
     if (userId) {
       this.veicoliService.getVeicoliUtente(userId).subscribe({
-        next: (veicoli) => console.log("Veicoli utente:", veicoli),
-        error: (err) => console.error("Errore caricamento veicoli:", err)
+        next: (data) => {
+          this.veicoliService.veicoli = data;
+          this.cdr.detectChanges();
+        }
       });
     }
   }
+
+  get sinistriFiltrati(): sinistro[] {
+    if (!this.searchTerm.trim()) return this.sinistri;
+    const search = this.searchTerm.toLowerCase();
+    return this.sinistri.filter(s => {
+      const targa = (s.targa ?? '').toLowerCase();
+      const descrizione = (s.descrizione ?? '').toLowerCase();
+      const stato = (s.stato ?? '').toLowerCase();
+      return targa.includes(search) || descrizione.includes(search) || stato.includes(search);
+    });
+  }
+
+  openDettaglio(s: sinistro): void { this.sinistroSelezionato = s; }
+  closeDettaglio(): void { this.sinistroSelezionato = undefined; }
+
+  onCreated(): void {
+    this.caricaDati();
+    this.closeNewSinistro();
+  }
+
+  openNewSinistro(): void { this.showNewSinistro = true; }
+  closeNewSinistro(): void { this.showNewSinistro = false; }
+  vaiAVeicoli(): void { this.router.navigate(['/veicoli']); }
 }
