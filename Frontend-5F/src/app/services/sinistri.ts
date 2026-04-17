@@ -8,7 +8,7 @@ import { tap } from 'rxjs/operators';
   providedIn: 'root',
 })
 export class SinistriService {
-  link = "https://laughing-meme-jjjxx497pp642v4q-5000.app.github.dev/";
+  link = "https://laughing-meme-jjjxx497pp642v4q-7000.app.github.dev/";
 
   private sinistriSubject = new BehaviorSubject<sinistro[]>([]);
   obsSinistri = this.sinistriSubject.asObservable();
@@ -34,8 +34,8 @@ export class SinistriService {
   }
 
   uploadImmagini(sinistroId: string, files: File[]): Observable<any> {
-    const formData = new FormData();
-    files.forEach(file => formData.append('immagini', file));
-    return this.http.post(`${this.link}sinistro/${sinistroId}/immagini`, formData);
-  }
+  const formData = new FormData();
+  files.forEach(file => formData.append('immagini', file, file.name));
+  return this.http.post(`${this.link}sinistro/${sinistroId}/immagini`, formData);
+}
 }

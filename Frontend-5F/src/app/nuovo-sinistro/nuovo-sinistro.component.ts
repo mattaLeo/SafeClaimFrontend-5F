@@ -58,9 +58,9 @@ export class NuovoSinistroComponent implements OnInit {
 
     this.loading = true;
     
-    // Creiamo l'oggetto rispettando il modello id_automobilista
+    // Creiamo l'oggetto rispettando il modello automobilista_id
     const payload: sinistro = {
-      id_automobilista: this.auth.currentUser?.id || 0,
+      automobilista_id: this.auth.currentUser?.id || 0,
       targa: this.formData.targa,
       data_evento: new Date(this.formData.data_evento),
       descrizione: this.formData.descrizione
