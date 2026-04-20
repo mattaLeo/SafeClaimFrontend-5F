@@ -8,7 +8,7 @@ import { Veicolo } from '../models/veicolo.model';
   providedIn: 'root',
 })
 export class VeicoliService {
-  private link = 'https://animated-space-trout-977ppqwvr6742p9qj-7000.app.github.dev/'; 
+  private link = 'https://improved-palm-tree-pjjxxg9v4j6g2xq9-5000.app.github.dev/'; 
 
   // Variabile pubblica che memorizza i veicoli scaricati, rendendoli accessibili a tutti i componenti
   public veicoli: Veicolo[] = [];

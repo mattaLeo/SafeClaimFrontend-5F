@@ -7,7 +7,7 @@ import { User } from '../models/user.model';
   providedIn: 'root',
 })
 export class AuthService {
-  link = "https://organic-palm-tree-7vvggrx45j993x5pg-6000.app.github.dev/";
+  link = "https://improved-palm-tree-pjjxxg9v4j6g2xq9-6000.app.github.dev/";
 
   currentUser?: User
 
