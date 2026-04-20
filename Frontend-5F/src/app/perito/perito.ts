@@ -1,4 +1,4 @@
-// ── Tipi condivisi ──────────────────────────────────────────────────────────
+// ── Shared types ──────────────────────────────────────────────────────────────
 
 export type VehicleType = 'car' | 'motorcycle' | 'truck' | 'van' | 'suv';
 
@@ -33,9 +33,32 @@ export interface Relazione {
   createdAt?:       string;
 }
 
-// ── Componente ──────────────────────────────────────────────────────────────
+/** Dettaglio completo del sinistro caricato al click sulla card pratica. */
+export interface SinistroDettaglio {
+  id:           string;
+  targa?:       string;
+  marca?:       string;
+  modello?:     string;
+  dataEvento?:  string;
+  descrizione?: string;
+  luogo?:       string;
+  tipoSinistro?: string;
+  stimaDanno?:  number;
+  stato?:       string;
+  compagnia?:   string;
+  immagini:     Array<{ url: string; public_id: string }>;
+  analisiAi?: {
+    testo?:       string;
+    modello?:     string;
+    stato:        'completata' | 'in_elaborazione' | 'errore' | 'non_avviata';
+    dataAnalisi?: string;
+    errore?:      string;
+  };
+}
 
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+// ── Component ──────────────────────────────────────────────────────────────────
+
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ClaimCardComponent } from '../componenti/claim-card/claim-card.component';
@@ -50,22 +73,23 @@ import jsPDF from 'jspdf';
   templateUrl: './perito.html',
   styleUrl: './perito.css',
 })
-export class Perito implements OnInit {
+export class Perito implements OnInit, OnDestroy {
 
   currentView: 'dashboard' | 'archivio' | 'relazioni' = 'dashboard';
-  isSidebarOpen       = false;
-  isSettingsOpen      = false;
-  isSettingsAnimating = false;
   isClaimDetailOpen   = false;
   isRelazioneOpen     = false;
   isContactModalOpen  = false;
   isLoading           = true;
   isRelazioniLoading  = false;
   contactSent         = false;
-  settingsSaved       = false;
   relazioneError      = '';
 
-  selectedClaim: Claim | null = null;
+  selectedClaim:    Claim | null           = null;
+  selectedSinistro: SinistroDettaglio | null = null;
+  isLoadingSinistro = false;
+  lightboxUrl:      string | null          = null;
+
+  private aiPollInterval: any = null;
 
   claims:    Claim[] = [];
   allClaims: Claim[] = [];
@@ -85,27 +109,23 @@ export class Perito implements OnInit {
       const matchStatus   = !this.filterStatus   || c.status   === this.filterStatus;
       const matchPriority = !this.filterPriority || c.priority === this.filterPriority;
 
-      // Converte la data italiana (es. "14 aprile 2026") in oggetto Date
       const parts = c.date?.split(' ');
       const mesi: Record<string, number> = {
-        'gennaio': 1, 'febbraio': 2, 'marzo': 3, 'aprile': 4,
-        'maggio': 5, 'giugno': 6, 'luglio': 7, 'agosto': 8,
-        'settembre': 9, 'ottobre': 10, 'novembre': 11, 'dicembre': 12
+        'gennaio':1,'febbraio':2,'marzo':3,'aprile':4,'maggio':5,'giugno':6,
+        'luglio':7,'agosto':8,'settembre':9,'ottobre':10,'novembre':11,'dicembre':12
       };
       const claimDate = parts?.length === 3
         ? new Date(+parts[2], (mesi[parts[1].toLowerCase()] ?? 1) - 1, +parts[0])
         : null;
 
-      const matchFrom = !this.filterDateFrom || !claimDate ||
-        claimDate >= new Date(this.filterDateFrom);
-      const matchTo   = !this.filterDateTo   || !claimDate ||
-        claimDate <= new Date(this.filterDateTo);
+      const matchFrom = !this.filterDateFrom || !claimDate || claimDate >= new Date(this.filterDateFrom);
+      const matchTo   = !this.filterDateTo   || !claimDate || claimDate <= new Date(this.filterDateTo);
 
       return matchSearch && matchStatus && matchPriority && matchFrom && matchTo;
     });
   }
 
-  // ── Stats ───────────────────────────────────────────────────────────────────
+  // ── Stats ─────────────────────────────────────────────────────────────────────
 
   get activeClaimsCount(): number {
     return this.claims.filter(c =>
@@ -117,56 +137,37 @@ export class Perito implements OnInit {
     return this.allClaims.reduce((sum, c) => sum + (c.amount ?? 0), 0);
   }
 
-  get relazioniCount(): number {
-    return this.relazioni.length;
-  }
+  get relazioniCount(): number { return this.relazioni.length; }
 
-  // ── Utente ──────────────────────────────────────────────────────────────────
+  // ── Utente ────────────────────────────────────────────────────────────────────
 
   user = { full_name: '', id: '', email: '', phone: '', ruolo: '' };
 
-  settings = {
-    full_name: '', email: '', phone: '',
-    notifications_email: true,
-    notifications_sms:   false,
-  };
-
-  // ── Relazioni ────────────────────────────────────────────────────────────────
+  // ── Relazioni ─────────────────────────────────────────────────────────────────
 
   relazioni: Relazione[] = [];
 
-  editingRelazione: Partial<Relazione> = {
-    partiDanneggiate: [],
-    status: 'Bozza',
-  };
+  editingRelazione: Partial<Relazione> = { partiDanneggiate: [], status: 'Bozza' };
 
-  tipiDanno = [
-    'Collisione', 'Grandine', 'Furto', 'Incendio', 'Vandalismo', 'Altro'
-  ];
+  tipiDanno = ['Collisione', 'Grandine', 'Furto', 'Incendio', 'Vandalismo', 'Altro'];
   partiDisponibili = [
-    'Paraurti anteriore', 'Paraurti posteriore', 'Cofano', 'Portiera SX',
-    'Portiera DX', 'Tetto', 'Parabrezza', 'Lunotto', 'Fiancata SX', 'Fiancata DX'
+    'Paraurti anteriore','Paraurti posteriore','Cofano','Portiera SX',
+    'Portiera DX','Tetto','Parabrezza','Lunotto','Fiancata SX','Fiancata DX'
   ];
   conclusioni        = ['Riparabile', 'Danno totale', 'In valutazione', 'Frode sospetta'];
   insuranceCompanies = [
-    'Generali', 'Allianz', 'UnipolSai', 'AXA', 'Zurich',
-    'Reale Mutua', 'Cattolica', 'Sara Assicurazioni'
+    'Generali','Allianz','UnipolSai','AXA','Zurich',
+    'Reale Mutua','Cattolica','Sara Assicurazioni'
   ];
 
-  roles       = ['Perito', 'Automobilista', 'Assicurazione'];
-  currentRole = 'Perito';
-
-  contactForm: any = {
-    claimCode: '', insurance: '', priority: 'normale', subject: '', message: '',
-  };
-
+  contactForm: any = { claimCode:'', insurance:'', priority:'normale', subject:'', message:'' };
   confirmDeleteClaim:     Claim | null     = null;
   confirmDeleteRelazione: Relazione | null = null;
 
   constructor(
     private perizie: Perizie,
-    private auth: AuthService,
-    private cdr: ChangeDetectorRef,
+    private auth:    AuthService,
+    private cdr:     ChangeDetectorRef,
   ) {}
 
   ngOnInit(): void {
@@ -175,7 +176,11 @@ export class Perito implements OnInit {
     this.loadRelazioni();
   }
 
-  // ── Caricamento utente ──────────────────────────────────────────────────────
+  ngOnDestroy(): void {
+    this.stopAIPoll();
+  }
+
+  // ── Caricamento utente ────────────────────────────────────────────────────────
 
   private loadUser(): void {
     const u = this.auth.currentUser as any;
@@ -187,31 +192,30 @@ export class Perito implements OnInit {
       phone:     u.telefono ?? u.phone ?? '',
       ruolo:     u.ruolo ?? '',
     };
-    this.settings = {
-      full_name:           this.user.full_name,
-      email:               this.user.email,
-      phone:               this.user.phone,
-      notifications_email: true,
-      notifications_sms:   false,
-    };
-    this.currentRole = this.user.ruolo || 'Perito';
   }
 
-  // ── Caricamento sinistri ────────────────────────────────────────────────────
+  // ── Caricamento pratiche ──────────────────────────────────────────────────────
 
+  /**
+   * Carica le pratiche assegnate all'assicurazione al perito corrente.
+   * Ogni pratica contiene già un campo "sinistro" con il riepilogo del sinistro,
+   * senza le immagini (che vengono caricate on-demand all'apertura del dettaglio).
+   * In caso di fallimento (endpoint non ancora disponibile) fa fallback ai sinistri.
+   */
   private loadClaims(): void {
     this.isLoading = true;
     const u = this.auth.currentUser as any;
     const peritoId = String(u?.id ?? 'demo');
 
-    this.perizie.askSinistriPerito(peritoId).subscribe({
+    this.perizie.getPratichePerito(peritoId).subscribe({
       next: (data) => {
-        this.claims    = data.map(s => this.perizie.mapSinistreToClaim(s));
+        this.claims    = data.map(p => this.perizie.mapPraticaToClaimCard(p));
         this.allClaims = [...this.claims];
         this.isLoading = false;
         this.cdr.detectChanges();
       },
       error: () => {
+        // Fallback: usa tutti i sinistri se il nuovo endpoint non è ancora live
         this.perizie.askTuttiSinistri().subscribe({
           next: (data: any) => {
             const lista = Array.isArray(data) ? data : (data.data ?? []);
@@ -220,24 +224,18 @@ export class Perito implements OnInit {
             this.isLoading = false;
             this.cdr.detectChanges();
           },
-          error: () => {
-            this.isLoading = false;
-            this.cdr.detectChanges();
-          }
+          error: () => { this.isLoading = false; this.cdr.detectChanges(); }
         });
       }
     });
   }
 
-  // ── Caricamento relazioni ───────────────────────────────────────────────────
+  // ── Caricamento relazioni ─────────────────────────────────────────────────────
 
   private loadRelazioni(): void {
     const u = this.auth.currentUser as any;
     const peritoId = String(u?.id ?? '');
-    if (!peritoId) {
-      this.isRelazioniLoading = false;
-      return;
-    }
+    if (!peritoId) { this.isRelazioniLoading = false; return; }
 
     this.isRelazioniLoading = true;
     this.perizie.getRelazioniPerito(peritoId).subscribe({
@@ -275,26 +273,115 @@ export class Perito implements OnInit {
     };
   }
 
-  // ── Navigazione ─────────────────────────────────────────────────────────────
+  // ── Navigazione ───────────────────────────────────────────────────────────────
 
   setView(v: 'dashboard' | 'archivio' | 'relazioni'): void {
     this.currentView = v;
     if (v === 'relazioni') this.loadRelazioni();
   }
 
-  // ── Claim detail ─────────────────────────────────────────────────────────────
+  // ── Claim / Pratica detail ────────────────────────────────────────────────────
 
   openClaimDetail(c: Claim): void {
     this.selectedClaim     = c;
     this.isClaimDetailOpen = true;
+    this.selectedSinistro  = null;
+    this.stopAIPoll();
+    this.loadSinistroDetail(c.id);
   }
 
   closeClaimDetail(): void {
     this.isClaimDetailOpen = false;
     this.selectedClaim     = null;
+    this.selectedSinistro  = null;
+    this.stopAIPoll();
   }
 
-  // ── Delete perizia ────────────────────────────────────────────────────────────
+  /**
+   * Carica il dettaglio completo del sinistro collegato alla pratica:
+   * tutti i campi, l'array immagini con URL Cloudinary, e l'analisi AI.
+   */
+  private loadSinistroDetail(sinistroId: string): void {
+    this.isLoadingSinistro = true;
+    this.perizie.getSinistro(sinistroId).subscribe({
+      next: (data) => {
+        const analisi = data.analisi_ai;
+        this.selectedSinistro = {
+          id:          String(data._id ?? sinistroId),
+          targa:       data.targa,
+          marca:       data.marca,
+          modello:     data.modello,
+          dataEvento:  data.data_evento,
+          descrizione: data.descrizione,
+          luogo:       data.luogo ?? data.indirizzo,
+          tipoSinistro: data.tipo_sinistro,
+          stimaDanno:  data.stima_danno ?? data.importo,
+          stato:       data.stato,
+          compagnia:   data.compagnia_assicurativa ?? data.assicurazione,
+          immagini:    Array.isArray(data.immagini) ? data.immagini : [],
+          analisiAi: analisi ? {
+            testo:       analisi.testo,
+            modello:     analisi.modello,
+            stato:       analisi.stato ?? 'non_avviata',
+            dataAnalisi: analisi.data_analisi,
+            errore:      analisi.errore,
+          } : { stato: 'non_avviata' },
+        };
+        this.isLoadingSinistro = false;
+
+        // Se l'analisi AI è ancora in corso, avvia il polling
+        if (this.selectedSinistro.analisiAi?.stato === 'in_elaborazione') {
+          this.startAIPoll(sinistroId);
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoadingSinistro = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // ── Polling analisi AI ────────────────────────────────────────────────────────
+
+  private startAIPoll(sinistroId: string): void {
+    let attempts = 0;
+    this.aiPollInterval = setInterval(() => {
+      attempts++;
+      if (attempts > 12 || !this.isClaimDetailOpen) {
+        this.stopAIPoll();
+        return;
+      }
+      this.perizie.getAnalisiAI(sinistroId).subscribe({
+        next: (analisi) => {
+          if (!this.selectedSinistro) return;
+          this.selectedSinistro.analisiAi = {
+            testo:       analisi.testo,
+            modello:     analisi.modello,
+            stato:       analisi.stato ?? 'non_avviata',
+            dataAnalisi: analisi.data_analisi,
+            errore:      analisi.errore,
+          };
+          if (analisi.stato !== 'in_elaborazione') this.stopAIPoll();
+          this.cdr.detectChanges();
+        }
+      });
+    }, 5000);
+  }
+
+  private stopAIPoll(): void {
+    if (this.aiPollInterval) {
+      clearInterval(this.aiPollInterval);
+      this.aiPollInterval = null;
+    }
+  }
+
+  // ── Lightbox immagini ─────────────────────────────────────────────────────────
+
+  openImage(url: string): void  { this.lightboxUrl = url; }
+  closeLightbox(): void          { this.lightboxUrl = null; }
+
+  // ── Delete pratica ────────────────────────────────────────────────────────────
 
   askDeleteClaim(c: Claim, event?: Event): void {
     event?.stopPropagation();
@@ -310,9 +397,7 @@ export class Perito implements OnInit {
     this.confirmDeleteClaim = null;
   }
 
-  cancelDelete(): void {
-    this.confirmDeleteClaim = null;
-  }
+  cancelDelete(): void { this.confirmDeleteClaim = null; }
 
   // ── Delete relazione ──────────────────────────────────────────────────────────
 
@@ -324,19 +409,10 @@ export class Perito implements OnInit {
   confirmDeleteRel(): void {
     if (!this.confirmDeleteRelazione) return;
     const rel = this.confirmDeleteRelazione;
-
     if (rel.id) {
       this.perizie.eliminaRelazione(rel.id).subscribe({
-        next: () => {
-          this.relazioni = this.relazioni.filter(r => r.id !== rel.id);
-          this.confirmDeleteRelazione = null;
-          this.cdr.detectChanges();
-        },
-        error: () => {
-          this.relazioni = this.relazioni.filter(r => r.id !== rel.id);
-          this.confirmDeleteRelazione = null;
-          this.cdr.detectChanges();
-        }
+        next:  () => { this.relazioni = this.relazioni.filter(r => r.id !== rel.id); this.confirmDeleteRelazione = null; this.cdr.detectChanges(); },
+        error: () => { this.relazioni = this.relazioni.filter(r => r.id !== rel.id); this.confirmDeleteRelazione = null; this.cdr.detectChanges(); }
       });
     } else {
       this.relazioni = this.relazioni.filter(r => r !== rel);
@@ -344,11 +420,9 @@ export class Perito implements OnInit {
     }
   }
 
-  cancelDeleteRel(): void {
-    this.confirmDeleteRelazione = null;
-  }
+  cancelDeleteRel(): void { this.confirmDeleteRelazione = null; }
 
-  // ── Relazione CRUD ───────────────────────────────────────────────────────────
+  // ── Relazione CRUD ────────────────────────────────────────────────────────────
 
   openNewRelazione(): void {
     this.editingRelazione = { partiDanneggiate: [], status: 'Bozza' };
@@ -370,12 +444,9 @@ export class Perito implements OnInit {
   }
 
   openRelazioneDetail(rel: Relazione): void {
-    this.editingRelazione = {
-      ...rel,
-      partiDanneggiate: [...(rel.partiDanneggiate ?? [])],
-    };
-    this.relazioneError  = '';
-    this.isRelazioneOpen = true;
+    this.editingRelazione = { ...rel, partiDanneggiate: [...(rel.partiDanneggiate ?? [])] };
+    this.relazioneError   = '';
+    this.isRelazioneOpen  = true;
   }
 
   closeRelazione(): void {
@@ -387,28 +458,17 @@ export class Perito implements OnInit {
     this.relazioneError = '';
 
     const claim = this.allClaims.find(c => c.code === this.editingRelazione.claimCode);
-
-    if (!claim) {
-      this.relazioneError = 'Seleziona un sinistro valido prima di salvare.';
-      return;
-    }
+    if (!claim) { this.relazioneError = 'Seleziona un sinistro valido prima di salvare.'; return; }
 
     this.editingRelazione.sinistroId = claim.id;
     this.editingRelazione.vehicle    = claim.vehicle;
 
     const u        = this.auth.currentUser as any;
     const peritoId = String(u?.id ?? '');
+    if (!peritoId) { this.relazioneError = 'Sessione scaduta. Rieffettua il login.'; return; }
 
-    if (!peritoId) {
-      this.relazioneError = 'Sessione scaduta. Rieffettua il login.';
-      return;
-    }
-
-    const sinistroId = this.editingRelazione.sinistroId;
-
-    const now = new Date().toLocaleDateString('it-IT', {
-      day: '2-digit', month: 'long', year: 'numeric'
-    });
+    const sinistroId = this.editingRelazione.sinistroId!;
+    const now = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
 
     if (this.editingRelazione.id) {
       this.perizie.aggiornaRelazione(sinistroId, peritoId, this.editingRelazione).subscribe({
@@ -424,10 +484,7 @@ export class Perito implements OnInit {
           this.isRelazioneOpen = false;
           this.cdr.detectChanges();
         },
-        error: (err) => {
-          this.relazioneError = 'Errore durante il salvataggio. Riprova.';
-          console.error(err);
-        }
+        error: (err) => { this.relazioneError = 'Errore durante il salvataggio. Riprova.'; console.error(err); }
       });
     } else {
       this.perizie.creaRelazione(sinistroId, peritoId, this.editingRelazione).subscribe({
@@ -442,10 +499,7 @@ export class Perito implements OnInit {
           this.isRelazioneOpen = false;
           this.cdr.detectChanges();
         },
-        error: (err) => {
-          this.relazioneError = 'Errore durante il salvataggio. Riprova.';
-          console.error(err);
-        }
+        error: (err) => { this.relazioneError = 'Errore durante il salvataggio. Riprova.'; console.error(err); }
       });
     }
   }
@@ -456,11 +510,10 @@ export class Perito implements OnInit {
   }
 
   removeParte(i: number): void {
-    this.editingRelazione.partiDanneggiate =
-      this.editingRelazione.partiDanneggiate?.filter((_, idx) => idx !== i);
+    this.editingRelazione.partiDanneggiate = this.editingRelazione.partiDanneggiate?.filter((_, idx) => idx !== i);
   }
 
-  // ── Export PDF ───────────────────────────────────────────────────────────────
+  // ── Export PDF ────────────────────────────────────────────────────────────────
 
   exportRelazione(rel: Relazione): void {
     const doc    = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -490,21 +543,15 @@ export class Perito implements OnInit {
     const section = (label: string) => {
       doc.setFillColor(241, 245, 249);
       doc.roundedRect(margin, y, W - margin * 2, 7, 1, 1, 'F');
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 116, 139);
       doc.text(label.toUpperCase(), margin + 3, y + 4.8);
-      y += 11;
-      doc.setTextColor(15, 23, 42);
+      y += 11; doc.setTextColor(15, 23, 42);
     };
 
     const row = (label: string, value: string) => {
-      doc.setFontSize(8.5);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(100, 116, 139);
+      doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 116, 139);
       doc.text(label, margin, y);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(15, 23, 42);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(15, 23, 42);
       const lines = doc.splitTextToSize(value, W - margin * 2 - 45);
       doc.text(lines, margin + 45, y);
       y += 6 * lines.length + 2;
@@ -518,16 +565,13 @@ export class Perito implements OnInit {
 
     section('Valutazione Danno');
     row('Tipo Danno',        rel.tipoDanno ?? '—');
-    row('Stima (€)',         rel.estimatedDamage != null
-                               ? `€ ${rel.estimatedDamage.toLocaleString('it-IT')}` : '—');
+    row('Stima (€)',         rel.estimatedDamage != null ? `€ ${rel.estimatedDamage.toLocaleString('it-IT')}` : '—');
     row('Parti Danneggiate', rel.partiDanneggiate?.join(', ') || '—');
     y += 4;
 
     if (rel.description) {
       section('Descrizione Tecnica');
-      doc.setFontSize(8.5);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(15, 23, 42);
+      doc.setFontSize(8.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(15, 23, 42);
       const lines = doc.splitTextToSize(rel.description, W - margin * 2);
       doc.text(lines, margin, y);
       y += 6 * lines.length + 6;
@@ -535,47 +579,35 @@ export class Perito implements OnInit {
 
     if (rel.conclusione) {
       section('Conclusione Peritale');
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10); doc.setFont('helvetica', 'bold');
       if      (rel.conclusione === 'Danno totale')   doc.setTextColor(220, 38, 38);
       else if (rel.conclusione === 'Riparabile')     doc.setTextColor(5, 150, 105);
       else if (rel.conclusione === 'Frode sospetta') doc.setTextColor(217, 119, 6);
       else                                           doc.setTextColor(9, 99, 126);
       doc.text(rel.conclusione, margin, y);
-      y += 10;
-      doc.setTextColor(15, 23, 42);
+      y += 10; doc.setTextColor(15, 23, 42);
     }
 
     const pageH = 297;
     doc.setDrawColor(226, 232, 240);
     doc.line(margin, pageH - 20, W - margin, pageH - 20);
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(148, 163, 184);
-    doc.text(
-      `SafeClaim · Documento generato il ${new Date().toLocaleDateString('it-IT')}`,
-      margin, pageH - 14
-    );
+    doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(148, 163, 184);
+    doc.text(`SafeClaim · Documento generato il ${new Date().toLocaleDateString('it-IT')}`, margin, pageH - 14);
     doc.text(rel.claimCode ?? '', W - margin, pageH - 14, { align: 'right' });
     doc.save(`Relazione_${rel.claimCode ?? 'perizia'}_${Date.now()}.pdf`);
   }
 
-  // ── Filtri ───────────────────────────────────────────────────────────────────
+  // ── Filtri ────────────────────────────────────────────────────────────────────
 
   resetFilters(): void {
-    this.filterSearch   = '';
-    this.filterStatus   = '';
-    this.filterPriority = '';
-    this.filterDateFrom = '';
-    this.filterDateTo   = '';
+    this.filterSearch = ''; this.filterStatus = ''; this.filterPriority = '';
+    this.filterDateFrom = ''; this.filterDateTo = '';
   }
 
-  // ── Contatto ─────────────────────────────────────────────────────────────────
+  // ── Contatto ──────────────────────────────────────────────────────────────────
 
   openContactModal(code: string): void {
-    this.contactForm = {
-      claimCode: code, insurance: '', priority: 'normale', subject: '', message: ''
-    };
+    this.contactForm = { claimCode: code, insurance: '', priority: 'normale', subject: '', message: '' };
     this.contactSent        = false;
     this.isContactModalOpen = true;
   }
@@ -587,49 +619,24 @@ export class Perito implements OnInit {
     setTimeout(() => this.closeContactModal(), 2000);
   }
 
-  // ── Sidebar / Settings ───────────────────────────────────────────────────────
-
-  toggleSidebar(): void { this.isSidebarOpen = !this.isSidebarOpen; }
-
-  openSettings(): void {
-    this.isSettingsAnimating = true;
-    this.isSettingsOpen      = true;
-    this.isSidebarOpen       = false;
-  }
-
-  closeSettings(): void {
-    this.isSettingsAnimating = false;
-    setTimeout(() => this.isSettingsOpen = false, 250);
-  }
-
-  saveSettings(): void {
-    this.user.full_name = this.settings.full_name;
-    this.settingsSaved  = true;
-    setTimeout(() => this.settingsSaved = false, 3000);
-  }
-
-  switchRole(role: string): void { this.currentRole = role; }
-
-  // ── Template helpers ─────────────────────────────────────────────────────────
+  // ── Template helpers ──────────────────────────────────────────────────────────
 
   getVehicleType(vehicle: string): VehicleType {
     const v = vehicle.toLowerCase();
     if (['ducati','yamaha','kawasaki','harley','honda cb','honda cbr','ktm','aprilia',
          'triumph','bmw r','bmw gs','vespa','piaggio'].some(b => v.includes(b))) return 'motorcycle';
-    if (['iveco','scania','man ','daf ','volvo fh','mercedes actros',
-         'mercedes arocs'].some(b => v.includes(b))) return 'truck';
+    if (['iveco','scania','man ','daf ','volvo fh','mercedes actros','mercedes arocs'].some(b => v.includes(b))) return 'truck';
     if (['transporter','transit','sprinter','ducato','master','jumper','vito',
          'crafter','boxer','daily'].some(b => v.includes(b))) return 'van';
     if (['qashqai','tucson','sportage','tiguan','rav4','cr-v','x5','x3','xc60',
-         'discovery','defender','renegade','glc','gle','mokka','captur',
-         'kuga'].some(b => v.includes(b))) return 'suv';
+         'discovery','defender','renegade','glc','gle','mokka','captur','kuga'].some(b => v.includes(b))) return 'suv';
     return 'car';
   }
 
   getStatusLabel(status: string): string {
     const map: Record<string, string> = {
-      in_valutazione: 'In Valutazione', assegnato: 'Assegnato',
-      chiuso: 'Chiuso', in_attesa: 'In Attesa', approvato: 'Approvato',
+      in_valutazione:'In Valutazione', assegnato:'Assegnato',
+      chiuso:'Chiuso', in_attesa:'In Attesa', approvato:'Approvato',
     };
     return map[status] ?? status;
   }
@@ -646,29 +653,19 @@ export class Perito implements OnInit {
   }
 
   getPriorityClass(priority: string): string {
-    const map: Record<string, string> = {
-      alta:  'bg-red-50 text-rose-600',
-      media: 'bg-orange-50 text-orange-600',
-      bassa: 'bg-green-50 text-green-600',
-    };
+    const map: Record<string, string> = { alta:'bg-red-50 text-rose-600', media:'bg-orange-50 text-orange-600', bassa:'bg-green-50 text-green-600' };
     return map[priority] ?? '';
   }
 
   getRelazioneStatusClass(status: string): string {
-    const map: Record<string, string> = {
-      Bozza:      'bg-slate-100 text-slate-500',
-      Completata: 'bg-green-100 text-green-700',
-      Inviata:    'bg-blue-100 text-blue-700',
-    };
+    const map: Record<string, string> = { Bozza:'bg-slate-100 text-slate-500', Completata:'bg-green-100 text-green-700', Inviata:'bg-blue-100 text-blue-700' };
     return map[status] ?? 'bg-slate-100 text-slate-500';
   }
 
-  getRoleIcon(role: string): string {
-    const map: Record<string, string> = {
-      Perito:        'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
-      Automobilista: 'M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0zM13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10',
-      Assicurazione: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
-    };
-    return map[role] ?? '';
+  formatDate(isoStr?: string): string {
+    if (!isoStr) return '';
+    try {
+      return new Date(isoStr).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch { return isoStr; }
   }
 }

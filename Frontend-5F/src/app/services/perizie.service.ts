@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Perizia } from '../models/perizia.model';
 import { Pratica } from '../models/pratica.model';
-import { Relazione } from '../perito/perito';
+import { Relazione, Claim } from '../perito/perito';
 
 @Injectable({
   providedIn: 'root'
@@ -11,13 +11,13 @@ import { Relazione } from '../perito/perito';
 export class Perizie {
 
   // Porta 8000 → pratiche/perizie (MongoDB)
-  private praticheLink = 'https://redesigned-zebra-977ppqwrvvww274w5-8000.app.github.dev/';
+  private praticheLink = 'https://scaling-yodel-g44gg56j9695hpv6j-8000.app.github.dev/';
   // Porta 7000 → sinistri (MongoDB)
-  private sinistriLink = 'https://redesigned-zebra-977ppqwrvvww274w5-7000.app.github.dev/';
+  private sinistriLink = 'https://scaling-yodel-g44gg56j9695hpv6j-7000.app.github.dev/';
 
   constructor(public http: HttpClient) {}
 
-  // ── Sinistri ────────────────────────────────────────────────────────────────
+  // ── Sinistri ─────────────────────────────────────────────────────────────────
 
   askSinistriPerito(peritoId: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.sinistriLink}perito/${peritoId}/sinistri`);
@@ -27,21 +27,98 @@ export class Perizie {
     return this.http.get<any[]>(`${this.sinistriLink}sinistri`);
   }
 
-  mapSinistreToClaim(s: any): any {
+  /**
+   * Carica il dettaglio completo di un singolo sinistro, inclusi immagini e analisi AI.
+   * Endpoint: GET /sinistro/<sinistroId>   (porta 7000)
+   */
+  getSinistro(sinistroId: string): Observable<any> {
+    return this.http.get<any>(`${this.sinistriLink}sinistro/${sinistroId}`);
+  }
+
+  /**
+   * Stato corrente dell'analisi AI per un sinistro.
+   * Usato per il polling quando stato = 'in_elaborazione'.
+   * Endpoint: GET /sinistro/<sinistroId>/analisi   (porta 7000)
+   */
+  getAnalisiAI(sinistroId: string): Observable<any> {
+    return this.http.get<any>(`${this.sinistriLink}sinistro/${sinistroId}/analisi`);
+  }
+
+  // ── Pratiche (assegnate dall'Assicurazione) ───────────────────────────────────
+
+  /**
+   * Carica tutte le pratiche assegnate a un perito dalla collezione MongoDB "Pratica".
+   * Il backend incorpora il sinistro collegato come campo "sinistro" (senza immagini).
+   * Endpoint: GET /perito/<peritoId>/pratiche   (porta 8000)
+   */
+  getPratichePerito(peritoId: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.praticheLink}perito/${peritoId}/pratiche`);
+  }
+
+  /**
+   * Mappa una pratica (con sinistro embedded) all'interfaccia Claim usata dai componenti UI.
+   */
+  mapPraticaToClaimCard(p: any): Claim {
+    const s = p.sinistro ?? {};
     const dataEvento = s.data_evento ? new Date(s.data_evento) : new Date();
 
     const statoMap: Record<string, string> = {
-      'in_valutazione': 'in_valutazione',
-      'aperto':         'in_valutazione',
-      'nuovo':          'in_valutazione',
-      'assegnato':      'assegnato',
-      'in_attesa':      'in_attesa',
-      'approvato':      'approvato',
-      'chiuso':         'chiuso',
-      'concluso':       'chiuso',
+      'in_valutazione':    'in_valutazione',
+      'aperto':            'in_valutazione',
+      'nuovo':             'in_valutazione',
+      'assegnato':         'assegnato',
+      'in_perizia':        'assegnato',
+      'in_attesa':         'in_attesa',
+      'approvato':         'approvato',
+      'rimborso_proposto': 'approvato',
+      'chiuso':            'chiuso',
+      'concluso':          'chiuso',
+      'in_riparazione':    'chiuso',
+    };
+    const praticaStato = (p.stato ?? s.stato ?? '').toLowerCase();
+    const status = statoMap[praticaStato] ?? 'in_valutazione';
+
+    const stima = s.stima_danno ?? p.stima_danno ?? 0;
+    let priority = 'media';
+    if      (s.priorita)              priority = s.priorita;
+    else if (stima > 10000)           priority = 'alta';
+    else if (stima > 0 && stima < 1000) priority = 'bassa';
+
+    const vehicle = (
+      [
+        s.marca ?? '',
+        s.modello ?? '',
+        s.targa ? `- ${s.targa}` : ''
+      ].join(' ').trim() || s.targa
+    ) ?? 'N/D';
+
+    return {
+      id:               String(s._id ?? p.sinistro_id ?? p._id),
+      code:             `SN-${String(s._id ?? p.sinistro_id ?? p._id).slice(-5).toUpperCase()}`,
+      status:           status as Claim['status'],
+      type:             s.tipo_sinistro ?? (s.descrizione?.substring(0, 50) ?? 'Sinistro'),
+      location:         s.luogo ?? s.indirizzo ?? 'N/D',
+      date:             dataEvento.toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' }),
+      time:             dataEvento.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+      vehicle,
+      priority:         priority as Claim['priority'],
+      insuranceCompany: s.compagnia_assicurativa ?? p.compagnia ?? 'N/D',
+      amount:           stima || undefined,
+      month:            dataEvento.getMonth() + 1,
+      year:             dataEvento.getFullYear(),
+    };
+  }
+
+  /** Mantiene la compatibilità con il codice che usa ancora i sinistri diretti. */
+  mapSinistreToClaim(s: any): Claim {
+    const dataEvento = s.data_evento ? new Date(s.data_evento) : new Date();
+
+    const statoMap: Record<string, string> = {
+      'in_valutazione': 'in_valutazione', 'aperto': 'in_valutazione', 'nuovo': 'in_valutazione',
+      'assegnato': 'assegnato', 'in_attesa': 'in_attesa',
+      'approvato': 'approvato', 'chiuso': 'chiuso', 'concluso': 'chiuso',
     };
     const status = statoMap[s.stato?.toLowerCase?.() ?? ''] ?? 'in_valutazione';
-
     const stima = s.stima_danno ?? s.importo ?? 0;
     let priority = 'media';
     if      (s.priorita)    priority = s.priorita;
@@ -49,46 +126,28 @@ export class Perizie {
     else if (stima < 1000)  priority = 'bassa';
 
     return {
-      id:       String(s._id ?? s.id),
-      code:     `SN-${String(s._id ?? s.id).slice(-5).toUpperCase()}`,
-      status,
-      type:     s.tipo_sinistro ?? s.descrizione ?? 'Sinistro',
-      location: s.luogo ?? s.indirizzo ?? 'N/D',
-      date:     dataEvento.toLocaleDateString('it-IT', {
-                  day: '2-digit', month: 'long', year: 'numeric'
-                }),
-      time:     dataEvento.toLocaleTimeString('it-IT', {
-                  hour: '2-digit', minute: '2-digit'
-                }),
-      vehicle:  `${s.marca ?? ''} ${s.modello ?? ''} ${s.targa ? '- ' + s.targa : ''}`.trim(),
-      priority,
+      id:               String(s._id ?? s.id),
+      code:             `SN-${String(s._id ?? s.id).slice(-5).toUpperCase()}`,
+      status:           status as Claim['status'],
+      type:             s.tipo_sinistro ?? s.descrizione ?? 'Sinistro',
+      location:         s.luogo ?? s.indirizzo ?? 'N/D',
+      date:             dataEvento.toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' }),
+      time:             dataEvento.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+      vehicle:          `${s.marca ?? ''} ${s.modello ?? ''} ${s.targa ? '- ' + s.targa : ''}`.trim(),
+      priority:         priority as Claim['priority'],
       insuranceCompany: s.compagnia_assicurativa ?? s.assicurazione ?? 'N/D',
-      amount:   stima || undefined,
-      month:    dataEvento.getMonth() + 1,
-      year:     dataEvento.getFullYear(),
+      amount:           stima || undefined,
+      month:            dataEvento.getMonth() + 1,
+      year:             dataEvento.getFullYear(),
     };
   }
 
-  // ── Relazioni (CRUD su MongoDB via porta 8000) ───────────────────────────────
-  // Le relazioni sono salvate nella collezione "Perizia" di MongoDB.
-  // Ogni documento ha: sinistro_id (= claim._id originale), perito_id, e i campi
-  // della Relazione. Usiamo gli endpoint pratica già esistenti sul backend.
+  // ── Relazioni (CRUD su MongoDB via porta 8000) ────────────────────────────────
 
-  /**
-   * Carica tutte le relazioni di un perito.
-   * Endpoint reale: GET /perito/<peritoId>/perizie  (non ancora implementato)
-   * Fallback: leggiamo la collezione Perizia filtrando per perito_id lato client.
-   */
   getRelazioniPerito(peritoId: string): Observable<any[]> {
-    return this.http.get<any[]>(
-      `${this.praticheLink}perito/${peritoId}/perizie`
-    );
+    return this.http.get<any[]>(`${this.praticheLink}perito/${peritoId}/perizie`);
   }
 
-  /**
-   * Crea una nuova relazione peritale.
-   * Mappa sull'endpoint POST /sinistro/<sinistroId>/perito/<peritoId>/pratica
-   */
   creaRelazione(sinistroId: string, peritoId: string, rel: Partial<Relazione>): Observable<any> {
     const body = {
       titolo:            rel.title,
@@ -102,15 +161,10 @@ export class Perizie {
       stato:             rel.status ?? 'Bozza',
     };
     return this.http.post<any>(
-      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`,
-      body
+      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`, body
     );
   }
 
-  /**
-   * Aggiorna una relazione esistente.
-   * Mappa sull'endpoint PUT /sinistro/<sinistroId>/perito/<peritoId>/pratica
-   */
   aggiornaRelazione(sinistroId: string, peritoId: string, rel: Partial<Relazione>): Observable<any> {
     const body = {
       titolo:            rel.title,
@@ -123,20 +177,15 @@ export class Perizie {
       stato:             rel.status ?? 'Bozza',
     };
     return this.http.put<any>(
-      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`,
-      body
+      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`, body
     );
   }
 
-  /**
-   * Elimina una relazione (perizia) tramite il suo ID MongoDB.
-   * Endpoint: DELETE /perizia/<id>  — da aggiungere al backend.
-   */
   eliminaRelazione(periziaid: string): Observable<any> {
     return this.http.delete<any>(`${this.praticheLink}perizia/${periziaid}`);
   }
 
-  // ── Pratica / Rimborso / Intervento (invariati) ───────────────────────────
+  // ── Pratica / Rimborso / Intervento ────────────────────────────────────────
 
   askPratica(sinistroId: string, peritoId: string): Observable<Pratica> {
     return this.http.get<Pratica>(
@@ -146,8 +195,7 @@ export class Perizie {
 
   askCreaPerizia(sinistroId: string, peritoId: string, body: Partial<Perizia>): Observable<any> {
     return this.http.post<any>(
-      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`,
-      body
+      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`, body
     );
   }
 
@@ -156,8 +204,7 @@ export class Perizie {
     body: { stima_danno: number; esito: string }
   ): Observable<any> {
     return this.http.post<any>(
-      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica/${periziaid}/rimborso`,
-      body
+      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica/${periziaid}/rimborso`, body
     );
   }
 
@@ -166,8 +213,7 @@ export class Perizie {
     body: { id_officina: string; data_inizio_lavori: string }
   ): Observable<any> {
     return this.http.post<any>(
-      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica/${periziaid}/intervento`,
-      body
+      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica/${periziaid}/intervento`, body
     );
   }
 }
