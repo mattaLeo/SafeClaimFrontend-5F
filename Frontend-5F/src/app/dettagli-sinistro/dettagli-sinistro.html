@@ -1,0 +1,122 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-6">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="close()"></div>
+
+  <div (click)="$event.stopPropagation()"
+       class="w-full max-w-2xl bg-white rounded-[40px] shadow-2xl shadow-blue-100/40 p-10 relative max-h-[90vh] overflow-y-auto">
+
+    <!-- Close button -->
+    <button type="button" (click)="close()" aria-label="Chiudi"
+            class="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+
+    <h2 class="text-2xl font-black mb-2 text-[#0F172A]">Dettaglio Sinistro</h2>
+    <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-8">Targa: {{ sinistro.targa }}</p>
+
+    <div class="flex flex-col gap-6">
+
+      <!-- Info grid -->
+      <div class="grid grid-cols-2 gap-4">
+
+        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Targa</p>
+          <p class="font-black text-[#0F172A] text-sm uppercase">{{ sinistro.targa }}</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Stato</p>
+          <span class="text-xs font-black px-2.5 py-1 rounded-lg uppercase"
+            [ngClass]="{
+              'bg-green-100 text-green-700': sinistro.stato === 'APERTO',
+              'bg-red-100 text-red-700': sinistro.stato === 'CHIUSO',
+              'bg-yellow-100 text-yellow-700': sinistro.stato === 'IN ANALISI'
+            }">
+            {{ sinistro.stato }}
+          </span>
+        </div>
+
+        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Data Evento</p>
+          <p class="font-bold text-[#0F172A] text-sm">{{ sinistro.data_evento | date:'dd/MM/yyyy' }}</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">ID Pratica</p>
+          <p class="font-bold text-slate-400 text-sm">#{{ sinistro.automobilista_id }}</p>
+        </div>
+
+      </div>
+
+      <!-- Descrizione -->
+      <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Descrizione</p>
+        <p class="text-slate-600 text-sm leading-relaxed">{{ sinistro.descrizione }}</p>
+      </div>
+
+      <!-- Divider -->
+      <div class="border-t border-slate-100"></div>
+
+      <!-- Sezione immagini -->
+      <div>
+        <p class="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Documenti e Foto</p>
+
+        <!-- Immagini già caricate -->
+        <div *ngIf="immagini.length > 0" class="grid grid-cols-3 gap-3 mb-4">
+          <div *ngFor="let img of immagini"
+               class="aspect-square rounded-2xl overflow-hidden border border-slate-200">
+            <img [src]="img" class="w-full h-full object-cover" alt="Immagine sinistro" />
+          </div>
+        </div>
+
+        <!-- Anteprime file selezionati -->
+        <div *ngIf="previewUrls.length > 0" class="grid grid-cols-3 gap-3 mb-4">
+          <div *ngFor="let url of previewUrls"
+               class="aspect-square rounded-2xl overflow-hidden border-2 border-dashed border-blue-300 relative">
+            <img [src]="url" class="w-full h-full object-cover" alt="Anteprima" />
+            <div class="absolute inset-0 bg-blue-500/10 flex items-end justify-center pb-2">
+              <span class="text-[8px] font-black text-blue-700 bg-white/90 px-2 py-0.5 rounded-full uppercase">Da inviare</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Area upload -->
+        <label class="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-slate-200 rounded-2xl cursor-pointer bg-slate-50 hover:border-blue-400 hover:bg-blue-50/30 transition-all group">
+          <i class="bi bi-cloud-arrow-up text-4xl text-slate-300 group-hover:text-blue-400 transition-colors block mb-2"></i>
+          <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Clicca per aggiungere foto</p>
+          <p class="text-[9px] text-slate-300 mt-1">JPG, PNG, PDF — max 10MB</p>
+          <input type="file" class="hidden" multiple accept="image/*,.pdf" (change)="onFilesSelected($event)" />
+        </label>
+
+        <!-- Messaggi feedback -->
+        <div *ngIf="uploadError"
+             class="mt-3 text-xs text-red-600 font-semibold p-2 bg-red-50 rounded-lg">
+          {{ uploadError }}
+        </div>
+        <div *ngIf="uploadSuccess"
+             class="mt-3 text-xs text-green-600 font-semibold p-2 bg-green-50 rounded-lg">
+          {{ uploadSuccess }}
+        </div>
+      </div>
+
+      <!-- Footer actions -->
+      <div class="flex items-center justify-between pt-2">
+        <button type="button" (click)="close()"
+                class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors">
+          Chiudi
+        </button>
+        <button type="button" (click)="inviaImmagini()"
+                [disabled]="!previewUrls.length || uploading"
+                class="py-3 px-8 bg-[#0F172A] text-white text-sm font-extrabold rounded-xl shadow-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2">
+          <svg *ngIf="uploading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          {{ uploading ? 'Caricamento...' : 'Invia Immagini' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

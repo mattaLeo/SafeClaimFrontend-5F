@@ -89,6 +89,7 @@ import {
   provideImgixLoader,
   provideNetlifyLoader,
   registerLocaleData
+
 } from "./chunk-IVQHS6EK.js";
 import {
   BrowserPlatformLocation,
