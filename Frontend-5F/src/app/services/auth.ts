@@ -7,17 +7,21 @@ import { User } from '../models/user.model';
   providedIn: 'root',
 })
 export class AuthService {
-  link = "https://laughing-meme-jjjxx497pp642v4q-6000.app.github.dev/";
+  link = "https://scaling-yodel-g44gg56j9695hpv6j-6000.app.github.dev/";
 
-  currentUser?: User;
+  private _currentUser?: User;
 
-  constructor(private http: HttpClient) {
-    // Ripristina utente dal localStorage all'avvio
-    const saved = localStorage.getItem('currentUser');
-    if (saved) {
-      this.currentUser = JSON.parse(saved);
+  get currentUser(): User | undefined {
+    if (!this._currentUser) {
+      const saved = localStorage.getItem('currentUser');
+      if (saved) {
+        try { this._currentUser = JSON.parse(saved); } catch {}
+      }
     }
+    return this._currentUser;
   }
+
+  constructor(private http: HttpClient) {}
 
   login(email_in: string, psw_in: string): Observable<any> {
     return this.http.post<any>(`${this.link}login`, {
@@ -27,10 +31,10 @@ export class AuthService {
       tap(res => {
         console.log("Risposta API Login:", res);
         if (res.status === "success") {
-          this.currentUser = res.user;
+          this._currentUser = res.user;
           localStorage.setItem('currentUser', JSON.stringify(res.user));
           localStorage.setItem('userRole', res.user.ruolo);
-          console.log("Utente loggato:", this.currentUser);
+          console.log("Utente loggato:", this._currentUser);
         }
       })
     );
@@ -41,7 +45,7 @@ export class AuthService {
   }
 
   logout(): void {
-    this.currentUser = undefined;
+    this._currentUser = undefined;
     localStorage.removeItem('currentUser');
     localStorage.removeItem('userRole');
   }

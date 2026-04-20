@@ -7,8 +7,12 @@ import { tap } from 'rxjs/operators';
 @Injectable({
   providedIn: 'root',
 })
-export class SinistriService {
-  link = "https://laughing-meme-jjjxx497pp642v4q-7000.app.github.dev/";
+export class Sinistri {
+  link = "https://humble-palm-tree-pjjxxg94v5qx39gv-7000.app.github.dev/"
+
+  obsSinistri!: Observable<sinistro[]>
+  obsSinistroId!: Observable<sinistro>
+  obsCreateSinistro!: Observable<any>
 
   private sinistriSubject = new BehaviorSubject<sinistro[]>([]);
   obsSinistri = this.sinistriSubject.asObservable();
