@@ -7,7 +7,7 @@ import { tap } from 'rxjs/operators';
 @Injectable({
   providedIn: 'root',
 })
-export class Sinistri {
+export class SinistriService {
   link = "https://humble-palm-tree-pjjxxg94v5qx39gv-7000.app.github.dev/"
 
   obsSinistri!: Observable<sinistro[]>
@@ -15,7 +15,6 @@ export class Sinistri {
   obsCreateSinistro!: Observable<any>
 
   private sinistriSubject = new BehaviorSubject<sinistro[]>([]);
-  obsSinistri = this.sinistriSubject.asObservable();
   sinistri: sinistro[] = [];
 
   constructor(public http: HttpClient) {}
@@ -27,7 +26,7 @@ export class Sinistri {
         this.sinistriSubject.next(data);
         console.log("Sinistri caricati:", data);
       },
-      error: (err) => console.error("Errore download sinistri:", err)
+      error: (err: any) => console.error("Errore download sinistri:", err)
     });
   }
 
