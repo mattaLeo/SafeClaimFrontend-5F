@@ -180,10 +180,44 @@ export class Perito implements OnInit, OnDestroy {
 
   editingRelazione: Partial<Relazione> = { partiDanneggiate: [], status: 'Bozza' };
 
+  // Input per parti danneggiate / tipo danno personalizzati
+  customParte:      string = '';
+  customTipoDanno:  string = '';
+
+  // Dettaglio sinistro mostrato nella card del modal relazione
+  relazioneSinistro: SinistroDettaglio | null = null;
+  isLoadingRelazioneSinistro = false;
+
   tipiDanno = ['Collisione', 'Grandine', 'Furto', 'Incendio', 'Vandalismo', 'Altro'];
   partiDisponibili = [
-    'Paraurti anteriore','Paraurti posteriore','Cofano','Portiera SX',
-    'Portiera DX','Tetto','Parabrezza','Lunotto','Fiancata SX','Fiancata DX'
+    // Carrozzeria anteriore
+    'Paraurti anteriore', 'Cofano', 'Parafango anteriore SX', 'Parafango anteriore DX',
+    'Calandra', 'Griglia anteriore', 'Sottoparaurti anteriore',
+    // Carrozzeria posteriore
+    'Paraurti posteriore', 'Portellone', 'Parafango posteriore SX', 'Parafango posteriore DX',
+    'Sottoparaurti posteriore',
+    // Laterale
+    'Portiera anteriore SX', 'Portiera anteriore DX', 'Portiera posteriore SX', 'Portiera posteriore DX',
+    'Fiancata SX', 'Fiancata DX', 'Brancardo SX', 'Brancardo DX', 'Montante SX', 'Montante DX',
+    // Vetri e specchi
+    'Parabrezza', 'Lunotto', 'Vetro portiera SX', 'Vetro portiera DX',
+    'Specchietto SX', 'Specchietto DX',
+    // Tetto e padiglione
+    'Tetto', 'Tetto apribile', 'Padiglione interno',
+    // Fari e illuminazione
+    'Faro anteriore SX', 'Faro anteriore DX', 'Fanale posteriore SX', 'Fanale posteriore DX',
+    'Fendinebbia SX', 'Fendinebbia DX', 'Indicatore di direzione',
+    // Ruote e gomme
+    'Cerchio anteriore SX', 'Cerchio anteriore DX', 'Cerchio posteriore SX', 'Cerchio posteriore DX',
+    'Pneumatico anteriore SX', 'Pneumatico anteriore DX', 'Pneumatico posteriore SX', 'Pneumatico posteriore DX',
+    // Meccanica e telaio
+    'Telaio', 'Sospensioni anteriori', 'Sospensioni posteriori', 'Impianto frenante',
+    'Impianto di scarico', 'Motore', 'Cambio', 'Radiatore', 'Serbatoio carburante',
+    // Interni
+    'Sedile anteriore SX', 'Sedile anteriore DX', 'Sedili posteriori', 'Plancia',
+    'Volante', 'Airbag anteriori', 'Airbag laterali', 'Cruscotto',
+    // Vari
+    'Antenna', 'Targa anteriore', 'Targa posteriore', 'Modanature laterali'
   ];
   conclusioni        = ['Riparabile', 'Danno totale', 'In valutazione', 'Frode sospetta'];
   insuranceCompanies = [
@@ -527,6 +561,9 @@ export class Perito implements OnInit, OnDestroy {
 
   openNewRelazione(): void {
     this.editingRelazione = { partiDanneggiate: [], status: 'Bozza' };
+    this.customParte      = '';
+    this.customTipoDanno  = '';
+    this.relazioneSinistro = null;
     this.relazioneError   = '';
     this.isRelazioneOpen  = true;
   }
@@ -539,21 +576,86 @@ export class Perito implements OnInit, OnDestroy {
       partiDanneggiate: [],
       status:           'Bozza',
     };
+    this.customParte       = '';
+    this.customTipoDanno   = '';
     this.relazioneError    = '';
+    // Riusa il sinistro già caricato per il claim detail, altrimenti lo ricarica
+    if (this.selectedSinistro && this.selectedSinistro.id === c.id) {
+      this.relazioneSinistro = this.selectedSinistro;
+    } else {
+      this.loadSinistroForRelazione(c.id);
+    }
     this.isClaimDetailOpen = false;
     this.isRelazioneOpen   = true;
   }
 
   openRelazioneDetail(rel: Relazione): void {
     this.editingRelazione = { ...rel, partiDanneggiate: [...(rel.partiDanneggiate ?? [])] };
-    this.relazioneError   = '';
+    // Se il tipo danno salvato non è in lista, lo trattiamo come custom (chip "Altro" attiva)
+    if (rel.tipoDanno && !this.tipiDanno.includes(rel.tipoDanno)) {
+      this.customTipoDanno = rel.tipoDanno;
+      this.editingRelazione.tipoDanno = 'Altro';
+    } else {
+      this.customTipoDanno = '';
+    }
+    this.customParte       = '';
+    this.relazioneError    = '';
+    // Carica i dettagli del sinistro collegato per arricchire la card
+    if (rel.sinistroId) {
+      this.loadSinistroForRelazione(rel.sinistroId);
+    } else {
+      this.relazioneSinistro = null;
+    }
     this.isRelazioneOpen  = true;
   }
 
   closeRelazione(): void {
-    this.isRelazioneOpen = false;
-    this.relazioneError  = '';
+    this.isRelazioneOpen   = false;
+    this.relazioneError    = '';
+    this.customParte       = '';
+    this.customTipoDanno   = '';
+    this.relazioneSinistro = null;
   }
+
+  /** Carica il dettaglio del sinistro per popolare la card riassuntiva nel modal relazione. */
+  private loadSinistroForRelazione(sinistroId: string): void {
+    this.relazioneSinistro = null;
+    this.isLoadingRelazioneSinistro = true;
+    this.cdr.detectChanges();
+    this.perizie.getSinistro(sinistroId).subscribe({
+      next: (data) => {
+        const analisi = data.analisi_ai;
+        this.relazioneSinistro = {
+          id:          String(data._id ?? sinistroId),
+          targa:       data.targa,
+          marca:       data.marca,
+          modello:     data.modello,
+          dataEvento:  data.data_evento,
+          descrizione: data.descrizione,
+          luogo:       data.luogo ?? data.indirizzo,
+          tipoSinistro: data.tipo_sinistro,
+          stimaDanno:  data.stima_danno ?? data.importo,
+          stato:       data.stato,
+          compagnia:   data.compagnia_assicurativa ?? data.assicurazione,
+          immagini:    Array.isArray(data.immagini) ? data.immagini : [],
+          analisiAi: analisi ? {
+            testo:       analisi.testo,
+            modello:     analisi.modello,
+            stato:       analisi.stato ?? 'non_avviata',
+            dataAnalisi: analisi.data_analisi,
+            errore:      analisi.errore,
+          } : { stato: 'non_avviata' },
+        };
+        this.isLoadingRelazioneSinistro = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoadingRelazioneSinistro = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
 
   /** Per il modal: restituisce la Claim collegata alla relazione in editing (se c'è). */
   get editingLinkedClaim(): Claim | null {
@@ -566,6 +668,11 @@ export class Perito implements OnInit, OnDestroy {
 
     const claim = this.allClaims.find(c => c.code === this.editingRelazione.claimCode);
     if (!claim) { this.relazioneError = 'Seleziona un sinistro valido prima di salvare.'; return; }
+
+    // Se "Altro" è selezionato e l'utente ha scritto un tipo personalizzato, usa quello
+    if (this.editingRelazione.tipoDanno === 'Altro' && this.customTipoDanno?.trim()) {
+      this.editingRelazione.tipoDanno = this.customTipoDanno.trim();
+    }
 
     this.editingRelazione.sinistroId = claim.id;
     this.editingRelazione.vehicle    = claim.vehicle;
@@ -618,6 +725,40 @@ export class Perito implements OnInit, OnDestroy {
 
   removeParte(i: number): void {
     this.editingRelazione.partiDanneggiate = this.editingRelazione.partiDanneggiate?.filter((_, idx) => idx !== i);
+  }
+
+  /** Aggiunge una parte danneggiata personalizzata digitata dall'utente. */
+  addCustomParte(): void {
+    const value = this.customParte?.trim();
+    if (!value) return;
+    if (!this.editingRelazione.partiDanneggiate) this.editingRelazione.partiDanneggiate = [];
+    // Evita duplicati (case-insensitive)
+    const exists = this.editingRelazione.partiDanneggiate
+      .some(p => p.toLowerCase() === value.toLowerCase());
+    if (!exists) {
+      this.editingRelazione.partiDanneggiate = [...this.editingRelazione.partiDanneggiate, value];
+    }
+    this.customParte = '';
+  }
+
+  /** Vero quando il tipo danno selezionato è "Altro" (mostra l'input custom). */
+  get isTipoDannoCustom(): boolean {
+    return this.editingRelazione.tipoDanno === 'Altro';
+  }
+
+  /** Aggiorna la priorità di una pratica (locale). */
+  updateClaimPriority(claim: Claim, priority: 'alta' | 'media' | 'bassa'): void {
+    if (!claim || claim.priority === priority) return;
+    claim.priority = priority;
+    // Riallinea i riferimenti nelle liste claims/allClaims
+    const update = (list: Claim[]) => list.map(c => c.id === claim.id ? { ...c, priority } : c);
+    this.claims    = update(this.claims);
+    this.allClaims = update(this.allClaims);
+    if (this.selectedClaim?.id === claim.id) {
+      this.selectedClaim = { ...this.selectedClaim, priority };
+    }
+    // TODO: chiamare endpoint backend per persistere quando disponibile
+    this.cdr.detectChanges();
   }
 
   // ── Export PDF ────────────────────────────────────────────────────────────────

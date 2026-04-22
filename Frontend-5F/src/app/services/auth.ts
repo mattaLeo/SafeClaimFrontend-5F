@@ -44,6 +44,23 @@ export class AuthService {
     return this.http.post<any>(`${this.link}registrazione`, nuovoUtente);
   }
 
+  // 🆕 Aggiornamento profilo utente loggato
+  updateUser(id: number, data: Partial<User>): Observable<any> {
+    const ruolo = localStorage.getItem('userRole') ?? '';
+    return this.http.put<any>(`${this.link}utente/${id}`, { ...data, ruolo }).pipe(
+      tap(res => {
+        if (res?.status === 'success') {
+          // Se il backend rimanda l'utente aggiornato lo uso, altrimenti faccio merge locale
+          const updated = res.user
+            ? { ...res.user, ruolo: this._currentUser?.ruolo ?? ruolo }
+            : { ...(this._currentUser as User), ...data };
+          this._currentUser = updated as User;
+          localStorage.setItem('currentUser', JSON.stringify(this._currentUser));
+        }
+      })
+    );
+  }
+
   logout(): void {
     this._currentUser = undefined;
     localStorage.removeItem('currentUser');

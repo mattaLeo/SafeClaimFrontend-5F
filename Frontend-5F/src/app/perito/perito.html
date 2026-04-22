@@ -357,286 +357,316 @@
     }
   </main>
 
-  <!-- ===== CLAIM / PRATICA DETAIL PANEL (sidebar) ===== -->
+  <!-- ===== CLAIM / PRATICA DETAIL - MODAL CENTRATO ===== -->
   @if (isClaimDetailOpen && selectedClaim) {
-    <div class="fixed inset-0 z-50 flex justify-end">
-      <div (click)="closeClaimDetail()" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"></div>
-      <div class="relative w-full max-w-md bg-white h-full shadow-2xl flex flex-col sidebar-slide-in overflow-hidden">
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div (click)="closeClaimDetail()" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
+      <div class="relative w-full max-w-5xl bg-white rounded-2xl shadow-2xl flex flex-col modal-pop overflow-hidden max-h-[92vh]">
 
-        <!-- Header -->
-        <div class="p-6 border-b border-slate-100 flex items-start justify-between">
-          <div class="flex items-center gap-3">
-            <div class="w-12 h-12 bg-[#EBF4F6] text-[#09637E] rounded-xl flex items-center justify-center flex-shrink-0">
+        <!-- Header con gradient -->
+        <div class="px-7 py-5 border-b border-slate-100 flex items-start justify-between bg-gradient-to-r from-[#EBF4F6] via-white to-white">
+          <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 bg-[#09637E] text-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#063d4a]/25">
               @if (getVehicleType(selectedClaim.vehicle) === 'motorcycle') {
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="17" r="2" stroke-width="1.8"/><circle cx="19" cy="17" r="2" stroke-width="1.8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 17l1.5-5h7l3-4h2l1.5 4-3 1"/></svg>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="17" r="2" stroke-width="1.8"/><circle cx="19" cy="17" r="2" stroke-width="1.8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 17l1.5-5h7l3-4h2l1.5 4-3 1"/></svg>
               } @else if (getVehicleType(selectedClaim.vehicle) === 'truck') {
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="1" y="3" width="13" height="13" rx="1" stroke-width="1.8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 7h4l3 3v6h-7V7z"/><circle cx="6" cy="19" r="2" stroke-width="1.8"/><circle cx="18" cy="19" r="2" stroke-width="1.8"/></svg>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="1" y="3" width="13" height="13" rx="1" stroke-width="1.8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 7h4l3 3v6h-7V7z"/><circle cx="6" cy="19" r="2" stroke-width="1.8"/><circle cx="18" cy="19" r="2" stroke-width="1.8"/></svg>
               } @else if (getVehicleType(selectedClaim.vehicle) === 'van') {
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 13l1-7h14l2 7M3 13v4h1m15-4v4h1m-17 0h16"/><circle cx="6" cy="17" r="1.5" stroke-width="1.8"/><circle cx="18" cy="17" r="1.5" stroke-width="1.8"/></svg>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 13l1-7h14l2 7M3 13v4h1m15-4v4h1m-17 0h16"/><circle cx="6" cy="17" r="1.5" stroke-width="1.8"/><circle cx="18" cy="17" r="1.5" stroke-width="1.8"/></svg>
               } @else if (getVehicleType(selectedClaim.vehicle) === 'suv') {
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 17V9l3-4h12l3 4v8H3zm4-8h10"/><circle cx="7" cy="17" r="2" stroke-width="1.8"/><circle cx="17" cy="17" r="2" stroke-width="1.8"/></svg>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 17V9l3-4h12l3 4v8H3zm4-8h10"/><circle cx="7" cy="17" r="2" stroke-width="1.8"/><circle cx="17" cy="17" r="2" stroke-width="1.8"/></svg>
               } @else {
-                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17h5"/></svg>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17h5"/></svg>
               }
             </div>
             <div>
-              <h2 class="text-lg font-black text-slate-900">{{ selectedClaim.code }}</h2>
-              <p class="text-[0.7rem] font-bold text-slate-400 uppercase tracking-wider">{{ selectedClaim.type }}</p>
+              <div class="flex items-center gap-2.5">
+                <h2 class="text-xl font-black text-slate-900 tracking-tight">{{ selectedClaim.code }}</h2>
+                <span [class]="'inline-flex items-center px-2.5 py-0.5 rounded text-[0.6rem] font-black uppercase tracking-[0.06em] border ' + getStatusClass(selectedClaim.status)">
+                  {{ getStatusLabel(selectedClaim.status) }}
+                </span>
+              </div>
+              <p class="text-xs font-bold text-slate-400 mt-0.5 uppercase tracking-wider">{{ selectedClaim.type }} · {{ selectedClaim.date }}</p>
             </div>
           </div>
-          <button (click)="closeClaimDetail()" class="p-2 hover:bg-slate-50 rounded-lg text-slate-400 transition-colors">
+          <button (click)="closeClaimDetail()" class="p-2 hover:bg-white/60 rounded-lg text-slate-400 transition-colors flex-shrink-0">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
         </div>
 
-        <!-- Scrollable body -->
-        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+        <!-- Body scrollabile a 2 colonne -->
+        <div class="flex-1 overflow-y-auto">
+          <div class="p-7 grid grid-cols-1 lg:grid-cols-2 gap-x-7 gap-y-6">
 
-          <!-- Badges stato/priorità -->
-          <div class="flex items-center gap-3">
-            <span [class]="'inline-flex items-center px-3 py-1 rounded-lg text-xs font-black uppercase tracking-[0.06em] border ' + getStatusClass(selectedClaim.status)">
-              {{ getStatusLabel(selectedClaim.status) }}
-            </span>
-            <span [class]="'inline-flex items-center px-3 py-1 rounded-lg text-xs font-black uppercase ' + getPriorityClass(selectedClaim.priority)">
-              Priorità {{ selectedClaim.priority }}
-            </span>
-          </div>
+            <!-- ── COLONNA SINISTRA: info, priorità, mappa ── -->
+            <div class="space-y-6">
 
-          <!-- Riepilogo sinistro -->
-          <div class="bg-slate-50 rounded-xl p-4 space-y-3.5">
-            <div class="flex justify-between items-start text-sm">
-              <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Veicolo</span>
-              <span class="font-bold text-slate-700 text-right ml-4">{{ selectedClaim.vehicle }}</span>
-            </div>
-            <div class="h-px bg-slate-100"></div>
-            <div class="flex justify-between items-start text-sm">
-              <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Luogo</span>
-              <span class="font-bold text-slate-700 text-right ml-4 max-w-[220px]">{{ selectedClaim.location }}</span>
-            </div>
-            <div class="h-px bg-slate-100"></div>
-            <div class="flex justify-between items-center text-sm">
-              <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Data & Ora</span>
-              <span class="font-bold text-slate-700">{{ selectedClaim.date }} · {{ selectedClaim.time }}</span>
-            </div>
-            @if (selectedClaim.insuranceCompany && selectedClaim.insuranceCompany !== 'N/D') {
-              <div class="h-px bg-slate-100"></div>
-              <div class="flex justify-between items-center text-sm">
-                <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Compagnia</span>
-                <span class="font-bold text-slate-700">{{ selectedClaim.insuranceCompany }}</span>
-              </div>
-            }
-            @if (selectedClaim.amount) {
-              <div class="h-px bg-slate-100"></div>
-              <div class="flex justify-between items-center text-sm">
-                <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Stima Danno</span>
-                <span class="text-lg font-black text-emerald-600">€ {{ selectedClaim.amount | number }}</span>
-              </div>
-            }
-          </div>
-
-          <!-- ── MAPPA POSIZIONE SINISTRO ── -->
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400">Posizione Sinistro</label>
-              @if (mapCoords) {
-                <a [href]="getOsmLink(mapCoords)" target="_blank" rel="noopener"
-                  class="text-[10px] font-black text-[#09637E] hover:underline flex items-center gap-1">
-                  Apri in mappa
-                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
-                  </svg>
-                </a>
-              }
-            </div>
-
-            @if (isGeocodingLocation) {
-              <div class="bg-slate-50 border border-slate-100 rounded-xl p-6 flex items-center justify-center gap-3">
-                <div class="w-4 h-4 border-2 border-[#09637E]/30 border-t-[#09637E] rounded-full animate-spin"></div>
-                <span class="text-xs font-bold text-slate-400">Ricerca posizione sulla mappa...</span>
-              </div>
-            } @else if (mapCoords) {
-              <div class="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
-                <iframe
-                  [src]="getMapUrl(mapCoords)"
-                  class="w-full h-56 block"
-                  loading="lazy"
-                  referrerpolicy="no-referrer-when-downgrade"
-                  title="Mappa posizione sinistro">
-                </iframe>
-                <div class="px-3 py-2.5 bg-white border-t border-slate-200 flex items-center gap-2">
-                  <svg class="w-3.5 h-3.5 text-[#09637E] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                  </svg>
-                  <p class="text-[11px] font-semibold text-slate-600 truncate">{{ selectedSinistro?.luogo ?? selectedClaim.location }}</p>
-                </div>
-              </div>
-            } @else {
-              <div class="bg-slate-50 border border-slate-100 rounded-xl p-5 text-center">
-                <svg class="w-7 h-7 text-slate-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-                <p class="text-xs font-bold text-slate-300">Posizione non geolocalizzabile</p>
-                <p class="text-[10px] text-slate-400 mt-1">{{ selectedSinistro?.luogo ?? selectedClaim.location }}</p>
-              </div>
-            }
-          </div>
-
-          <!-- DETTAGLIO SINISTRO (caricato on-demand) -->
-
-          @if (isLoadingSinistro) {
-            <div class="flex items-center gap-3 py-2">
-              <div class="w-5 h-5 border-2 border-[#09637E]/30 border-t-[#09637E] rounded-full animate-spin flex-shrink-0"></div>
-              <span class="text-xs font-bold text-slate-400">Caricamento dettagli sinistro...</span>
-            </div>
-          }
-
-          @if (!isLoadingSinistro && selectedSinistro) {
-
-            <!-- Descrizione completa -->
-            @if (selectedSinistro.descrizione) {
+              <!-- Editor priorità -->
               <div>
-                <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400 mb-2">Descrizione Sinistro</label>
-                <p class="text-sm text-slate-600 font-medium bg-slate-50 rounded-xl p-3.5 leading-relaxed border border-slate-100">
-                  {{ selectedSinistro.descrizione }}
-                </p>
-              </div>
-            }
-
-            <!-- ── FOTO SINISTRO ── -->
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400">Foto Sinistro</label>
-                @if (selectedSinistro.immagini.length > 0) {
-                  <span class="text-[10px] font-black text-[#09637E] bg-[#EBF4F6] px-2.5 py-0.5 rounded-full">
-                    {{ selectedSinistro.immagini.length }} foto
-                  </span>
-                }
-              </div>
-
-              @if (selectedSinistro.immagini.length === 0) {
-                <div class="bg-slate-50 border border-slate-100 rounded-xl p-6 text-center">
-                  <svg class="w-8 h-8 text-slate-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                  </svg>
-                  <p class="text-xs font-bold text-slate-300">Nessuna foto allegata</p>
-                </div>
-              } @else {
+                <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400 mb-2">Priorità Pratica</label>
                 <div class="grid grid-cols-3 gap-2">
-                  @for (img of selectedSinistro.immagini; track img.public_id) {
-                    <button
-                      (click)="openImage(img.url)"
-                      class="relative aspect-square rounded-xl overflow-hidden bg-slate-100 group/img focus:outline-none focus:ring-2 focus:ring-[#09637E]">
-                      <img [src]="img.url" alt="Foto sinistro"
-                        class="w-full h-full object-cover transition-transform group-hover/img:scale-105 duration-300" />
-                      <div class="absolute inset-0 bg-black/0 group-hover/img:bg-black/25 transition-colors flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white opacity-0 group-hover/img:opacity-100 transition-opacity drop-shadow"
-                          fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
-                        </svg>
-                      </div>
+                  @for (p of ['alta', 'media', 'bassa']; track p) {
+                    <button (click)="updateClaimPriority(selectedClaim, $any(p))"
+                      [ngClass]="selectedClaim.priority === p
+                        ? (p === 'alta'
+                            ? 'py-2 text-xs font-black rounded-lg border-[1.5px] border-rose-400 bg-rose-50 text-rose-700 transition-all uppercase'
+                            : p === 'media'
+                              ? 'py-2 text-xs font-black rounded-lg border-[1.5px] border-orange-400 bg-orange-50 text-orange-700 transition-all uppercase'
+                              : 'py-2 text-xs font-black rounded-lg border-[1.5px] border-emerald-400 bg-emerald-50 text-emerald-700 transition-all uppercase')
+                        : 'py-2 text-xs font-black rounded-lg border-[1.5px] border-slate-200 bg-white text-slate-400 hover:border-slate-300 hover:text-slate-600 transition-all uppercase'">
+                      {{ p }}
                     </button>
                   }
                 </div>
-              }
-            </div>
+              </div>
 
-            <!-- ── ANALISI AI ── -->
-            <div>
-              <div class="flex items-center gap-2 mb-2">
-                <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400">Analisi AI Danno</label>
-                @if (selectedSinistro.analisiAi?.stato === 'in_elaborazione') {
-                  <div class="w-3.5 h-3.5 border-[2px] border-amber-300 border-t-amber-500 rounded-full animate-spin"></div>
+              <!-- Riepilogo sinistro -->
+              <div class="bg-slate-50 rounded-xl p-4 space-y-3.5 border border-slate-100">
+                <div class="flex justify-between items-start text-sm">
+                  <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Veicolo</span>
+                  <span class="font-bold text-slate-700 text-right ml-4">{{ selectedClaim.vehicle }}</span>
+                </div>
+                <div class="h-px bg-slate-100"></div>
+                <div class="flex justify-between items-start text-sm">
+                  <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Luogo</span>
+                  <span class="font-bold text-slate-700 text-right ml-4 max-w-[220px]">{{ selectedClaim.location }}</span>
+                </div>
+                <div class="h-px bg-slate-100"></div>
+                <div class="flex justify-between items-center text-sm">
+                  <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Data & Ora</span>
+                  <span class="font-bold text-slate-700">{{ selectedClaim.date }} · {{ selectedClaim.time }}</span>
+                </div>
+                @if (selectedClaim.insuranceCompany && selectedClaim.insuranceCompany !== 'N/D') {
+                  <div class="h-px bg-slate-100"></div>
+                  <div class="flex justify-between items-center text-sm">
+                    <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Compagnia</span>
+                    <span class="font-bold text-slate-700">{{ selectedClaim.insuranceCompany }}</span>
+                  </div>
+                }
+                @if (selectedClaim.amount) {
+                  <div class="h-px bg-slate-100"></div>
+                  <div class="flex justify-between items-center text-sm">
+                    <span class="text-xs font-black text-slate-400 uppercase tracking-wider">Stima Danno</span>
+                    <span class="text-lg font-black text-emerald-600">€ {{ selectedClaim.amount | number }}</span>
+                  </div>
                 }
               </div>
 
-              @if (selectedSinistro.analisiAi?.stato === 'completata') {
-                <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 space-y-3">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-1.5">
-                      <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                      <span class="text-[10px] font-black text-emerald-700 uppercase tracking-wide">Analisi completata</span>
+              <!-- ── MAPPA POSIZIONE SINISTRO ── -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400">Posizione Sinistro</label>
+                  @if (mapCoords) {
+                    <a [href]="getOsmLink(mapCoords)" target="_blank" rel="noopener"
+                      class="text-[10px] font-black text-[#09637E] hover:underline flex items-center gap-1">
+                      Apri in mappa
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                      </svg>
+                    </a>
+                  }
+                </div>
+
+                @if (isGeocodingLocation) {
+                  <div class="bg-slate-50 border border-slate-100 rounded-xl p-6 flex items-center justify-center gap-3">
+                    <div class="w-4 h-4 border-2 border-[#09637E]/30 border-t-[#09637E] rounded-full animate-spin"></div>
+                    <span class="text-xs font-bold text-slate-400">Ricerca posizione sulla mappa...</span>
+                  </div>
+                } @else if (mapCoords) {
+                  <div class="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
+                    <iframe
+                      [src]="getMapUrl(mapCoords)"
+                      class="w-full h-64 block"
+                      loading="lazy"
+                      referrerpolicy="no-referrer-when-downgrade"
+                      title="Mappa posizione sinistro">
+                    </iframe>
+                    <div class="px-3 py-2.5 bg-white border-t border-slate-200 flex items-center gap-2">
+                      <svg class="w-3.5 h-3.5 text-[#09637E] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      </svg>
+                      <p class="text-[11px] font-semibold text-slate-600 truncate">{{ selectedSinistro?.luogo ?? selectedClaim.location }}</p>
                     </div>
-                    @if (selectedSinistro.analisiAi?.modello) {
-                      <span class="text-[9px] text-emerald-600 font-bold bg-emerald-100 px-2 py-0.5 rounded-full">
-                        {{ selectedSinistro.analisiAi?.modello }}
+                  </div>
+                } @else {
+                  <div class="bg-slate-50 border border-slate-100 rounded-xl p-5 text-center">
+                    <svg class="w-7 h-7 text-slate-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <p class="text-xs font-bold text-slate-300">Posizione non geolocalizzabile</p>
+                    <p class="text-[10px] text-slate-400 mt-1">{{ selectedSinistro?.luogo ?? selectedClaim.location }}</p>
+                  </div>
+                }
+              </div>
+
+              <!-- Note perizia -->
+              <div>
+                <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400 mb-2">Note Perizia</label>
+                <textarea rows="3" placeholder="Aggiungi note o osservazioni sul sinistro..."
+                  class="w-full px-3.5 py-2.5 text-[0.85rem] font-semibold border-[1.5px] border-slate-200 rounded-xl bg-slate-50 text-slate-900 outline-none transition-all resize-none focus:border-[#09637E] focus:bg-white focus:ring-[3px] focus:ring-[#09637E]/[0.08]"></textarea>
+              </div>
+
+            </div>
+
+            <!-- ── COLONNA DESTRA: descrizione, foto, AI ── -->
+            <div class="space-y-6">
+
+              @if (isLoadingSinistro) {
+                <div class="flex items-center gap-3 py-2">
+                  <div class="w-5 h-5 border-2 border-[#09637E]/30 border-t-[#09637E] rounded-full animate-spin flex-shrink-0"></div>
+                  <span class="text-xs font-bold text-slate-400">Caricamento dettagli sinistro...</span>
+                </div>
+              }
+
+              @if (!isLoadingSinistro && selectedSinistro) {
+
+                <!-- Descrizione completa -->
+                @if (selectedSinistro.descrizione) {
+                  <div>
+                    <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400 mb-2">Descrizione Sinistro</label>
+                    <p class="text-sm text-slate-600 font-medium bg-slate-50 rounded-xl p-3.5 leading-relaxed border border-slate-100">
+                      {{ selectedSinistro.descrizione }}
+                    </p>
+                  </div>
+                }
+
+                <!-- ── FOTO SINISTRO ── -->
+                <div>
+                  <div class="flex items-center justify-between mb-2">
+                    <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400">Foto Sinistro</label>
+                    @if (selectedSinistro.immagini.length > 0) {
+                      <span class="text-[10px] font-black text-[#09637E] bg-[#EBF4F6] px-2.5 py-0.5 rounded-full">
+                        {{ selectedSinistro.immagini.length }} foto
                       </span>
                     }
                   </div>
-                  <p class="text-xs text-slate-700 leading-relaxed">{{ selectedSinistro.analisiAi?.testo }}</p>
-                  @if (selectedSinistro.analisiAi?.dataAnalisi) {
-                    <p class="text-[9px] text-slate-400 pt-1 border-t border-emerald-100">
-                      {{ formatDate(selectedSinistro.analisiAi?.dataAnalisi) }}
-                    </p>
+
+                  @if (selectedSinistro.immagini.length === 0) {
+                    <div class="bg-slate-50 border border-slate-100 rounded-xl p-6 text-center">
+                      <svg class="w-8 h-8 text-slate-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                      </svg>
+                      <p class="text-xs font-bold text-slate-300">Nessuna foto allegata</p>
+                    </div>
+                  } @else {
+                    <div class="grid grid-cols-3 gap-2">
+                      @for (img of selectedSinistro.immagini; track img.public_id) {
+                        <button
+                          (click)="openImage(img.url)"
+                          class="relative aspect-square rounded-xl overflow-hidden bg-slate-100 group/img focus:outline-none focus:ring-2 focus:ring-[#09637E]">
+                          <img [src]="img.url" alt="Foto sinistro"
+                            class="w-full h-full object-cover transition-transform group-hover/img:scale-105 duration-300" />
+                          <div class="absolute inset-0 bg-black/0 group-hover/img:bg-black/25 transition-colors flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white opacity-0 group-hover/img:opacity-100 transition-opacity drop-shadow"
+                              fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/>
+                            </svg>
+                          </div>
+                        </button>
+                      }
+                    </div>
                   }
                 </div>
 
-              } @else if (selectedSinistro.analisiAi?.stato === 'in_elaborazione') {
-                <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 flex items-center gap-3">
-                  <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                    </svg>
+                <!-- ── ANALISI AI ── -->
+                <div>
+                  <div class="flex items-center gap-2 mb-2">
+                    <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400">Analisi AI Danno</label>
+                    @if (selectedSinistro.analisiAi?.stato === 'in_elaborazione') {
+                      <div class="w-3.5 h-3.5 border-[2px] border-amber-300 border-t-amber-500 rounded-full animate-spin"></div>
+                    }
                   </div>
-                  <div>
-                    <p class="text-xs font-black text-amber-800">Analisi AI in corso...</p>
-                    <p class="text-[10px] text-amber-600 mt-0.5">Aggiornamento automatico ogni 5 s</p>
-                  </div>
-                </div>
 
-              } @else if (selectedSinistro.analisiAi?.stato === 'errore') {
-                <div class="bg-red-50 border border-red-100 rounded-xl p-3.5">
-                  <div class="flex items-center gap-1.5 mb-1">
-                    <div class="w-2 h-2 bg-red-500 rounded-full"></div>
-                    <span class="text-[10px] font-black text-red-700 uppercase">Errore analisi AI</span>
-                  </div>
-                  @if (selectedSinistro.analisiAi?.errore) {
-                    <p class="text-xs text-red-500">{{ selectedSinistro.analisiAi?.errore }}</p>
+                  @if (selectedSinistro.analisiAi?.stato === 'completata') {
+                    <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 space-y-3">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5">
+                          <div class="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                          <span class="text-[10px] font-black text-emerald-700 uppercase tracking-wide">Analisi completata</span>
+                        </div>
+                        @if (selectedSinistro.analisiAi?.modello) {
+                          <span class="text-[9px] text-emerald-600 font-bold bg-emerald-100 px-2 py-0.5 rounded-full">
+                            {{ selectedSinistro.analisiAi?.modello }}
+                          </span>
+                        }
+                      </div>
+                      <p class="text-xs text-slate-700 leading-relaxed">{{ selectedSinistro.analisiAi?.testo }}</p>
+                      @if (selectedSinistro.analisiAi?.dataAnalisi) {
+                        <p class="text-[9px] text-slate-400 pt-1 border-t border-emerald-100">
+                          {{ formatDate(selectedSinistro.analisiAi?.dataAnalisi) }}
+                        </p>
+                      }
+                    </div>
+
+                  } @else if (selectedSinistro.analisiAi?.stato === 'in_elaborazione') {
+                    <div class="bg-amber-50 border border-amber-100 rounded-xl p-4 flex items-center gap-3">
+                      <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                      </div>
+                      <div>
+                        <p class="text-xs font-black text-amber-800">Analisi AI in corso...</p>
+                        <p class="text-[10px] text-amber-600 mt-0.5">Aggiornamento automatico ogni 5 s</p>
+                      </div>
+                    </div>
+
+                  } @else if (selectedSinistro.analisiAi?.stato === 'errore') {
+                    <div class="bg-red-50 border border-red-100 rounded-xl p-3.5">
+                      <div class="flex items-center gap-1.5 mb-1">
+                        <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                        <span class="text-[10px] font-black text-red-700 uppercase">Errore analisi AI</span>
+                      </div>
+                      @if (selectedSinistro.analisiAi?.errore) {
+                        <p class="text-xs text-red-500">{{ selectedSinistro.analisiAi?.errore }}</p>
+                      }
+                    </div>
+
+                  } @else {
+                    <div class="bg-slate-50 border border-slate-100 rounded-xl p-5 text-center">
+                      <svg class="w-7 h-7 text-slate-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                          d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                      </svg>
+                      <p class="text-xs font-bold text-slate-300">Nessuna analisi AI disponibile</p>
+                    </div>
                   }
                 </div>
 
-              } @else {
-                <div class="bg-slate-50 border border-slate-100 rounded-xl p-5 text-center">
-                  <svg class="w-7 h-7 text-slate-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                      d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                  </svg>
-                  <p class="text-xs font-bold text-slate-300">Nessuna analisi AI disponibile</p>
-                </div>
               }
+
             </div>
 
-          }
-
-          <!-- Note perizia -->
-          <div>
-            <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400 mb-2">Note Perizia</label>
-            <textarea rows="3" placeholder="Aggiungi note o osservazioni sul sinistro..."
-              class="w-full px-3.5 py-2.5 text-[0.85rem] font-semibold border-[1.5px] border-slate-200 rounded-xl bg-slate-50 text-slate-900 outline-none transition-all resize-none focus:border-[#09637E] focus:bg-white focus:ring-[3px] focus:ring-[#09637E]/[0.08]"></textarea>
           </div>
-
         </div>
 
         <!-- Footer -->
-        <div class="p-5 border-t border-slate-100 bg-white flex gap-3">
+        <div class="px-7 py-5 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between gap-3">
           <button (click)="askDeleteClaim(selectedClaim)"
-            class="py-3 px-4 text-xs font-black text-red-400 border border-red-100 bg-red-50 rounded-xl hover:bg-red-500 hover:text-white transition-all">
+            class="py-2.5 px-4 text-xs font-black text-red-500 border border-red-100 bg-white rounded-xl hover:bg-red-500 hover:text-white hover:border-red-500 transition-all uppercase tracking-wider flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
             </svg>
+            Elimina
           </button>
-          <button (click)="openContactModal(selectedClaim.code)"
-            class="flex-1 py-3 text-xs font-black text-teal-600 border border-teal-200 bg-teal-50 rounded-xl hover:bg-teal-600 hover:text-white transition-all uppercase tracking-wider">
-            Contatta
-          </button>
-          <button (click)="openRelazioneFromClaim(selectedClaim)"
-            class="flex-1 py-3 text-xs font-black text-white bg-[#09637E] rounded-xl hover:bg-[#088395] transition-all uppercase tracking-wider shadow-lg shadow-[#063d4a]/20">
-            Avvia Perizia
-          </button>
+          <div class="flex gap-3">
+            <button (click)="openContactModal(selectedClaim.code)"
+              class="px-5 py-2.5 text-xs font-black text-teal-600 border border-teal-200 bg-teal-50 rounded-xl hover:bg-teal-600 hover:text-white transition-all uppercase tracking-wider">
+              Contatta
+            </button>
+            <button (click)="openRelazioneFromClaim(selectedClaim)"
+              class="px-7 py-2.5 text-xs font-black text-white bg-[#09637E] rounded-xl hover:bg-[#088395] transition-all uppercase tracking-wider shadow-lg shadow-[#063d4a]/25 flex items-center gap-2">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+              </svg>
+              Avvia Perizia
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -707,32 +737,121 @@
               </div>
             }
 
-            <!-- Sinistro collegato (card riassuntiva) -->
+            <!-- Sinistro collegato (card riassuntiva arricchita) -->
             @if (editingLinkedClaim; as lc) {
-              <div class="mb-6 p-4 bg-[#EBF4F6]/60 border border-[#7AB2B2]/40 rounded-xl flex items-center gap-4">
-                <div class="w-11 h-11 bg-white text-[#09637E] rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-                  @if (getVehicleType(lc.vehicle) === 'motorcycle') {
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="17" r="2" stroke-width="1.8"/><circle cx="19" cy="17" r="2" stroke-width="1.8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 17l1.5-5h7l3-4h2l1.5 4-3 1"/></svg>
-                  } @else if (getVehicleType(lc.vehicle) === 'truck') {
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="1" y="3" width="13" height="13" rx="1" stroke-width="1.8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 7h4l3 3v6h-7V7z"/><circle cx="6" cy="19" r="2" stroke-width="1.8"/><circle cx="18" cy="19" r="2" stroke-width="1.8"/></svg>
-                  } @else if (getVehicleType(lc.vehicle) === 'van') {
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 13l1-7h14l2 7M3 13v4h1m15-4v4h1m-17 0h16"/><circle cx="6" cy="17" r="1.5" stroke-width="1.8"/><circle cx="18" cy="17" r="1.5" stroke-width="1.8"/></svg>
-                  } @else {
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17h5"/></svg>
+              <div class="mb-6 rounded-xl border border-[#7AB2B2]/40 bg-gradient-to-br from-[#EBF4F6]/80 to-white overflow-hidden">
+
+                <!-- Header card: veicolo + codice + stima -->
+                <div class="p-4 flex items-center gap-4 border-b border-[#7AB2B2]/30">
+                  <div class="w-11 h-11 bg-white text-[#09637E] rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+                    @if (getVehicleType(lc.vehicle) === 'motorcycle') {
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="17" r="2" stroke-width="1.8"/><circle cx="19" cy="17" r="2" stroke-width="1.8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 17l1.5-5h7l3-4h2l1.5 4-3 1"/></svg>
+                    } @else if (getVehicleType(lc.vehicle) === 'truck') {
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="1" y="3" width="13" height="13" rx="1" stroke-width="1.8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 7h4l3 3v6h-7V7z"/><circle cx="6" cy="19" r="2" stroke-width="1.8"/><circle cx="18" cy="19" r="2" stroke-width="1.8"/></svg>
+                    } @else if (getVehicleType(lc.vehicle) === 'van') {
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 13l1-7h14l2 7M3 13v4h1m15-4v4h1m-17 0h16"/><circle cx="6" cy="17" r="1.5" stroke-width="1.8"/><circle cx="18" cy="17" r="1.5" stroke-width="1.8"/></svg>
+                    } @else {
+                      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17h5"/></svg>
+                    }
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-baseline gap-2 flex-wrap">
+                      <p class="text-sm font-black text-[#09637E]">{{ lc.code }}</p>
+                      <span [class]="'inline-flex items-center px-2 py-0.5 rounded text-[0.55rem] font-black uppercase tracking-[0.06em] border ' + getStatusClass(lc.status)">{{ getStatusLabel(lc.status) }}</span>
+                      <span [class]="'inline-flex items-center px-2 py-0.5 rounded text-[0.55rem] font-black uppercase tracking-[0.06em] ' + getPriorityClass(lc.priority)">{{ lc.priority }}</span>
+                    </div>
+                    <p class="text-xs text-slate-600 font-semibold truncate mt-0.5">{{ lc.vehicle }}</p>
+                  </div>
+                  @if (lc.amount) {
+                    <div class="text-right flex-shrink-0">
+                      <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Stima Iniziale</p>
+                      <p class="text-base font-black text-emerald-600">€ {{ lc.amount | number }}</p>
+                    </div>
                   }
                 </div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-baseline gap-2 flex-wrap">
-                    <p class="text-sm font-black text-[#09637E]">{{ lc.code }}</p>
-                    <span [class]="'inline-flex items-center px-2 py-0.5 rounded text-[0.55rem] font-black uppercase tracking-[0.06em] border ' + getStatusClass(lc.status)">{{ getStatusLabel(lc.status) }}</span>
+
+                <!-- Dati sinistro a griglia -->
+                <div class="px-4 py-3 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2.5 text-[11px]">
+                  @if (relazioneSinistro?.targa) {
+                    <div>
+                      <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Targa</p>
+                      <p class="font-black text-slate-800 tracking-wider">{{ relazioneSinistro?.targa }}</p>
+                    </div>
+                  }
+                  @if (relazioneSinistro?.marca || relazioneSinistro?.modello) {
+                    <div>
+                      <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Marca / Modello</p>
+                      <p class="font-bold text-slate-700 truncate">{{ relazioneSinistro?.marca }} {{ relazioneSinistro?.modello }}</p>
+                    </div>
+                  }
+                  <div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Luogo</p>
+                    <p class="font-bold text-slate-700 truncate" [title]="lc.location">{{ lc.location }}</p>
                   </div>
-                  <p class="text-xs text-slate-600 font-semibold truncate mt-0.5">{{ lc.vehicle }}</p>
-                  <p class="text-[11px] text-slate-400 truncate mt-0.5">{{ lc.location }} · {{ lc.date }}</p>
+                  <div>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Data Evento</p>
+                    <p class="font-bold text-slate-700">{{ lc.date }}</p>
+                  </div>
+                  @if (lc.insuranceCompany && lc.insuranceCompany !== 'N/D') {
+                    <div>
+                      <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Compagnia</p>
+                      <p class="font-bold text-slate-700 truncate">{{ lc.insuranceCompany }}</p>
+                    </div>
+                  }
+                  @if (relazioneSinistro?.tipoSinistro) {
+                    <div>
+                      <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-0.5">Tipo Sinistro</p>
+                      <p class="font-bold text-slate-700 truncate">{{ relazioneSinistro?.tipoSinistro }}</p>
+                    </div>
+                  }
                 </div>
-                @if (lc.amount) {
-                  <div class="text-right flex-shrink-0">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Stima</p>
-                    <p class="text-base font-black text-emerald-600">€ {{ lc.amount | number }}</p>
+
+                <!-- Loader sinistro -->
+                @if (isLoadingRelazioneSinistro) {
+                  <div class="px-4 py-3 border-t border-[#7AB2B2]/30 flex items-center gap-2">
+                    <div class="w-3.5 h-3.5 border-2 border-[#09637E]/30 border-t-[#09637E] rounded-full animate-spin"></div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Caricamento dettagli sinistro...</span>
+                  </div>
+                }
+
+                <!-- Descrizione + foto + AI badge -->
+                @if (relazioneSinistro && !isLoadingRelazioneSinistro) {
+                  @if (relazioneSinistro.descrizione) {
+                    <div class="px-4 py-3 border-t border-[#7AB2B2]/30 bg-white/60">
+                      <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">Descrizione Originale</p>
+                      <p class="text-[11.5px] text-slate-600 leading-relaxed line-clamp-3">{{ relazioneSinistro.descrizione }}</p>
+                    </div>
+                  }
+                  <div class="px-4 py-2.5 border-t border-[#7AB2B2]/30 bg-white/40 flex items-center gap-4 flex-wrap">
+                    <!-- Foto -->
+                    <div class="flex items-center gap-1.5 text-[10px] font-black text-slate-500">
+                      <svg class="w-3.5 h-3.5 text-[#09637E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                      </svg>
+                      <span class="uppercase tracking-wider">{{ relazioneSinistro.immagini.length }} Foto</span>
+                    </div>
+                    <!-- Stato AI -->
+                    @if (relazioneSinistro.analisiAi?.stato === 'completata') {
+                      <div class="flex items-center gap-1.5 text-[10px] font-black text-emerald-700">
+                        <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                        <span class="uppercase tracking-wider">Analisi AI Completata</span>
+                      </div>
+                    } @else if (relazioneSinistro.analisiAi?.stato === 'in_elaborazione') {
+                      <div class="flex items-center gap-1.5 text-[10px] font-black text-amber-700">
+                        <div class="w-2.5 h-2.5 border-[1.5px] border-amber-300 border-t-amber-600 rounded-full animate-spin"></div>
+                        <span class="uppercase tracking-wider">AI in corso</span>
+                      </div>
+                    } @else if (relazioneSinistro.analisiAi?.stato === 'errore') {
+                      <div class="flex items-center gap-1.5 text-[10px] font-black text-red-600">
+                        <div class="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                        <span class="uppercase tracking-wider">Errore AI</span>
+                      </div>
+                    } @else {
+                      <div class="flex items-center gap-1.5 text-[10px] font-black text-slate-400">
+                        <div class="w-1.5 h-1.5 bg-slate-300 rounded-full"></div>
+                        <span class="uppercase tracking-wider">Nessuna Analisi AI</span>
+                      </div>
+                    }
                   </div>
                 }
               </div>
@@ -782,6 +901,16 @@
                       </button>
                     }
                   </div>
+                  <!-- Input custom quando "Altro" è selezionato -->
+                  @if (isTipoDannoCustom) {
+                    <div class="mt-2.5 relative animate-fade-down">
+                      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#09637E]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                      </svg>
+                      <input [(ngModel)]="customTipoDanno" type="text" placeholder="Specifica il tipo di danno..."
+                        class="w-full pl-9 pr-3 py-2.5 text-[0.85rem] font-semibold border-[1.5px] border-[#09637E]/40 rounded-xl bg-[#EBF4F6]/30 text-slate-900 outline-none transition-all focus:border-[#09637E] focus:bg-white focus:ring-[3px] focus:ring-[#09637E]/[0.08]" />
+                    </div>
+                  }
                 </div>
 
                 <div>
@@ -825,8 +954,27 @@
                     </div>
                   }
 
-                  <!-- Chips disponibili -->
-                  <div class="flex flex-wrap gap-2">
+                  <!-- Input custom per aggiungere parti personalizzate -->
+                  <div class="flex gap-2 mb-3">
+                    <div class="relative flex-1">
+                      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                      </svg>
+                      <input [(ngModel)]="customParte" type="text"
+                        (keydown.enter)="addCustomParte(); $event.preventDefault()"
+                        placeholder="Aggiungi parte personalizzata..."
+                        class="w-full pl-9 pr-3 py-2 text-[0.8rem] font-semibold border-[1.5px] border-slate-200 rounded-lg bg-slate-50 text-slate-900 outline-none transition-all focus:border-[#09637E] focus:bg-white focus:ring-[3px] focus:ring-[#09637E]/[0.08]" />
+                    </div>
+                    <button (click)="addCustomParte()" type="button"
+                      [disabled]="!customParte?.trim()"
+                      class="px-4 py-2 text-xs font-black text-white bg-[#09637E] rounded-lg hover:bg-[#088395] disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-all uppercase tracking-wider">
+                      Aggiungi
+                    </button>
+                  </div>
+
+                  <!-- Chips disponibili (scrollabili, con header) -->
+                  <p class="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Oppure seleziona dalla lista</p>
+                  <div class="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1 pb-1">
                     @for (p of partiDisponibili; track p) {
                       @if (!(editingRelazione.partiDanneggiate ?? []).includes(p)) {
                         <button (click)="addParte(p)"
