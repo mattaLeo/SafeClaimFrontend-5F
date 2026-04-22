@@ -56,11 +56,18 @@ export interface SinistroDettaglio {
   };
 }
 
+/** Entry dell'archivio: coppia pratica + relazione associata. */
+export interface ArchivedEntry {
+  claim:     Claim;
+  relazione: Relazione;
+}
+
 // ── Component ──────────────────────────────────────────────────────────────────
 
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ClaimCardComponent } from '../componenti/claim-card/claim-card.component';
 import { Perizie } from '../services/perizie.service';
 import { AuthService } from '../services/auth';
@@ -84,10 +91,14 @@ export class Perito implements OnInit, OnDestroy {
   contactSent         = false;
   relazioneError      = '';
 
-  selectedClaim:    Claim | null           = null;
+  selectedClaim:    Claim | null             = null;
   selectedSinistro: SinistroDettaglio | null = null;
   isLoadingSinistro = false;
-  lightboxUrl:      string | null          = null;
+  lightboxUrl:      string | null            = null;
+
+  // ── Mappa / Geolocalizzazione ─────────────────────────────────────────────
+  mapCoords: { lat: number; lng: number } | null = null;
+  isGeocodingLocation = false;
 
   private aiPollInterval: any = null;
 
@@ -100,8 +111,9 @@ export class Perito implements OnInit, OnDestroy {
   filterDateFrom = '';
   filterDateTo   = '';
 
-  get filteredClaims(): Claim[] {
-    return this.allClaims.filter(c => {
+  /** Applica i filtri UI a una lista di claim (riusato da dashboard e archivio). */
+  private applyFilters(list: Claim[]): Claim[] {
+    return list.filter(c => {
       const matchSearch = !this.filterSearch ||
         c.code.toLowerCase().includes(this.filterSearch.toLowerCase()) ||
         c.vehicle.toLowerCase().includes(this.filterSearch.toLowerCase()) ||
@@ -125,6 +137,25 @@ export class Perito implements OnInit, OnDestroy {
     });
   }
 
+  /** Lista usata in dashboard (tutte le claim filtrate). */
+  get filteredClaims(): Claim[] {
+    return this.applyFilters(this.allClaims);
+  }
+
+  /**
+   * Lista usata nell'ARCHIVIO: solo le pratiche per cui esiste una relazione/perizia
+   * associata, abbinate a essa così il click apre direttamente la relazione.
+   */
+  get archivedEntries(): ArchivedEntry[] {
+    const filtered = this.applyFilters(this.allClaims);
+    const entries: ArchivedEntry[] = [];
+    for (const c of filtered) {
+      const rel = this.getRelazioneForClaim(c);
+      if (rel) entries.push({ claim: c, relazione: rel });
+    }
+    return entries;
+  }
+
   // ── Stats ─────────────────────────────────────────────────────────────────────
 
   get activeClaimsCount(): number {
@@ -134,7 +165,7 @@ export class Perito implements OnInit, OnDestroy {
   }
 
   get totalArchiveAmount(): number {
-    return this.allClaims.reduce((sum, c) => sum + (c.amount ?? 0), 0);
+    return this.relazioni.reduce((sum, r) => sum + (r.estimatedDamage ?? 0), 0);
   }
 
   get relazioniCount(): number { return this.relazioni.length; }
@@ -165,9 +196,10 @@ export class Perito implements OnInit, OnDestroy {
   confirmDeleteRelazione: Relazione | null = null;
 
   constructor(
-    private perizie: Perizie,
-    private auth:    AuthService,
-    private cdr:     ChangeDetectorRef,
+    private perizie:   Perizie,
+    private auth:      AuthService,
+    private cdr:       ChangeDetectorRef,
+    private sanitizer: DomSanitizer,
   ) {}
 
   ngOnInit(): void {
@@ -196,12 +228,6 @@ export class Perito implements OnInit, OnDestroy {
 
   // ── Caricamento pratiche ──────────────────────────────────────────────────────
 
-  /**
-   * Carica le pratiche assegnate all'assicurazione al perito corrente.
-   * Ogni pratica contiene già un campo "sinistro" con il riepilogo del sinistro,
-   * senza le immagini (che vengono caricate on-demand all'apertura del dettaglio).
-   * In caso di fallimento (endpoint non ancora disponibile) fa fallback ai sinistri.
-   */
   private loadClaims(): void {
     this.isLoading = true;
     const u = this.auth.currentUser as any;
@@ -277,7 +303,26 @@ export class Perito implements OnInit, OnDestroy {
 
   setView(v: 'dashboard' | 'archivio' | 'relazioni'): void {
     this.currentView = v;
-    if (v === 'relazioni') this.loadRelazioni();
+    if (v === 'relazioni' || v === 'archivio') this.loadRelazioni();
+  }
+
+  // ── Relazione lookup (usato da archivio) ─────────────────────────────────────
+
+  hasRelazione(claim: Claim): boolean {
+    return this.relazioni.some(r =>
+      r.sinistroId === claim.id || r.claimCode === claim.code
+    );
+  }
+
+  getRelazioneForClaim(claim: Claim): Relazione | undefined {
+    return this.relazioni.find(r =>
+      r.sinistroId === claim.id || r.claimCode === claim.code
+    );
+  }
+
+  /** Dall'archivio, click sulla riga: apre direttamente la perizia collegata. */
+  openArchivedEntry(entry: ArchivedEntry): void {
+    this.openRelazioneDetail(entry.relazione);
   }
 
   // ── Claim / Pratica detail ────────────────────────────────────────────────────
@@ -286,6 +331,7 @@ export class Perito implements OnInit, OnDestroy {
     this.selectedClaim     = c;
     this.isClaimDetailOpen = true;
     this.selectedSinistro  = null;
+    this.mapCoords         = null;
     this.stopAIPoll();
     this.loadSinistroDetail(c.id);
   }
@@ -294,12 +340,14 @@ export class Perito implements OnInit, OnDestroy {
     this.isClaimDetailOpen = false;
     this.selectedClaim     = null;
     this.selectedSinistro  = null;
+    this.mapCoords         = null;
+    this.isGeocodingLocation = false;
     this.stopAIPoll();
   }
 
   /**
-   * Carica il dettaglio completo del sinistro collegato alla pratica:
-   * tutti i campi, l'array immagini con URL Cloudinary, e l'analisi AI.
+   * Carica il dettaglio completo del sinistro e avvia il geocoding
+   * dell'indirizzo per mostrare la mappa.
    */
   private loadSinistroDetail(sinistroId: string): void {
     this.isLoadingSinistro = true;
@@ -329,6 +377,13 @@ export class Perito implements OnInit, OnDestroy {
         };
         this.isLoadingSinistro = false;
 
+        // Avvia geocoding se c'è un indirizzo disponibile
+        const luogo = this.selectedSinistro.luogo
+                   ?? this.selectedClaim?.location;
+        if (luogo && luogo !== 'N/D') {
+          this.geocodeLocation(luogo);
+        }
+
         // Se l'analisi AI è ancora in corso, avvia il polling
         if (this.selectedSinistro.analisiAi?.stato === 'in_elaborazione') {
           this.startAIPoll(sinistroId);
@@ -337,9 +392,55 @@ export class Perito implements OnInit, OnDestroy {
       },
       error: () => {
         this.isLoadingSinistro = false;
+        // Tenta comunque di geocodare il luogo dalla claim, se presente
+        const luogo = this.selectedClaim?.location;
+        if (luogo && luogo !== 'N/D') this.geocodeLocation(luogo);
         this.cdr.detectChanges();
       }
     });
+  }
+
+  // ── Geocoding (Nominatim / OpenStreetMap) ────────────────────────────────────
+
+  private async geocodeLocation(address: string): Promise<void> {
+    this.mapCoords = null;
+    this.isGeocodingLocation = true;
+    this.cdr.detectChanges();
+    try {
+      const url = `https://nominatim.openstreetmap.org/search`
+                + `?q=${encodeURIComponent(address)}`
+                + `&format=json&limit=1&addressdetails=0`;
+      const res = await fetch(url, {
+        headers: { 'Accept-Language': 'it,en' }
+      });
+      if (res.ok) {
+        const data: any[] = await res.json();
+        if (data && data.length > 0) {
+          this.mapCoords = {
+            lat: parseFloat(data[0].lat),
+            lng: parseFloat(data[0].lon)
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Geocoding failed:', e);
+    }
+    this.isGeocodingLocation = false;
+    this.cdr.detectChanges();
+  }
+
+  getMapUrl(coords: { lat: number; lng: number }): SafeResourceUrl {
+    const delta = 0.004;
+    const bbox = `${coords.lng - delta},${coords.lat - delta},${coords.lng + delta},${coords.lat + delta}`;
+    const url  = `https://www.openstreetmap.org/export/embed.html`
+               + `?bbox=${bbox}&layer=mapnik`
+               + `&marker=${coords.lat},${coords.lng}`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  getOsmLink(coords: { lat: number; lng: number }): string {
+    return `https://www.openstreetmap.org/?mlat=${coords.lat}`
+         + `&mlon=${coords.lng}#map=17/${coords.lat}/${coords.lng}`;
   }
 
   // ── Polling analisi AI ────────────────────────────────────────────────────────
@@ -378,8 +479,8 @@ export class Perito implements OnInit, OnDestroy {
 
   // ── Lightbox immagini ─────────────────────────────────────────────────────────
 
-  openImage(url: string): void  { this.lightboxUrl = url; }
-  closeLightbox(): void          { this.lightboxUrl = null; }
+  openImage(url: string): void { this.lightboxUrl = url; }
+  closeLightbox(): void        { this.lightboxUrl = null; }
 
   // ── Delete pratica ────────────────────────────────────────────────────────────
 
@@ -454,6 +555,12 @@ export class Perito implements OnInit, OnDestroy {
     this.relazioneError  = '';
   }
 
+  /** Per il modal: restituisce la Claim collegata alla relazione in editing (se c'è). */
+  get editingLinkedClaim(): Claim | null {
+    if (!this.editingRelazione.claimCode) return null;
+    return this.allClaims.find(c => c.code === this.editingRelazione.claimCode) ?? null;
+  }
+
   saveRelazione(): void {
     this.relazioneError = '';
 
@@ -515,7 +622,8 @@ export class Perito implements OnInit, OnDestroy {
 
   // ── Export PDF ────────────────────────────────────────────────────────────────
 
-  exportRelazione(rel: Relazione): void {
+  exportRelazione(rel: Relazione, event?: Event): void {
+    event?.stopPropagation();
     const doc    = new jsPDF({ unit: 'mm', format: 'a4' });
     const W      = 210;
     const margin = 20;
@@ -660,6 +768,16 @@ export class Perito implements OnInit, OnDestroy {
   getRelazioneStatusClass(status: string): string {
     const map: Record<string, string> = { Bozza:'bg-slate-100 text-slate-500', Completata:'bg-green-100 text-green-700', Inviata:'bg-blue-100 text-blue-700' };
     return map[status] ?? 'bg-slate-100 text-slate-500';
+  }
+
+  getConclusioneClass(c: string | undefined): string {
+    switch (c) {
+      case 'Danno totale':   return 'bg-red-50 text-red-700 border-red-100';
+      case 'Riparabile':     return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+      case 'Frode sospetta': return 'bg-amber-50 text-amber-700 border-amber-100';
+      case 'In valutazione': return 'bg-blue-50 text-blue-700 border-blue-100';
+      default:               return 'bg-slate-50 text-slate-500 border-slate-200';
+    }
   }
 
   formatDate(isoStr?: string): string {

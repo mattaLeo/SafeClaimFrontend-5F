@@ -7,7 +7,7 @@ import { User } from '../models/user.model';
   providedIn: 'root',
 })
 export class AuthService {
-  link = "https://bug-free-funicular-wrrww9x6q6qqh56x7-6000.app.github.dev/";
+  link = "https://scaling-yodel-g44gg56j9695hpv6j-6000.app.github.dev/";
 
   private _currentUser?: User;
 
