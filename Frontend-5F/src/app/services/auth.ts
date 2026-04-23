@@ -7,7 +7,7 @@ import { User } from '../models/user.model';
   providedIn: 'root',
 })
 export class AuthService {
-  link = "https://bug-free-funicular-wrrww9x6q6qqh56x7-6000.app.github.dev/";
+  link = "https://super-duper-space-zebra-977ppqwvr6q62x5rw-6000.app.github.dev/";
 
   private _currentUser?: User;
 
@@ -42,6 +42,23 @@ export class AuthService {
 
   signup(nuovoUtente: User): Observable<any> {
     return this.http.post<any>(`${this.link}registrazione`, nuovoUtente);
+  }
+
+  // 🆕 Aggiornamento profilo utente loggato
+  updateUser(id: number, data: Partial<User>): Observable<any> {
+    const ruolo = localStorage.getItem('userRole') ?? '';
+    return this.http.put<any>(`${this.link}utente/${id}`, { ...data, ruolo }).pipe(
+      tap(res => {
+        if (res?.status === 'success') {
+          // Se il backend rimanda l'utente aggiornato lo uso, altrimenti faccio merge locale
+          const updated = res.user
+            ? { ...res.user, ruolo: this._currentUser?.ruolo ?? ruolo }
+            : { ...(this._currentUser as User), ...data };
+          this._currentUser = updated as User;
+          localStorage.setItem('currentUser', JSON.stringify(this._currentUser));
+        }
+      })
+    );
   }
 
   logout(): void {
