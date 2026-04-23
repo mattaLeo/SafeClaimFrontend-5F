@@ -9,9 +9,19 @@ import { User } from '../models/user.model';
 export class AuthService {
   link = "https://improved-palm-tree-pjjxxg9v4j6g2xq9-6000.app.github.dev/";
 
-  currentUser?: User
+  private _currentUser?: User;
 
-  constructor(private http: HttpClient) { }
+  get currentUser(): User | undefined {
+    if (!this._currentUser) {
+      const saved = localStorage.getItem('currentUser');
+      if (saved) {
+        try { this._currentUser = JSON.parse(saved); } catch {}
+      }
+    }
+    return this._currentUser;
+  }
+
+  constructor(private http: HttpClient) {}
 
   login(email_in: string, psw_in: string): Observable<any> {
     return this.http.post<any>(`${this.link}login`, {
@@ -21,9 +31,10 @@ export class AuthService {
       tap(res => {
         console.log("Risposta API Login:", res);
         if (res.status === "success") {
-          this.currentUser = res.user;
-          localStorage.setItem('userRole', res.user.ruolo); // <-- aggiungi questa riga
-          console.log("Utente loggato:", this.currentUser);
+          this._currentUser = res.user;
+          localStorage.setItem('currentUser', JSON.stringify(res.user));
+          localStorage.setItem('userRole', res.user.ruolo);
+          console.log("Utente loggato:", this._currentUser);
         }
       })
     );
@@ -31,5 +42,28 @@ export class AuthService {
 
   signup(nuovoUtente: User): Observable<any> {
     return this.http.post<any>(`${this.link}registrazione`, nuovoUtente);
+  }
+
+  // 🆕 Aggiornamento profilo utente loggato
+  updateUser(id: number, data: Partial<User>): Observable<any> {
+    const ruolo = localStorage.getItem('userRole') ?? '';
+    return this.http.put<any>(`${this.link}utente/${id}`, { ...data, ruolo }).pipe(
+      tap(res => {
+        if (res?.status === 'success') {
+          // Se il backend rimanda l'utente aggiornato lo uso, altrimenti faccio merge locale
+          const updated = res.user
+            ? { ...res.user, ruolo: this._currentUser?.ruolo ?? ruolo }
+            : { ...(this._currentUser as User), ...data };
+          this._currentUser = updated as User;
+          localStorage.setItem('currentUser', JSON.stringify(this._currentUser));
+        }
+      })
+    );
+  }
+
+  logout(): void {
+    this._currentUser = undefined;
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('userRole');
   }
 }

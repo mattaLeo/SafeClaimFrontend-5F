@@ -1,51 +1,77 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { ClaimCardComponent } from '../componenti/claim-card/claim-card.component';
-import { Perizie } from '../services/perizie.service';
+// ── Shared types ──────────────────────────────────────────────────────────────
 
-export type ViewType = 'dashboard' | 'archivio' | 'relazioni';
-export type VehicleType = 'car' | 'truck' | 'motorcycle' | 'van' | 'suv';
+export type VehicleType = 'car' | 'motorcycle' | 'truck' | 'van' | 'suv';
 
 export interface Claim {
-  id: string;
-  code: string;
-  status: 'in_valutazione' | 'assegnato' | 'chiuso' | 'in_attesa' | 'approvato';
-  type: string;
-  location: string;
-  date: string;
-  time: string;
-  vehicle: string;
-  priority: 'alta' | 'media' | 'bassa';
+  id:               string;
+  code:             string;
+  status:           'in_valutazione' | 'assegnato' | 'chiuso' | 'in_attesa' | 'approvato';
+  type:             string;
+  location:         string;
+  date:             string;
+  time:             string;
+  vehicle:          string;
+  priority:         'alta' | 'media' | 'bassa';
   insuranceCompany: string;
-  amount?: number;
-  month: number;
-  year: number;
+  amount?:          number;
+  month?:           number;
+  year?:            number;
 }
 
 export interface Relazione {
-  id: string;
-  claimCode: string;
-  title: string;
-  date: string;
-  vehicle: string;
-  status: 'Bozza' | 'Completata' | 'Inviata';
+  id?:              string;
+  claimCode:        string;
+  sinistroId?:      string;
+  title:            string;
+  vehicle:          string;
+  tipoDanno:        string;
   estimatedDamage?: number;
-  tipoDanno: string;
   partiDanneggiate: string[];
-  description: string;
-  conclusione: string;
+  description:      string;
+  conclusione:      string;
+  status:           'Bozza' | 'Completata' | 'Inviata';
+  createdAt?:       string;
 }
 
-export interface UserSettings {
-  full_name: string;
-  email: string;
-  phone: string;
-  notifications_email: boolean;
-  notifications_sms: boolean;
-  language: string;
-  theme: string;
+/** Dettaglio completo del sinistro caricato al click sulla card pratica. */
+export interface SinistroDettaglio {
+  id:           string;
+  targa?:       string;
+  marca?:       string;
+  modello?:     string;
+  dataEvento?:  string;
+  descrizione?: string;
+  luogo?:       string;
+  tipoSinistro?: string;
+  stimaDanno?:  number;
+  stato?:       string;
+  compagnia?:   string;
+  immagini:     Array<{ url: string; public_id: string }>;
+  analisiAi?: {
+    testo?:       string;
+    modello?:     string;
+    stato:        'completata' | 'in_elaborazione' | 'errore' | 'non_avviata';
+    dataAnalisi?: string;
+    errore?:      string;
+  };
 }
+
+/** Entry dell'archivio: coppia pratica + relazione associata. */
+export interface ArchivedEntry {
+  claim:     Claim;
+  relazione: Relazione;
+}
+
+// ── Component ──────────────────────────────────────────────────────────────────
+
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { ClaimCardComponent } from '../componenti/claim-card/claim-card.component';
+import { Perizie } from '../services/perizie.service';
+import { AuthService } from '../services/auth';
+import jsPDF from 'jspdf';
 
 @Component({
   selector: 'app-perito',
@@ -54,350 +80,851 @@ export interface UserSettings {
   templateUrl: './perito.html',
   styleUrl: './perito.css',
 })
-export class Perito implements OnInit {
+export class Perito implements OnInit, OnDestroy {
 
-  // ─── UI state ─────────────────────────────────────────────────────────────
-  isSidebarOpen       = false;
-  isSettingsOpen      = false;
-  isContactModalOpen  = false;
-  isSettingsAnimating = false;
+  currentView: 'dashboard' | 'archivio' | 'relazioni' = 'dashboard';
   isClaimDetailOpen   = false;
   isRelazioneOpen     = false;
+  isContactModalOpen  = false;
   isLoading           = true;
-  selectedClaim: Claim | null = null;
-  currentRole  = 'Perito';
-  currentView: ViewType = 'dashboard';
+  isRelazioniLoading  = false;
+  contactSent         = false;
+  relazioneError      = '';
 
-  // ─── User ─────────────────────────────────────────────────────────────────
-  user = {
-    full_name: 'MARRO SIMONE',
-    email: 'simone.marro@safeclaim.it',
-    id: 'P-9928'
-  };
+  selectedClaim:    Claim | null             = null;
+  selectedSinistro: SinistroDettaglio | null = null;
+  isLoadingSinistro = false;
+  lightboxUrl:      string | null            = null;
 
-  settings: UserSettings = {
-    full_name: 'MARRO SIMONE',
-    email: 'simone.marro@safeclaim.it',
-    phone: '+39 335 7821094',
-    notifications_email: true,
-    notifications_sms: false,
-    language: 'Italiano',
-    theme: 'Chiaro'
-  };
+  // ── Mappa / Geolocalizzazione ─────────────────────────────────────────────
+  mapCoords: { lat: number; lng: number } | null = null;
+  isGeocodingLocation = false;
 
-  settingsSaved = false;
-  roles = ['Perito', 'Automobilista', 'Assicurazione', 'Officina', 'Supporto Stradale'];
+  private aiPollInterval: any = null;
 
-  // ─── Contact ──────────────────────────────────────────────────────────────
-  contactForm = {
-    insurance: '', subject: '', priority: 'normale', message: '', claimCode: ''
-  };
-  contactSent = false;
-  insuranceCompanies = ['Generali', 'AXA', 'UnipolSai', 'Allianz', 'Poste Assicura', 'Zurich'];
-
-  // ─── Relazioni ────────────────────────────────────────────────────────────
-  tipiDanno        = ['Urto', 'Grandine', 'Incendio', 'Furto', 'Alluvione', 'Vandalismo'];
-  partiDisponibili = ['Paraurti','Cofano','Tetto','Portiera SX','Portiera DX','Parafango','Parabrezza','Lunotto','Cerchi'];
-  conclusioni      = ['Riparabile','Danno Totale','Furto Confermato','Danno Preesistente','Perizia Negativa','In Valutazione'];
-  relazioni: Relazione[] = [];
-  editingRelazione: Partial<Relazione> & { partiDanneggiate: string[] } = {
-    id: '', claimCode: '', title: '', date: '', vehicle: '', status: 'Bozza',
-    tipoDanno: '', partiDanneggiate: [], description: '', conclusione: ''
-  };
-
-  // ─── Filters ──────────────────────────────────────────────────────────────
-  filterStatus   = '';
-  filterType     = '';
-  filterMonth    = '';
-  filterPriority = '';
-  filterSearch   = '';
-
-  // ─── Claims ───────────────────────────────────────────────────────────────
-  claims: Claim[]    = [];
+  claims:    Claim[] = [];
   allClaims: Claim[] = [];
 
-  // ══════════════════════════════════════════════════════════════════════════
+  filterSearch   = '';
+  filterStatus   = '';
+  filterPriority = '';
+  filterDateFrom = '';
+  filterDateTo   = '';
 
-  constructor(public perieService: Perizie) {}
+  /** Applica i filtri UI a una lista di claim (riusato da dashboard e archivio). */
+  private applyFilters(list: Claim[]): Claim[] {
+    return list.filter(c => {
+      const matchSearch = !this.filterSearch ||
+        c.code.toLowerCase().includes(this.filterSearch.toLowerCase()) ||
+        c.vehicle.toLowerCase().includes(this.filterSearch.toLowerCase()) ||
+        c.location.toLowerCase().includes(this.filterSearch.toLowerCase());
+      const matchStatus   = !this.filterStatus   || c.status   === this.filterStatus;
+      const matchPriority = !this.filterPriority || c.priority === this.filterPriority;
+
+      const parts = c.date?.split(' ');
+      const mesi: Record<string, number> = {
+        'gennaio':1,'febbraio':2,'marzo':3,'aprile':4,'maggio':5,'giugno':6,
+        'luglio':7,'agosto':8,'settembre':9,'ottobre':10,'novembre':11,'dicembre':12
+      };
+      const claimDate = parts?.length === 3
+        ? new Date(+parts[2], (mesi[parts[1].toLowerCase()] ?? 1) - 1, +parts[0])
+        : null;
+
+      const matchFrom = !this.filterDateFrom || !claimDate || claimDate >= new Date(this.filterDateFrom);
+      const matchTo   = !this.filterDateTo   || !claimDate || claimDate <= new Date(this.filterDateTo);
+
+      return matchSearch && matchStatus && matchPriority && matchFrom && matchTo;
+    });
+  }
+
+  /** Lista usata in dashboard (tutte le claim filtrate). */
+  get filteredClaims(): Claim[] {
+    return this.applyFilters(this.allClaims);
+  }
+
+  /**
+   * Lista usata nell'ARCHIVIO: solo le pratiche per cui esiste una relazione/perizia
+   * associata, abbinate a essa così il click apre direttamente la relazione.
+   */
+  get archivedEntries(): ArchivedEntry[] {
+    const filtered = this.applyFilters(this.allClaims);
+    const entries: ArchivedEntry[] = [];
+    for (const c of filtered) {
+      const rel = this.getRelazioneForClaim(c);
+      if (rel) entries.push({ claim: c, relazione: rel });
+    }
+    return entries;
+  }
+
+  // ── Stats ─────────────────────────────────────────────────────────────────────
+
+  get activeClaimsCount(): number {
+    return this.claims.filter(c =>
+      c.status === 'in_valutazione' || c.status === 'assegnato' || c.status === 'in_attesa'
+    ).length;
+  }
+
+  get totalArchiveAmount(): number {
+    return this.relazioni.reduce((sum, r) => sum + (r.estimatedDamage ?? 0), 0);
+  }
+
+  get relazioniCount(): number { return this.relazioni.length; }
+
+  // ── Utente ────────────────────────────────────────────────────────────────────
+
+  user = { full_name: '', id: '', email: '', phone: '', ruolo: '' };
+
+  // ── Relazioni ─────────────────────────────────────────────────────────────────
+
+  relazioni: Relazione[] = [];
+
+  editingRelazione: Partial<Relazione> = { partiDanneggiate: [], status: 'Bozza' };
+
+  // Input per parti danneggiate / tipo danno personalizzati
+  customParte:      string = '';
+  customTipoDanno:  string = '';
+
+  // Dettaglio sinistro mostrato nella card del modal relazione
+  relazioneSinistro: SinistroDettaglio | null = null;
+  isLoadingRelazioneSinistro = false;
+
+  tipiDanno = ['Collisione', 'Grandine', 'Furto', 'Incendio', 'Vandalismo', 'Altro'];
+  partiDisponibili = [
+    // Carrozzeria anteriore
+    'Paraurti anteriore', 'Cofano', 'Parafango anteriore SX', 'Parafango anteriore DX',
+    'Calandra', 'Griglia anteriore', 'Sottoparaurti anteriore',
+    // Carrozzeria posteriore
+    'Paraurti posteriore', 'Portellone', 'Parafango posteriore SX', 'Parafango posteriore DX',
+    'Sottoparaurti posteriore',
+    // Laterale
+    'Portiera anteriore SX', 'Portiera anteriore DX', 'Portiera posteriore SX', 'Portiera posteriore DX',
+    'Fiancata SX', 'Fiancata DX', 'Brancardo SX', 'Brancardo DX', 'Montante SX', 'Montante DX',
+    // Vetri e specchi
+    'Parabrezza', 'Lunotto', 'Vetro portiera SX', 'Vetro portiera DX',
+    'Specchietto SX', 'Specchietto DX',
+    // Tetto e padiglione
+    'Tetto', 'Tetto apribile', 'Padiglione interno',
+    // Fari e illuminazione
+    'Faro anteriore SX', 'Faro anteriore DX', 'Fanale posteriore SX', 'Fanale posteriore DX',
+    'Fendinebbia SX', 'Fendinebbia DX', 'Indicatore di direzione',
+    // Ruote e gomme
+    'Cerchio anteriore SX', 'Cerchio anteriore DX', 'Cerchio posteriore SX', 'Cerchio posteriore DX',
+    'Pneumatico anteriore SX', 'Pneumatico anteriore DX', 'Pneumatico posteriore SX', 'Pneumatico posteriore DX',
+    // Meccanica e telaio
+    'Telaio', 'Sospensioni anteriori', 'Sospensioni posteriori', 'Impianto frenante',
+    'Impianto di scarico', 'Motore', 'Cambio', 'Radiatore', 'Serbatoio carburante',
+    // Interni
+    'Sedile anteriore SX', 'Sedile anteriore DX', 'Sedili posteriori', 'Plancia',
+    'Volante', 'Airbag anteriori', 'Airbag laterali', 'Cruscotto',
+    // Vari
+    'Antenna', 'Targa anteriore', 'Targa posteriore', 'Modanature laterali'
+  ];
+  conclusioni        = ['Riparabile', 'Danno totale', 'In valutazione', 'Frode sospetta'];
+  insuranceCompanies = [
+    'Generali','Allianz','UnipolSai','AXA','Zurich',
+    'Reale Mutua','Cattolica','Sara Assicurazioni'
+  ];
+
+  contactForm: any = { claimCode:'', insurance:'', priority:'normale', subject:'', message:'' };
+  confirmDeleteClaim:     Claim | null     = null;
+  confirmDeleteRelazione: Relazione | null = null;
+
+  constructor(
+    private perizie:   Perizie,
+    private auth:      AuthService,
+    private cdr:       ChangeDetectorRef,
+    private sanitizer: DomSanitizer,
+  ) {}
 
   ngOnInit(): void {
-    this.loadSettings();
-    this.caricaSinistri();
+    this.loadUser();
+    this.loadClaims();
+    this.loadRelazioni();
   }
 
-  // ─── Caricamento sinistri ─────────────────────────────────────────────────
-  // ⚠️  Quando arriva l'API sostituisci il corpo con:
-  //     this.perieService.askSinistriPerito(this.user.id).subscribe(data => this.popolaClaims(data))
-  caricaSinistri(): void {
-    console.log('[Perito] Caricamento sinistri per perito:', this.user.id);
-
-    // ── MOCK DATA — rimuovi questo blocco quando arriva l'API ──────────────
-    const mock: Claim[] = [
-      { id:'1',  code:'SN-88291-24', status:'in_valutazione', type:'Collisione Catena',   location:'Via Verdi 15, Milano',        date:'18 Febbraio 2026', time:'14:30', vehicle:'Audi A3 - AB123CD',                priority:'alta',  insuranceCompany:'Generali',  amount:3400,  month:2,  year:2026 },
-      { id:'2',  code:'SN-77102-24', status:'assegnato',      type:'Danno da Grandine',   location:'Corso Buenos Aires, Milano',  date:'19 Febbraio 2026', time:'09:00', vehicle:'Fiat 500 - EF456GH',                priority:'media', insuranceCompany:'AXA',       amount:1200,  month:2,  year:2026 },
-      { id:'3',  code:'SN-91034-24', status:'in_valutazione', type:'Tamponamento',         location:'Viale Monza 88, Milano',      date:'20 Febbraio 2026', time:'11:15', vehicle:'BMW Serie 3 - MN789OP',             priority:'alta',  insuranceCompany:'UnipolSai', amount:5600,  month:2,  year:2026 },
-      { id:'4',  code:'SN-66543-24', status:'assegnato',      type:'Furto Parziale',       location:'Via Torino 22, Milano',       date:'21 Febbraio 2026', time:'16:00', vehicle:'Mercedes GLA - QR012ST',            priority:'bassa', insuranceCompany:'Allianz',   amount:800,   month:2,  year:2026 },
-      { id:'5',  code:'SN-55210-24', status:'in_valutazione', type:'Incendio Parziale',    location:'Via Padova 5, Milano',        date:'22 Febbraio 2026', time:'08:30', vehicle:'Ducati Monster - UV345WX',          priority:'alta',  insuranceCompany:'Generali',  amount:9200,  month:2,  year:2026 },
-      { id:'6',  code:'SN-44120-24', status:'in_attesa',      type:'Collisione Laterale',  location:'Via Novara 11, Milano',       date:'23 Febbraio 2026', time:'10:00', vehicle:'Iveco Daily - RR901ZZ',             priority:'media', insuranceCompany:'AXA',       amount:6700,  month:2,  year:2026 },
-      { id:'7',  code:'SN-33880-24', status:'assegnato',      type:'Danno da Grandine',   location:"Piazza Duca d'Aosta, Milano", date:'24 Febbraio 2026', time:'13:30', vehicle:'Volkswagen Transporter - PP567HH', priority:'bassa', insuranceCompany:'UnipolSai', amount:2300,  month:2,  year:2026 },
-      { id:'8',  code:'SN-44891-24', status:'chiuso',         type:'Collisione Laterale',  location:'Via Dante 3, Torino',         date:'10 Gennaio 2026',  time:'10:00', vehicle:'Toyota Yaris - YZ678AB',            priority:'media', insuranceCompany:'Generali',  amount:2100,  month:1,  year:2026 },
-      { id:'9',  code:'SN-33781-24', status:'approvato',      type:'Danno da Grandine',   location:'Corso Vittorio, Torino',      date:'12 Gennaio 2026',  time:'14:00', vehicle:'Renault Clio - CD901EF',            priority:'bassa', insuranceCompany:'AXA',       amount:780,   month:1,  year:2026 },
-      { id:'10', code:'SN-22654-24', status:'approvato',      type:'Tamponamento',         location:'Via Roma 99, Bologna',        date:'15 Gennaio 2026',  time:'09:30', vehicle:'Peugeot 308 - GH234IJ',             priority:'media', insuranceCompany:'UnipolSai', amount:3300,  month:1,  year:2026 },
-      { id:'11', code:'SN-11523-24', status:'chiuso',         type:'Furto Totale',         location:'Via Indipendenza 7, Bologna', date:'18 Gennaio 2026',  time:'11:00', vehicle:'Honda Civic - KL567MN',             priority:'alta',  insuranceCompany:'Allianz',   amount:18000, month:1,  year:2026 },
-      { id:'12', code:'SN-99410-23', status:'chiuso',         type:'Vandalismo',           location:'Via Manzoni 14, Firenze',     date:'05 Dicembre 2025', time:'15:30', vehicle:'Ford Focus - OP890QR',              priority:'bassa', insuranceCompany:'Generali',  amount:650,   month:12, year:2025 },
-      { id:'13', code:'SN-88334-23', status:'approvato',      type:'Collisione Frontale',  location:'Viale Europa 23, Firenze',    date:'08 Dicembre 2025', time:'08:00', vehicle:'Yamaha MT-07 - ST123UV',            priority:'alta',  insuranceCompany:'AXA',       amount:7400,  month:12, year:2025 },
-      { id:'14', code:'SN-66098-23', status:'chiuso',         type:'Incendio Totale',      location:'Via Nazionale 8, Napoli',     date:'20 Novembre 2025', time:'17:00', vehicle:'Kia Sportage - AB789CD',            priority:'alta',  insuranceCompany:'Allianz',   amount:22000, month:11, year:2025 },
-      { id:'15', code:'SN-55873-23', status:'approvato',      type:'Danno da Alluvione',   location:'Via Toledo 40, Napoli',       date:'25 Novembre 2025', time:'10:30', vehicle:'Ford Transit - EF012GH',            priority:'alta',  insuranceCompany:'Generali',  amount:11500, month:11, year:2025 },
-    ];
-
-    this.popolaClaims(mock);
-    // ── FINE MOCK DATA ──────────────────────────────────────────────────────
+  ngOnDestroy(): void {
+    this.stopAIPoll();
   }
 
-  popolaClaims(data: Claim[]): void {
-    this.allClaims = data;
-    this.claims    = data.filter(c =>
-      c.status === 'in_valutazione' || c.status === 'assegnato' || c.status === 'in_attesa'
+  // ── Caricamento utente ────────────────────────────────────────────────────────
+
+  private loadUser(): void {
+    const u = this.auth.currentUser as any;
+    if (!u) return;
+    this.user = {
+      full_name: `${u.nome ?? ''} ${u.cognome ?? ''}`.trim(),
+      id:        String(u.id ?? ''),
+      email:     u.email ?? '',
+      phone:     u.telefono ?? u.phone ?? '',
+      ruolo:     u.ruolo ?? '',
+    };
+  }
+
+  // ── Caricamento pratiche ──────────────────────────────────────────────────────
+
+  private loadClaims(): void {
+    this.isLoading = true;
+    const u = this.auth.currentUser as any;
+    const peritoId = String(u?.id ?? 'demo');
+
+    this.perizie.getPratichePerito(peritoId).subscribe({
+      next: (data) => {
+        this.claims    = data.map(p => this.perizie.mapPraticaToClaimCard(p));
+        this.allClaims = [...this.claims];
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        // Fallback: usa tutti i sinistri se il nuovo endpoint non è ancora live
+        this.perizie.askTuttiSinistri().subscribe({
+          next: (data: any) => {
+            const lista = Array.isArray(data) ? data : (data.data ?? []);
+            this.claims    = lista.map((s: any) => this.perizie.mapSinistreToClaim(s));
+            this.allClaims = [...this.claims];
+            this.isLoading = false;
+            this.cdr.detectChanges();
+          },
+          error: () => { this.isLoading = false; this.cdr.detectChanges(); }
+        });
+      }
+    });
+  }
+
+  // ── Caricamento relazioni ─────────────────────────────────────────────────────
+
+  private loadRelazioni(): void {
+    const u = this.auth.currentUser as any;
+    const peritoId = String(u?.id ?? '');
+    if (!peritoId) { this.isRelazioniLoading = false; return; }
+
+    this.isRelazioniLoading = true;
+    this.perizie.getRelazioniPerito(peritoId).subscribe({
+      next: (data: any[]) => {
+        this.relazioni = data.map(d => this.mapBackendToRelazione(d));
+        this.isRelazioniLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.relazioni = [];
+        this.isRelazioniLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private mapBackendToRelazione(d: any): Relazione {
+    return {
+      id:               String(d._id ?? d.id ?? ''),
+      sinistroId:       String(d.sinistro_id ?? ''),
+      claimCode:        d.claim_code ?? d.claimCode ?? '',
+      title:            d.titolo ?? d.title ?? '',
+      vehicle:          d.veicolo ?? d.vehicle ?? '',
+      tipoDanno:        d.tipo_danno ?? d.tipoDanno ?? '',
+      estimatedDamage:  d.stima_danno ?? d.estimatedDamage ?? undefined,
+      partiDanneggiate: d.parti_danneggiate ?? d.partiDanneggiate ?? [],
+      description:      d.descrizione ?? d.description ?? '',
+      conclusione:      d.conclusione ?? '',
+      status:           d.stato ?? d.status ?? 'Bozza',
+      createdAt:        d.data_inserimento
+                          ? new Date(d.data_inserimento).toLocaleDateString('it-IT', {
+                              day: '2-digit', month: 'long', year: 'numeric'
+                            })
+                          : undefined,
+    };
+  }
+
+  // ── Navigazione ───────────────────────────────────────────────────────────────
+
+  setView(v: 'dashboard' | 'archivio' | 'relazioni'): void {
+    this.currentView = v;
+    if (v === 'relazioni' || v === 'archivio') this.loadRelazioni();
+  }
+
+  // ── Relazione lookup (usato da archivio) ─────────────────────────────────────
+
+  hasRelazione(claim: Claim): boolean {
+    return this.relazioni.some(r =>
+      r.sinistroId === claim.id || r.claimCode === claim.code
     );
-    this.isLoading = false;
-    console.log('[Perito] Tutti i sinistri:', this.allClaims);
-    console.log('[Perito] Sinistri attivi:', this.claims);
   }
 
-  // ─── View ─────────────────────────────────────────────────────────────────
-
-  setView(view: ViewType): void {
-    this.currentView = view;
-    this.isSidebarOpen = false;
+  getRelazioneForClaim(claim: Claim): Relazione | undefined {
+    return this.relazioni.find(r =>
+      r.sinistroId === claim.id || r.claimCode === claim.code
+    );
   }
 
-  goHome(): void {
-    this.currentView = 'dashboard';
-    this.isSidebarOpen = false;
-    this.isSettingsOpen = false;
-    this.isClaimDetailOpen = false;
-    this.isContactModalOpen = false;
+  /** Dall'archivio, click sulla riga: apre direttamente la perizia collegata. */
+  openArchivedEntry(entry: ArchivedEntry): void {
+    this.openRelazioneDetail(entry.relazione);
   }
 
-  // ─── Claim detail ─────────────────────────────────────────────────────────
+  // ── Claim / Pratica detail ────────────────────────────────────────────────────
 
-  openClaimDetail(claim: Claim): void {
-    this.selectedClaim = claim;
+  openClaimDetail(c: Claim): void {
+    this.selectedClaim     = c;
     this.isClaimDetailOpen = true;
-    console.log('[Perito] Claim selezionato:', claim);
-    this.perieService.askPratica(claim.id, this.user.id);
+    this.selectedSinistro  = null;
+    this.mapCoords         = null;
+    this.stopAIPoll();
+    this.loadSinistroDetail(c.id);
   }
 
   closeClaimDetail(): void {
     this.isClaimDetailOpen = false;
-    setTimeout(() => { this.selectedClaim = null; }, 350);
+    this.selectedClaim     = null;
+    this.selectedSinistro  = null;
+    this.mapCoords         = null;
+    this.isGeocodingLocation = false;
+    this.stopAIPoll();
   }
 
-  // ─── Relazioni ────────────────────────────────────────────────────────────
+  /**
+   * Carica il dettaglio completo del sinistro e avvia il geocoding
+   * dell'indirizzo per mostrare la mappa.
+   */
+  private loadSinistroDetail(sinistroId: string): void {
+    this.isLoadingSinistro = true;
+    this.perizie.getSinistro(sinistroId).subscribe({
+      next: (data) => {
+        const analisi = data.analisi_ai;
+        this.selectedSinistro = {
+          id:          String(data._id ?? sinistroId),
+          targa:       data.targa,
+          marca:       data.marca,
+          modello:     data.modello,
+          dataEvento:  data.data_evento,
+          descrizione: data.descrizione,
+          luogo:       data.luogo ?? data.indirizzo,
+          tipoSinistro: data.tipo_sinistro,
+          stimaDanno:  data.stima_danno ?? data.importo,
+          stato:       data.stato,
+          compagnia:   data.compagnia_assicurativa ?? data.assicurazione,
+          immagini:    Array.isArray(data.immagini) ? data.immagini : [],
+          analisiAi: analisi ? {
+            testo:       analisi.testo,
+            modello:     analisi.modello,
+            stato:       analisi.stato ?? 'non_avviata',
+            dataAnalisi: analisi.data_analisi,
+            errore:      analisi.errore,
+          } : { stato: 'non_avviata' },
+        };
+        this.isLoadingSinistro = false;
+
+        // Avvia geocoding se c'è un indirizzo disponibile
+        const luogo = this.selectedSinistro.luogo
+                   ?? this.selectedClaim?.location;
+        if (luogo && luogo !== 'N/D') {
+          this.geocodeLocation(luogo);
+        }
+
+        // Se l'analisi AI è ancora in corso, avvia il polling
+        if (this.selectedSinistro.analisiAi?.stato === 'in_elaborazione') {
+          this.startAIPoll(sinistroId);
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoadingSinistro = false;
+        // Tenta comunque di geocodare il luogo dalla claim, se presente
+        const luogo = this.selectedClaim?.location;
+        if (luogo && luogo !== 'N/D') this.geocodeLocation(luogo);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // ── Geocoding (Nominatim / OpenStreetMap) ────────────────────────────────────
+
+  private async geocodeLocation(address: string): Promise<void> {
+    this.mapCoords = null;
+    this.isGeocodingLocation = true;
+    this.cdr.detectChanges();
+    try {
+      const url = `https://nominatim.openstreetmap.org/search`
+                + `?q=${encodeURIComponent(address)}`
+                + `&format=json&limit=1&addressdetails=0`;
+      const res = await fetch(url, {
+        headers: { 'Accept-Language': 'it,en' }
+      });
+      if (res.ok) {
+        const data: any[] = await res.json();
+        if (data && data.length > 0) {
+          this.mapCoords = {
+            lat: parseFloat(data[0].lat),
+            lng: parseFloat(data[0].lon)
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('Geocoding failed:', e);
+    }
+    this.isGeocodingLocation = false;
+    this.cdr.detectChanges();
+  }
+
+  getMapUrl(coords: { lat: number; lng: number }): SafeResourceUrl {
+    const delta = 0.004;
+    const bbox = `${coords.lng - delta},${coords.lat - delta},${coords.lng + delta},${coords.lat + delta}`;
+    const url  = `https://www.openstreetmap.org/export/embed.html`
+               + `?bbox=${bbox}&layer=mapnik`
+               + `&marker=${coords.lat},${coords.lng}`;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+
+  getOsmLink(coords: { lat: number; lng: number }): string {
+    return `https://www.openstreetmap.org/?mlat=${coords.lat}`
+         + `&mlon=${coords.lng}#map=17/${coords.lat}/${coords.lng}`;
+  }
+
+  // ── Polling analisi AI ────────────────────────────────────────────────────────
+
+  private startAIPoll(sinistroId: string): void {
+    let attempts = 0;
+    this.aiPollInterval = setInterval(() => {
+      attempts++;
+      if (attempts > 12 || !this.isClaimDetailOpen) {
+        this.stopAIPoll();
+        return;
+      }
+      this.perizie.getAnalisiAI(sinistroId).subscribe({
+        next: (analisi) => {
+          if (!this.selectedSinistro) return;
+          this.selectedSinistro.analisiAi = {
+            testo:       analisi.testo,
+            modello:     analisi.modello,
+            stato:       analisi.stato ?? 'non_avviata',
+            dataAnalisi: analisi.data_analisi,
+            errore:      analisi.errore,
+          };
+          if (analisi.stato !== 'in_elaborazione') this.stopAIPoll();
+          this.cdr.detectChanges();
+        }
+      });
+    }, 5000);
+  }
+
+  private stopAIPoll(): void {
+    if (this.aiPollInterval) {
+      clearInterval(this.aiPollInterval);
+      this.aiPollInterval = null;
+    }
+  }
+
+  // ── Lightbox immagini ─────────────────────────────────────────────────────────
+
+  openImage(url: string): void { this.lightboxUrl = url; }
+  closeLightbox(): void        { this.lightboxUrl = null; }
+
+  // ── Delete pratica ────────────────────────────────────────────────────────────
+
+  askDeleteClaim(c: Claim, event?: Event): void {
+    event?.stopPropagation();
+    this.confirmDeleteClaim = c;
+  }
+
+  confirmDelete(): void {
+    if (!this.confirmDeleteClaim) return;
+    const id = this.confirmDeleteClaim.id;
+    this.claims    = this.claims.filter(c => c.id !== id);
+    this.allClaims = this.allClaims.filter(c => c.id !== id);
+    if (this.selectedClaim?.id === id) this.closeClaimDetail();
+    this.confirmDeleteClaim = null;
+  }
+
+  cancelDelete(): void { this.confirmDeleteClaim = null; }
+
+  // ── Delete relazione ──────────────────────────────────────────────────────────
+
+  askDeleteRelazione(rel: Relazione, event?: Event): void {
+    event?.stopPropagation();
+    this.confirmDeleteRelazione = rel;
+  }
+
+  confirmDeleteRel(): void {
+    if (!this.confirmDeleteRelazione) return;
+    const rel = this.confirmDeleteRelazione;
+    if (rel.id) {
+      this.perizie.eliminaRelazione(rel.id).subscribe({
+        next:  () => { this.relazioni = this.relazioni.filter(r => r.id !== rel.id); this.confirmDeleteRelazione = null; this.cdr.detectChanges(); },
+        error: () => { this.relazioni = this.relazioni.filter(r => r.id !== rel.id); this.confirmDeleteRelazione = null; this.cdr.detectChanges(); }
+      });
+    } else {
+      this.relazioni = this.relazioni.filter(r => r !== rel);
+      this.confirmDeleteRelazione = null;
+    }
+  }
+
+  cancelDeleteRel(): void { this.confirmDeleteRelazione = null; }
+
+  // ── Relazione CRUD ────────────────────────────────────────────────────────────
 
   openNewRelazione(): void {
-    this.editingRelazione = {
-      id: '', claimCode: '', title: '', date: '', vehicle: '',
-      status: 'Bozza', tipoDanno: '', partiDanneggiate: [], description: '', conclusione: ''
-    };
-    this.isRelazioneOpen = true;
+    this.editingRelazione = { partiDanneggiate: [], status: 'Bozza' };
+    this.customParte      = '';
+    this.customTipoDanno  = '';
+    this.relazioneSinistro = null;
+    this.relazioneError   = '';
+    this.isRelazioneOpen  = true;
   }
 
-  openRelazioneFromClaim(claim: Claim): void {
+  openRelazioneFromClaim(c: Claim): void {
     this.editingRelazione = {
-      id: '', claimCode: claim.code, title: `Perizia ${claim.type}`,
-      date: new Date().toISOString().split('T')[0], vehicle: claim.vehicle,
-      status: 'Bozza', tipoDanno: '', partiDanneggiate: [], description: '', conclusione: ''
+      claimCode:        c.code,
+      sinistroId:       c.id,
+      vehicle:          c.vehicle,
+      partiDanneggiate: [],
+      status:           'Bozza',
     };
-    this.closeClaimDetail();
-    this.currentView = 'relazioni';
-    this.isRelazioneOpen = true;
+    this.customParte       = '';
+    this.customTipoDanno   = '';
+    this.relazioneError    = '';
+    // Riusa il sinistro già caricato per il claim detail, altrimenti lo ricarica
+    if (this.selectedSinistro && this.selectedSinistro.id === c.id) {
+      this.relazioneSinistro = this.selectedSinistro;
+    } else {
+      this.loadSinistroForRelazione(c.id);
+    }
+    this.isClaimDetailOpen = false;
+    this.isRelazioneOpen   = true;
   }
 
   openRelazioneDetail(rel: Relazione): void {
-    this.editingRelazione = { ...rel, partiDanneggiate: [...rel.partiDanneggiate] };
+    this.editingRelazione = { ...rel, partiDanneggiate: [...(rel.partiDanneggiate ?? [])] };
+    // Se il tipo danno salvato non è in lista, lo trattiamo come custom (chip "Altro" attiva)
+    if (rel.tipoDanno && !this.tipiDanno.includes(rel.tipoDanno)) {
+      this.customTipoDanno = rel.tipoDanno;
+      this.editingRelazione.tipoDanno = 'Altro';
+    } else {
+      this.customTipoDanno = '';
+    }
+    this.customParte       = '';
+    this.relazioneError    = '';
+    // Carica i dettagli del sinistro collegato per arricchire la card
+    if (rel.sinistroId) {
+      this.loadSinistroForRelazione(rel.sinistroId);
+    } else {
+      this.relazioneSinistro = null;
+    }
     this.isRelazioneOpen  = true;
   }
 
   closeRelazione(): void {
-    this.isRelazioneOpen = false;
+    this.isRelazioneOpen   = false;
+    this.relazioneError    = '';
+    this.customParte       = '';
+    this.customTipoDanno   = '';
+    this.relazioneSinistro = null;
   }
 
-  saveRelazione(): void {
-    const rel = this.editingRelazione as Relazione;
-    if (rel.id) {
-      const idx = this.relazioni.findIndex(r => r.id === rel.id);
-      if (idx > -1) this.relazioni[idx] = { ...rel };
-    } else {
-      rel.id     = `R-${Date.now()}`;
-      rel.status = 'Bozza';
-      this.relazioni.unshift({ ...rel });
-      const claim = this.allClaims.find(c => c.code === rel.claimCode);
-      if (claim) {
-        console.log('[Perito] Creo perizia su API per sinistro:', claim.id);
-        this.perieService.askCreaPerizia(claim.id, this.user.id, {
-          data_perizia:  rel.date,
-          note_tecniche: rel.description,
-          documenti:     []
-        });
+  /** Carica il dettaglio del sinistro per popolare la card riassuntiva nel modal relazione. */
+  private loadSinistroForRelazione(sinistroId: string): void {
+    this.relazioneSinistro = null;
+    this.isLoadingRelazioneSinistro = true;
+    this.cdr.detectChanges();
+    this.perizie.getSinistro(sinistroId).subscribe({
+      next: (data) => {
+        const analisi = data.analisi_ai;
+        this.relazioneSinistro = {
+          id:          String(data._id ?? sinistroId),
+          targa:       data.targa,
+          marca:       data.marca,
+          modello:     data.modello,
+          dataEvento:  data.data_evento,
+          descrizione: data.descrizione,
+          luogo:       data.luogo ?? data.indirizzo,
+          tipoSinistro: data.tipo_sinistro,
+          stimaDanno:  data.stima_danno ?? data.importo,
+          stato:       data.stato,
+          compagnia:   data.compagnia_assicurativa ?? data.assicurazione,
+          immagini:    Array.isArray(data.immagini) ? data.immagini : [],
+          analisiAi: analisi ? {
+            testo:       analisi.testo,
+            modello:     analisi.modello,
+            stato:       analisi.stato ?? 'non_avviata',
+            dataAnalisi: analisi.data_analisi,
+            errore:      analisi.errore,
+          } : { stato: 'non_avviata' },
+        };
+        this.isLoadingRelazioneSinistro = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.isLoadingRelazioneSinistro = false;
+        this.cdr.detectChanges();
       }
-    }
-    this.closeRelazione();
-  }
-
-  exportRelazione(rel: Relazione): void {
-    alert(`Export PDF per ${rel.claimCode} in preparazione...`);
-  }
-
-  addParte(p: string): void {
-    if (!this.editingRelazione.partiDanneggiate.includes(p))
-      this.editingRelazione.partiDanneggiate.push(p);
-  }
-
-  removeParte(i: number): void {
-    this.editingRelazione.partiDanneggiate.splice(i, 1);
-  }
-
-  getRelazioneStatusClass(s: string): string {
-    const m: Record<string, string> = {
-      'Bozza':      'bg-yellow-50 text-yellow-700',
-      'Completata': 'bg-emerald-50 text-emerald-700',
-      'Inviata':    'bg-blue-50 text-blue-700',
-    };
-    return m[s] ?? 'bg-slate-50 text-slate-500';
-  }
-
-  // ─── Contact modal ────────────────────────────────────────────────────────
-
-  openContactModal(claimCode = ''): void {
-    this.contactForm.claimCode = claimCode;
-    this.contactSent = false;
-    this.isContactModalOpen = true;
-  }
-
-  closeContactModal(): void {
-    this.isContactModalOpen = false;
-    this.contactSent = false;
-  }
-
-  sendContactForm(): void {
-    this.contactSent = true;
-    setTimeout(() => { this.closeContactModal(); }, 2000);
-  }
-
-  // ─── Sidebar / Settings ──────────────────────────────────────────────────
-
-  toggleSidebar(): void {
-    this.isSidebarOpen = !this.isSidebarOpen;
-  }
-
-  openSettings(): void {
-    this.isSidebarOpen = false;
-    this.isSettingsOpen = true;
-    setTimeout(() => { this.isSettingsAnimating = true; }, 16);
-  }
-
-  closeSettings(): void {
-    this.isSettingsAnimating = false;
-    setTimeout(() => { this.isSettingsOpen = false; }, 350);
-  }
-
-  saveSettings(): void {
-    localStorage.setItem('perito_settings', JSON.stringify(this.settings));
-    this.user.full_name = this.settings.full_name;
-    this.user.email     = this.settings.email;
-    this.settingsSaved  = true;
-    setTimeout(() => { this.settingsSaved = false; }, 2500);
-  }
-
-  loadSettings(): void {
-    const saved = localStorage.getItem('perito_settings');
-    if (saved) {
-      this.settings       = JSON.parse(saved);
-      this.user.full_name = this.settings.full_name;
-    }
-  }
-
-  switchRole(role: string): void {
-    this.currentRole = role;
-  }
-
-  // ─── Filters ──────────────────────────────────────────────────────────────
-
-  get filteredClaims(): Claim[] {
-    return this.allClaims.filter(c => {
-      if (this.filterStatus   && c.status !== this.filterStatus) return false;
-      if (this.filterPriority && c.priority !== this.filterPriority) return false;
-      if (this.filterMonth    && c.month !== parseInt(this.filterMonth)) return false;
-      if (this.filterSearch) {
-        const s = this.filterSearch.toLowerCase();
-        if (!c.code.toLowerCase().includes(s) &&
-            !c.location.toLowerCase().includes(s) &&
-            !c.vehicle.toLowerCase().includes(s) &&
-            !c.insuranceCompany.toLowerCase().includes(s)) return false;
-      }
-      return true;
     });
   }
 
+
+  /** Per il modal: restituisce la Claim collegata alla relazione in editing (se c'è). */
+  get editingLinkedClaim(): Claim | null {
+    if (!this.editingRelazione.claimCode) return null;
+    return this.allClaims.find(c => c.code === this.editingRelazione.claimCode) ?? null;
+  }
+
+  saveRelazione(): void {
+    this.relazioneError = '';
+
+    const claim = this.allClaims.find(c => c.code === this.editingRelazione.claimCode);
+    if (!claim) { this.relazioneError = 'Seleziona un sinistro valido prima di salvare.'; return; }
+
+    // Se "Altro" è selezionato e l'utente ha scritto un tipo personalizzato, usa quello
+    if (this.editingRelazione.tipoDanno === 'Altro' && this.customTipoDanno?.trim()) {
+      this.editingRelazione.tipoDanno = this.customTipoDanno.trim();
+    }
+
+    this.editingRelazione.sinistroId = claim.id;
+    this.editingRelazione.vehicle    = claim.vehicle;
+
+    const u        = this.auth.currentUser as any;
+    const peritoId = String(u?.id ?? '');
+    if (!peritoId) { this.relazioneError = 'Sessione scaduta. Rieffettua il login.'; return; }
+
+    const sinistroId = this.editingRelazione.sinistroId!;
+    const now = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    if (this.editingRelazione.id) {
+      this.perizie.aggiornaRelazione(sinistroId, peritoId, this.editingRelazione).subscribe({
+        next: () => {
+          const idx = this.relazioni.findIndex(r => r.id === this.editingRelazione.id);
+          if (idx !== -1) {
+            this.relazioni = [
+              ...this.relazioni.slice(0, idx),
+              { ...(this.editingRelazione as Relazione) },
+              ...this.relazioni.slice(idx + 1),
+            ];
+          }
+          this.isRelazioneOpen = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => { this.relazioneError = 'Errore durante il salvataggio. Riprova.'; console.error(err); }
+      });
+    } else {
+      this.perizie.creaRelazione(sinistroId, peritoId, this.editingRelazione).subscribe({
+        next: (res: any) => {
+          const nuova: Relazione = {
+            ...(this.editingRelazione as Relazione),
+            id:        res.id_perizia ?? String(Date.now()),
+            status:    'Bozza',
+            createdAt: now,
+          };
+          this.relazioni       = [...this.relazioni, nuova];
+          this.isRelazioneOpen = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => { this.relazioneError = 'Errore durante il salvataggio. Riprova.'; console.error(err); }
+      });
+    }
+  }
+
+  addParte(p: string): void {
+    if (!this.editingRelazione.partiDanneggiate) this.editingRelazione.partiDanneggiate = [];
+    this.editingRelazione.partiDanneggiate = [...this.editingRelazione.partiDanneggiate, p];
+  }
+
+  removeParte(i: number): void {
+    this.editingRelazione.partiDanneggiate = this.editingRelazione.partiDanneggiate?.filter((_, idx) => idx !== i);
+  }
+
+  /** Aggiunge una parte danneggiata personalizzata digitata dall'utente. */
+  addCustomParte(): void {
+    const value = this.customParte?.trim();
+    if (!value) return;
+    if (!this.editingRelazione.partiDanneggiate) this.editingRelazione.partiDanneggiate = [];
+    // Evita duplicati (case-insensitive)
+    const exists = this.editingRelazione.partiDanneggiate
+      .some(p => p.toLowerCase() === value.toLowerCase());
+    if (!exists) {
+      this.editingRelazione.partiDanneggiate = [...this.editingRelazione.partiDanneggiate, value];
+    }
+    this.customParte = '';
+  }
+
+  /** Vero quando il tipo danno selezionato è "Altro" (mostra l'input custom). */
+  get isTipoDannoCustom(): boolean {
+    return this.editingRelazione.tipoDanno === 'Altro';
+  }
+
+  /** Aggiorna la priorità di una pratica (locale). */
+  updateClaimPriority(claim: Claim, priority: 'alta' | 'media' | 'bassa'): void {
+    if (!claim || claim.priority === priority) return;
+    claim.priority = priority;
+    // Riallinea i riferimenti nelle liste claims/allClaims
+    const update = (list: Claim[]) => list.map(c => c.id === claim.id ? { ...c, priority } : c);
+    this.claims    = update(this.claims);
+    this.allClaims = update(this.allClaims);
+    if (this.selectedClaim?.id === claim.id) {
+      this.selectedClaim = { ...this.selectedClaim, priority };
+    }
+    // TODO: chiamare endpoint backend per persistere quando disponibile
+    this.cdr.detectChanges();
+  }
+
+  // ── Export PDF ────────────────────────────────────────────────────────────────
+
+  exportRelazione(rel: Relazione, event?: Event): void {
+    event?.stopPropagation();
+    const doc    = new jsPDF({ unit: 'mm', format: 'a4' });
+    const W      = 210;
+    const margin = 20;
+    let y        = 0;
+
+    doc.setFillColor(9, 99, 126);
+    doc.rect(0, 0, W, 38, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('SAFECLAIM', margin, 16);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Relazione Peritale', margin, 23);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text(rel.title ?? 'Relazione', margin, 32);
+    doc.setFontSize(8);
+    doc.setTextColor(200, 240, 255);
+    doc.text(rel.status.toUpperCase(), W - margin, 32, { align: 'right' });
+
+    y = 50;
+    doc.setTextColor(15, 23, 42);
+
+    const section = (label: string) => {
+      doc.setFillColor(241, 245, 249);
+      doc.roundedRect(margin, y, W - margin * 2, 7, 1, 1, 'F');
+      doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 116, 139);
+      doc.text(label.toUpperCase(), margin + 3, y + 4.8);
+      y += 11; doc.setTextColor(15, 23, 42);
+    };
+
+    const row = (label: string, value: string) => {
+      doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 116, 139);
+      doc.text(label, margin, y);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(15, 23, 42);
+      const lines = doc.splitTextToSize(value, W - margin * 2 - 45);
+      doc.text(lines, margin + 45, y);
+      y += 6 * lines.length + 2;
+    };
+
+    section('Riferimento Sinistro');
+    row('Codice Sinistro', rel.claimCode ?? '—');
+    row('Veicolo',         rel.vehicle   ?? '—');
+    row('Data Redazione',  rel.createdAt ?? new Date().toLocaleDateString('it-IT'));
+    y += 4;
+
+    section('Valutazione Danno');
+    row('Tipo Danno',        rel.tipoDanno ?? '—');
+    row('Stima (€)',         rel.estimatedDamage != null ? `€ ${rel.estimatedDamage.toLocaleString('it-IT')}` : '—');
+    row('Parti Danneggiate', rel.partiDanneggiate?.join(', ') || '—');
+    y += 4;
+
+    if (rel.description) {
+      section('Descrizione Tecnica');
+      doc.setFontSize(8.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(15, 23, 42);
+      const lines = doc.splitTextToSize(rel.description, W - margin * 2);
+      doc.text(lines, margin, y);
+      y += 6 * lines.length + 6;
+    }
+
+    if (rel.conclusione) {
+      section('Conclusione Peritale');
+      doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+      if      (rel.conclusione === 'Danno totale')   doc.setTextColor(220, 38, 38);
+      else if (rel.conclusione === 'Riparabile')     doc.setTextColor(5, 150, 105);
+      else if (rel.conclusione === 'Frode sospetta') doc.setTextColor(217, 119, 6);
+      else                                           doc.setTextColor(9, 99, 126);
+      doc.text(rel.conclusione, margin, y);
+      y += 10; doc.setTextColor(15, 23, 42);
+    }
+
+    const pageH = 297;
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margin, pageH - 20, W - margin, pageH - 20);
+    doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(148, 163, 184);
+    doc.text(`SafeClaim · Documento generato il ${new Date().toLocaleDateString('it-IT')}`, margin, pageH - 14);
+    doc.text(rel.claimCode ?? '', W - margin, pageH - 14, { align: 'right' });
+    doc.save(`Relazione_${rel.claimCode ?? 'perizia'}_${Date.now()}.pdf`);
+  }
+
+  // ── Filtri ────────────────────────────────────────────────────────────────────
+
   resetFilters(): void {
-    this.filterStatus = ''; this.filterType = '';
-    this.filterMonth  = ''; this.filterPriority = ''; this.filterSearch = '';
+    this.filterSearch = ''; this.filterStatus = ''; this.filterPriority = '';
+    this.filterDateFrom = ''; this.filterDateTo = '';
   }
 
-  get totalArchiveAmount(): number {
-    return this.filteredClaims.reduce((s, c) => s + (c.amount || 0), 0);
+  // ── Contatto ──────────────────────────────────────────────────────────────────
+
+  openContactModal(code: string): void {
+    this.contactForm = { claimCode: code, insurance: '', priority: 'normale', subject: '', message: '' };
+    this.contactSent        = false;
+    this.isContactModalOpen = true;
   }
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────
+  closeContactModal(): void { this.isContactModalOpen = false; }
 
-  getStatusLabel(status: string): string {
-    const m: Record<string, string> = {
-      'in_valutazione': 'In Valutazione', 'assegnato': 'Assegnato',
-      'chiuso': 'Chiuso', 'in_attesa': 'In Attesa', 'approvato': 'Approvato'
-    };
-    return m[status] || status;
+  sendContactForm(): void {
+    this.contactSent = true;
+    setTimeout(() => this.closeContactModal(), 2000);
   }
 
-  getStatusClass(status: string): string {
-    const m: Record<string, string> = {
-      'in_valutazione': 'bg-orange-50 text-orange-700 border-orange-200',
-      'assegnato':      'bg-blue-50 text-blue-700 border-blue-200',
-      'chiuso':         'bg-slate-50 text-slate-500 border-slate-200',
-      'in_attesa':      'bg-yellow-50 text-yellow-700 border-yellow-100',
-      'approvato':      'bg-green-50 text-green-700 border-green-200'
-    };
-    return m[status] || 'bg-slate-50 text-slate-500 border-slate-200';
-  }
-
-  getPriorityClass(p: string): string {
-    const m: Record<string, string> = {
-      'alta': 'bg-red-50 text-rose-600', 'media': 'bg-orange-50 text-orange-600', 'bassa': 'bg-green-50 text-green-600'
-    };
-    return m[p] || '';
-  }
+  // ── Template helpers ──────────────────────────────────────────────────────────
 
   getVehicleType(vehicle: string): VehicleType {
     const v = vehicle.toLowerCase();
-    const motorcycle = ['ducati','yamaha','kawasaki','harley','honda cb','ktm','aprilia','triumph','bmw r','bmw gs','moto guzzi','vespa','piaggio'];
-    const truck      = ['iveco','scania','man ','daf ','volvo fh','mercedes actros','man tgx','man tgs'];
-    const van        = ['transporter','transit','sprinter','ducato','master','vito','crafter','boxer','daily'];
-    const suv        = ['suv','qashqai','tucson','sportage','tiguan','rav4','x5','x3','xc60','discovery','gla','glb','glc','mokka','captur','kuga'];
-    if (motorcycle.some(b => v.includes(b))) return 'motorcycle';
-    if (truck.some(b => v.includes(b)))      return 'truck';
-    if (van.some(b => v.includes(b)))        return 'van';
-    if (suv.some(b => v.includes(b)))        return 'suv';
+    if (['ducati','yamaha','kawasaki','harley','honda cb','honda cbr','ktm','aprilia',
+         'triumph','bmw r','bmw gs','vespa','piaggio'].some(b => v.includes(b))) return 'motorcycle';
+    if (['iveco','scania','man ','daf ','volvo fh','mercedes actros','mercedes arocs'].some(b => v.includes(b))) return 'truck';
+    if (['transporter','transit','sprinter','ducato','master','jumper','vito',
+         'crafter','boxer','daily'].some(b => v.includes(b))) return 'van';
+    if (['qashqai','tucson','sportage','tiguan','rav4','cr-v','x5','x3','xc60',
+         'discovery','defender','renegade','glc','gle','mokka','captur','kuga'].some(b => v.includes(b))) return 'suv';
     return 'car';
   }
 
-  getRoleIcon(role: string): string {
-    const icons: Record<string, string> = {
-      'Perito':           'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
-      'Automobilista':    'M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17h5',
-      'Assicurazione':    'M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z',
-      'Officina':         'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
-      'Supporto Stradale':'M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z'
+  getStatusLabel(status: string): string {
+    const map: Record<string, string> = {
+      in_valutazione:'In Valutazione', assegnato:'Assegnato',
+      chiuso:'Chiuso', in_attesa:'In Attesa', approvato:'Approvato',
     };
-    return icons[role] || icons['Perito'];
+    return map[status] ?? status;
+  }
+
+  getStatusClass(status: string): string {
+    const map: Record<string, string> = {
+      in_valutazione: 'bg-orange-50 text-orange-700 border-orange-200',
+      assegnato:      'bg-blue-50 text-blue-700 border-blue-200',
+      chiuso:         'bg-slate-50 text-slate-500 border-slate-200',
+      in_attesa:      'bg-yellow-50 text-yellow-700 border-yellow-100',
+      approvato:      'bg-green-50 text-green-700 border-green-200',
+    };
+    return map[status] ?? 'bg-slate-50 text-slate-500 border-slate-200';
+  }
+
+  getPriorityClass(priority: string): string {
+    const map: Record<string, string> = { alta:'bg-red-50 text-rose-600', media:'bg-orange-50 text-orange-600', bassa:'bg-green-50 text-green-600' };
+    return map[priority] ?? '';
+  }
+
+  getRelazioneStatusClass(status: string): string {
+    const map: Record<string, string> = { Bozza:'bg-slate-100 text-slate-500', Completata:'bg-green-100 text-green-700', Inviata:'bg-blue-100 text-blue-700' };
+    return map[status] ?? 'bg-slate-100 text-slate-500';
+  }
+
+  getConclusioneClass(c: string | undefined): string {
+    switch (c) {
+      case 'Danno totale':   return 'bg-red-50 text-red-700 border-red-100';
+      case 'Riparabile':     return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+      case 'Frode sospetta': return 'bg-amber-50 text-amber-700 border-amber-100';
+      case 'In valutazione': return 'bg-blue-50 text-blue-700 border-blue-100';
+      default:               return 'bg-slate-50 text-slate-500 border-slate-200';
+    }
+  }
+
+  formatDate(isoStr?: string): string {
+    if (!isoStr) return '';
+    try {
+      return new Date(isoStr).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch { return isoStr; }
   }
 }

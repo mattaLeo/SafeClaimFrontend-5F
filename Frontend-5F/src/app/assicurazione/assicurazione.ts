@@ -9,7 +9,6 @@ import { CommonModule } from '@angular/common';
   styleUrl: './assicurazione.css',
 })
 export class Assicurazione implements OnInit {
-
   constructor(public sinistri: Sinistri) {}
 
   ngOnInit(): void {

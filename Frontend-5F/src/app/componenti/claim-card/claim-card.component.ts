@@ -11,21 +11,21 @@ import { Claim, VehicleType } from '../../perito/perito';
 })
 export class ClaimCardComponent {
 
-  /** La perizia da visualizzare (obbligatorio) */
   @Input({ required: true }) claim!: Claim;
-
-  /** Emette la perizia quando l'utente clicca sulla card */
-  @Output() cardClick = new EventEmitter<Claim>();
+  @Output() cardClick   = new EventEmitter<Claim>();
+  @Output() deleteClick = new EventEmitter<Claim>();
 
   onCardClick(): void {
     this.cardClick.emit(this.claim);
   }
 
-  // ─── Vehicle type ──────────────────────────────────────────────────────────
+  onDeleteClick(event: Event): void {
+    event.stopPropagation();
+    this.deleteClick.emit(this.claim);
+  }
 
   get vehicleType(): VehicleType {
     const v = this.claim.vehicle.toLowerCase();
-
     const motorcycleBrands = [
       'ducati','yamaha','kawasaki','harley','honda cb','honda cbr','honda sh',
       'ktm','aprilia','triumph','bmw r','bmw gs','bmw f','moto guzzi',
@@ -33,21 +33,18 @@ export class ClaimCardComponent {
       'sym moto','cfmoto','husqvarna','beta moto'
     ];
     if (motorcycleBrands.some(b => v.includes(b))) return 'motorcycle';
-
     const truckBrands = [
       'iveco','scania','man ','daf ','volvo fh','volvo fm','mercedes actros',
       'mercedes arocs','renault t ','kenworth','peterbilt','mercedes atego',
       'man tgx','man tgs','man tgl'
     ];
     if (truckBrands.some(b => v.includes(b))) return 'truck';
-
     const vanKeywords = [
       'transporter','transit','sprinter','ducato','master','jumper','vito',
       'crafter','boxer','daily','trafic','expert','berlingo cargo','kangoo',
       'caddy cargo'
     ];
     if (vanKeywords.some(b => v.includes(b))) return 'van';
-
     const suvKeywords = [
       'qashqai','tucson','sportage','tiguan','rav4','cr-v','x5','x3','x1',
       'xc60','xc40','discovery','freelander','defender','renegade','compass',
@@ -55,11 +52,8 @@ export class ClaimCardComponent {
       'arona','ateca','karoq','kodiaq','yaris cross','ix35','ix55','santa fe'
     ];
     if (suvKeywords.some(b => v.includes(b))) return 'suv';
-
     return 'car';
   }
-
-  // ─── Status helpers ────────────────────────────────────────────────────────
 
   get statusLabel(): string {
     const map: Record<string, string> = {

@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
 import { sinistro } from '../models/sinistro.model';
 import { HttpClient } from '@angular/common/http';
+import { tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root',
@@ -13,42 +14,32 @@ export class Sinistri {
   obsSinistroId!: Observable<sinistro>
   obsCreateSinistro!: Observable<any>
 
+  private sinistriSubject = new BehaviorSubject<sinistro[]>([]);
+  sinistri$: Observable<sinistro[]> = this.sinistriSubject.asObservable();
   sinistri: sinistro[] = [];
-  sinistroById!: sinistro
 
   constructor(public http: HttpClient) {}
 
   askSinistri() {
-    this.obsSinistri = this.http.get<sinistro[]>(`${this.link}sinistri`)
-    this.obsSinistri.subscribe(data => this.getSinistri(data))
+    this.http.get<sinistro[]>(`${this.link}sinistri`).subscribe({
+      next: (data) => {
+        this.sinistri = data;
+        this.sinistriSubject.next(data);
+        console.log("Sinistri caricati:", data);
+      },
+      error: (err: any) => console.error("Errore download sinistri:", err)
+    });
   }
 
-  getSinistri(d: sinistro[]) {
-    this.sinistri = d
-    console.log(this.sinistri)
+  createSinistro(nuovoSinistro: sinistro): Observable<any> {
+    return this.http.post(`${this.link}sinistro`, nuovoSinistro).pipe(
+      tap(() => this.askSinistri())
+    );
   }
 
-  askSinistroById(id: number) {
-    this.obsSinistroId = this.http.get<sinistro>(`${this.link}sinistri/${id}`)
-    this.obsSinistroId.subscribe(data => this.getSinistroById(data))
-  }
-
-  getSinistroById(d: sinistro) {
-    this.sinistroById = d
-    console.log(this.sinistroById)
-  }
-
-  createSinistro(automobilista_id: number, targa: string, data_evento: Date, descrizione: string): Observable<any> {
-    const newSinistro = {
-      // CAMBIA QUI: usa lo stesso nome che si aspetta il backend
-      automobilista_id: automobilista_id, 
-      targa: targa,
-      data_evento: data_evento,
-      descrizione: descrizione
-    };
-
-    console.log("Sto inviando questo oggetto:", newSinistro); // Utile per il debug
-
-    return this.http.post(`${this.link}sinistro`, newSinistro);
-  }
+  uploadImmagini(sinistroId: string, files: File[]): Observable<any> {
+  const formData = new FormData();
+  files.forEach(file => formData.append('immagini', file, file.name));
+  return this.http.post(`${this.link}sinistro/${sinistroId}/immagini`, formData);
+}
 }
