@@ -8,13 +8,14 @@ import { tap } from 'rxjs/operators';
   providedIn: 'root',
 })
 export class SinistriService {
-  link = "https://humble-palm-tree-pjjxxg94v5qx39gv-7000.app.github.dev/"
+  link = "https://super-duper-space-zebra-977ppqwvr6q62x5rw-7000.app.github.dev/"
 
   obsSinistri!: Observable<sinistro[]>
   obsSinistroId!: Observable<sinistro>
   obsCreateSinistro!: Observable<any>
 
   private sinistriSubject = new BehaviorSubject<sinistro[]>([]);
+  sinistri$: Observable<sinistro[]> = this.sinistriSubject.asObservable();
   sinistri: sinistro[] = [];
 
   constructor(public http: HttpClient) {}

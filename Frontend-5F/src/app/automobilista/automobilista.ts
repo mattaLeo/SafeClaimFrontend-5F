@@ -38,9 +38,9 @@ export class Automobilista implements OnInit {
   }
 
   caricaDati(): void {
-    this.sinistriService.obsSinistri.subscribe({
-      next: (data: any) => {
-        this.sinistri = Array.isArray(data) ? data : data.data || [];
+    this.sinistriService.sinistri$.subscribe({
+      next: (data: sinistro[]) => {
+        this.sinistri = data;
         this.cdr.detectChanges();
       }
     });
