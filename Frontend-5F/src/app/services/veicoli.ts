@@ -7,8 +7,7 @@ import { Veicolo } from '../models/veicolo.model';
   providedIn: 'root',
 })
 export class VeicoliService {
-  // ATTENZIONE: Assicurati che l'URL punti alla porta 5000 (MySQL/Python)
-  private link = 'https://super-duper-space-zebra-977ppqwvr6q62x5rw-5000.app.github.dev/'; 
+  private link = 'https://improved-palm-tree-pjjxxg9v4j6g2xq9-5000.app.github.dev/'; 
 
   public veicoli: Veicolo[] = [];
 
