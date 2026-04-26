@@ -6,7 +6,7 @@ import { NuovoSinistroComponent } from '../nuovo-sinistro/nuovo-sinistro.compone
 import { DettaglioSinistroComponent } from '../dettagli-sinistro/dettagli-sinistro';
 import { sinistro } from '../models/sinistro.model';
 import { VeicoliService } from '../services/veicoli';
-import { SinistriService } from '../services/sinistri';
+import { Sinistri } from '../services/sinistri';
 import { AuthService } from '../services/auth';
 import { User } from '../models/user.model';
 
@@ -27,7 +27,7 @@ export class Automobilista implements OnInit {
   constructor(
     public auth: AuthService,
     public veicoliService: VeicoliService,
-    private sinistriService: SinistriService,
+    private Sinistri: Sinistri,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
@@ -38,13 +38,13 @@ export class Automobilista implements OnInit {
   }
 
   caricaDati(): void {
-    this.sinistriService.sinistri$.subscribe({
+    this.Sinistri.sinistri$.subscribe({
       next: (data: sinistro[]) => {
         this.sinistri = data;
         this.cdr.detectChanges();
       }
     });
-    this.sinistriService.askSinistri();
+    this.Sinistri.askSinistri();
 
     const userId = this.auth.currentUser?.id;
     if (userId) {

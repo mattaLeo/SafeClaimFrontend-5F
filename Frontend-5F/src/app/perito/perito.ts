@@ -85,10 +85,8 @@ export class Perito implements OnInit, OnDestroy {
   currentView: 'dashboard' | 'archivio' | 'relazioni' = 'dashboard';
   isClaimDetailOpen   = false;
   isRelazioneOpen     = false;
-  isContactModalOpen  = false;
   isLoading           = true;
   isRelazioniLoading  = false;
-  contactSent         = false;
   relazioneError      = '';
 
   selectedClaim:    Claim | null             = null;
@@ -219,13 +217,8 @@ export class Perito implements OnInit, OnDestroy {
     // Vari
     'Antenna', 'Targa anteriore', 'Targa posteriore', 'Modanature laterali'
   ];
-  conclusioni        = ['Riparabile', 'Danno totale', 'In valutazione', 'Frode sospetta'];
-  insuranceCompanies = [
-    'Generali','Allianz','UnipolSai','AXA','Zurich',
-    'Reale Mutua','Cattolica','Sara Assicurazioni'
-  ];
+  conclusioni = ['Riparabile', 'Danno totale', 'In valutazione', 'Frode sospetta'];
 
-  contactForm: any = { claimCode:'', insurance:'', priority:'normale', subject:'', message:'' };
   confirmDeleteClaim:     Claim | null     = null;
   confirmDeleteRelazione: Relazione | null = null;
 
@@ -783,7 +776,7 @@ export class Perito implements OnInit, OnDestroy {
     doc.setFont('helvetica', 'bold');
     doc.text(rel.title ?? 'Relazione', margin, 32);
     doc.setFontSize(8);
-    doc.setTextColor(200, 240, 255);
+    doc.setTextColor(235, 244, 246);
     doc.text(rel.status.toUpperCase(), W - margin, 32, { align: 'right' });
 
     y = 50;
@@ -853,21 +846,6 @@ export class Perito implements OnInit, OnDestroy {
     this.filterDateFrom = ''; this.filterDateTo = '';
   }
 
-  // ── Contatto ──────────────────────────────────────────────────────────────────
-
-  openContactModal(code: string): void {
-    this.contactForm = { claimCode: code, insurance: '', priority: 'normale', subject: '', message: '' };
-    this.contactSent        = false;
-    this.isContactModalOpen = true;
-  }
-
-  closeContactModal(): void { this.isContactModalOpen = false; }
-
-  sendContactForm(): void {
-    this.contactSent = true;
-    setTimeout(() => this.closeContactModal(), 2000);
-  }
-
   // ── Template helpers ──────────────────────────────────────────────────────────
 
   getVehicleType(vehicle: string): VehicleType {
@@ -893,7 +871,7 @@ export class Perito implements OnInit, OnDestroy {
   getStatusClass(status: string): string {
     const map: Record<string, string> = {
       in_valutazione: 'bg-orange-50 text-orange-700 border-orange-200',
-      assegnato:      'bg-blue-50 text-blue-700 border-blue-200',
+      assegnato:      'bg-[#EBF4F6] text-[#09637E] border-[#7AB2B2]/40',
       chiuso:         'bg-slate-50 text-slate-500 border-slate-200',
       in_attesa:      'bg-yellow-50 text-yellow-700 border-yellow-100',
       approvato:      'bg-green-50 text-green-700 border-green-200',
@@ -907,7 +885,11 @@ export class Perito implements OnInit, OnDestroy {
   }
 
   getRelazioneStatusClass(status: string): string {
-    const map: Record<string, string> = { Bozza:'bg-slate-100 text-slate-500', Completata:'bg-green-100 text-green-700', Inviata:'bg-blue-100 text-blue-700' };
+    const map: Record<string, string> = {
+      Bozza:      'bg-slate-100 text-slate-500',
+      Completata: 'bg-green-100 text-green-700',
+      Inviata:    'bg-[#EBF4F6] text-[#09637E]',
+    };
     return map[status] ?? 'bg-slate-100 text-slate-500';
   }
 
@@ -916,7 +898,7 @@ export class Perito implements OnInit, OnDestroy {
       case 'Danno totale':   return 'bg-red-50 text-red-700 border-red-100';
       case 'Riparabile':     return 'bg-emerald-50 text-emerald-700 border-emerald-100';
       case 'Frode sospetta': return 'bg-amber-50 text-amber-700 border-amber-100';
-      case 'In valutazione': return 'bg-blue-50 text-blue-700 border-blue-100';
+      case 'In valutazione': return 'bg-[#EBF4F6] text-[#09637E] border-[#7AB2B2]/40';
       default:               return 'bg-slate-50 text-slate-500 border-slate-200';
     }
   }

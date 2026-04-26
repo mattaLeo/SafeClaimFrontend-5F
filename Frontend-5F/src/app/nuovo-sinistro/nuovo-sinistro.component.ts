@@ -1,7 +1,7 @@
 import { Component, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SinistriService } from '../services/sinistri';
+import { Sinistri } from '../services/sinistri';
 import { VeicoliService } from '../services/veicoli';
 import { AuthService } from '../services/auth';
 import { sinistro } from '../models/sinistro.model';
@@ -28,7 +28,7 @@ export class NuovoSinistroComponent implements OnInit {
   successMessage = '';
 
   constructor(
-    private sinistriService: SinistriService,
+    private sinistriService: Sinistri,
     public veicoliService: VeicoliService,
     private auth: AuthService
   ) {}
@@ -67,14 +67,14 @@ export class NuovoSinistroComponent implements OnInit {
     };
 
     this.sinistriService.createSinistro(payload).subscribe({
-      next: (res) => {
+      next: (res: any) => {
         this.loading = false;
         this.successMessage = "Sinistro inviato con successo!";
         this.created.emit(res);
         // Chiudiamo il popup dopo un secondo e mezzo
         setTimeout(() => this.close(), 1500);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.loading = false;
         this.errorMessage = "Errore durante il salvataggio. Riprova.";
         console.error("Errore salvataggio sinistro:", err);

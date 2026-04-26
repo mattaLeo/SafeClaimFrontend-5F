@@ -69,7 +69,7 @@ export class ClaimCardComponent {
   get statusClass(): string {
     const map: Record<string, string> = {
       'in_valutazione': 'bg-orange-50 text-orange-700 border-orange-200',
-      'assegnato':      'bg-blue-50 text-blue-700 border-blue-200',
+      'assegnato':      'bg-[#EBF4F6] text-[#09637E] border-[#7AB2B2]/40',
       'chiuso':         'bg-slate-50 text-slate-500 border-slate-200',
       'in_attesa':      'bg-yellow-50 text-yellow-700 border-yellow-100',
       'approvato':      'bg-green-50 text-green-700 border-green-200',

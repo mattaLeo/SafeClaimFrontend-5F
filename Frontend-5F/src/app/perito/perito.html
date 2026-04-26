@@ -91,8 +91,8 @@
             </div>
           </div>
 
-          <div class="bg-white p-5 px-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 border-l-4 border-l-indigo-500 hover:shadow-md transition-shadow">
-            <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+          <div class="bg-white p-5 px-6 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4 border-l-4 border-l-[#09637E] hover:shadow-md transition-shadow">
+            <div class="w-12 h-12 bg-[#EBF4F6] text-[#09637E] rounded-xl flex items-center justify-center">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
@@ -297,7 +297,7 @@
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-black tracking-tight">Relazioni Peritali</h2>
             <button (click)="openNewRelazione()"
-              class="flex items-center gap-2 px-4 py-2 text-xs font-black text-white bg-[#09637E] rounded-lg hover:bg-[#088395] transition-all uppercase shadow-lg shadow-[#063d4a]/20">
+              class="flex items-center gap-2 px-4 py-2 text-xs font-black text-white bg-[#09637E] rounded-lg hover:bg-[#088395] transition-all uppercase shadow-lg shadow-[#09637E]/20">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
               Nuova Relazione
             </button>
@@ -366,7 +366,7 @@
         <!-- Header con gradient -->
         <div class="px-7 py-5 border-b border-slate-100 flex items-start justify-between bg-gradient-to-r from-[#EBF4F6] via-white to-white">
           <div class="flex items-center gap-3.5">
-            <div class="w-12 h-12 bg-[#09637E] text-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#063d4a]/25">
+            <div class="w-12 h-12 bg-[#09637E] text-white rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#09637E]/25">
               @if (getVehicleType(selectedClaim.vehicle) === 'motorcycle') {
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="17" r="2" stroke-width="1.8"/><circle cx="19" cy="17" r="2" stroke-width="1.8"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 17l1.5-5h7l3-4h2l1.5 4-3 1"/></svg>
               } @else if (getVehicleType(selectedClaim.vehicle) === 'truck') {
@@ -655,12 +655,8 @@
             Elimina
           </button>
           <div class="flex gap-3">
-            <button (click)="openContactModal(selectedClaim.code)"
-              class="px-5 py-2.5 text-xs font-black text-teal-600 border border-teal-200 bg-teal-50 rounded-xl hover:bg-teal-600 hover:text-white transition-all uppercase tracking-wider">
-              Contatta
-            </button>
             <button (click)="openRelazioneFromClaim(selectedClaim)"
-              class="px-7 py-2.5 text-xs font-black text-white bg-[#09637E] rounded-xl hover:bg-[#088395] transition-all uppercase tracking-wider shadow-lg shadow-[#063d4a]/25 flex items-center gap-2">
+              class="px-7 py-2.5 text-xs font-black text-white bg-[#09637E] rounded-xl hover:bg-[#088395] transition-all uppercase tracking-wider shadow-lg shadow-[#09637E]/25 flex items-center gap-2">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
               </svg>
@@ -703,7 +699,7 @@
         <!-- Header con gradient -->
         <div class="px-7 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-[#EBF4F6] via-white to-white">
           <div class="flex items-center gap-3.5">
-            <div class="w-11 h-11 bg-[#09637E] text-white rounded-xl flex items-center justify-center shadow-lg shadow-[#063d4a]/25 flex-shrink-0">
+            <div class="w-11 h-11 bg-[#09637E] text-white rounded-xl flex items-center justify-center shadow-lg shadow-[#09637E]/25 flex-shrink-0">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
               </svg>
@@ -1015,7 +1011,7 @@
               Annulla
             </button>
             <button (click)="saveRelazione()"
-              class="px-8 py-2.5 text-xs font-black text-white bg-[#09637E] rounded-xl hover:bg-[#088395] transition-all uppercase tracking-wider shadow-lg shadow-[#063d4a]/25 flex items-center gap-2">
+              class="px-8 py-2.5 text-xs font-black text-white bg-[#09637E] rounded-xl hover:bg-[#088395] transition-all uppercase tracking-wider shadow-lg shadow-[#09637E]/25 flex items-center gap-2">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
               </svg>
@@ -1024,80 +1020,6 @@
           </div>
         </div>
 
-      </div>
-    </div>
-  }
-
-  <!-- ===== CONTACT MODAL ===== -->
-  @if (isContactModalOpen) {
-    <div class="fixed inset-0 z-[70] flex items-center justify-center p-4">
-      <div (click)="closeContactModal()" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
-      <div class="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl modal-pop overflow-hidden">
-        @if (contactSent) {
-          <div class="p-12 text-center animate-fade-down">
-            <div class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-            </div>
-            <h3 class="text-xl font-black text-slate-800">Messaggio Inviato!</h3>
-            <p class="text-sm text-slate-400 mt-2">L'assicurazione riceverà il tuo messaggio entro pochi minuti.</p>
-          </div>
-        } @else {
-          <div class="p-6 border-b border-slate-100 flex items-center justify-between">
-            <div>
-              <h3 class="text-lg font-black">Contatta l'Assicurazione</h3>
-              @if (contactForm.claimCode) {
-                <p class="text-xs font-bold text-[#088395] mt-0.5">Rif. {{ contactForm.claimCode }}</p>
-              }
-            </div>
-            <button (click)="closeContactModal()" class="p-2 hover:bg-slate-50 rounded-lg text-slate-400">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-          </div>
-          <div class="p-6 space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400 mb-1.5">Assicurazione</label>
-                <select [(ngModel)]="contactForm.insurance" class="w-full px-3 py-2 text-[0.8rem] font-semibold border-[1.5px] border-slate-200 rounded-lg bg-slate-50 text-slate-900 outline-none transition-all appearance-none focus:border-[#09637E] focus:bg-white focus:ring-[3px] focus:ring-[#09637E]/[0.08]">
-                  <option value="">Seleziona...</option>
-                  @for (ins of insuranceCompanies; track ins) {
-                    <option [value]="ins">{{ ins }}</option>
-                  }
-                </select>
-              </div>
-              <div>
-                <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400 mb-1.5">Priorità</label>
-                <select [(ngModel)]="contactForm.priority" class="w-full px-3 py-2 text-[0.8rem] font-semibold border-[1.5px] border-slate-200 rounded-lg bg-slate-50 text-slate-900 outline-none transition-all appearance-none focus:border-[#09637E] focus:bg-white focus:ring-[3px] focus:ring-[#09637E]/[0.08]">
-                  <option value="bassa">Bassa</option>
-                  <option value="normale">Normale</option>
-                  <option value="urgente">Urgente</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400 mb-1.5">Oggetto</label>
-              <input [(ngModel)]="contactForm.subject" type="text" placeholder="Es. Aggiornamento stima danni"
-                class="w-full px-3 py-2 text-[0.8rem] font-semibold border-[1.5px] border-slate-200 rounded-lg bg-slate-50 text-slate-900 outline-none transition-all focus:border-[#09637E] focus:bg-white focus:ring-[3px] focus:ring-[#09637E]/[0.08]" />
-            </div>
-            <div>
-              <label class="block text-[0.65rem] font-black uppercase tracking-[0.07em] text-slate-400 mb-1.5">Messaggio</label>
-              <textarea [(ngModel)]="contactForm.message" rows="4" placeholder="Inserisci qui il tuo messaggio..."
-                class="w-full px-3 py-2 text-[0.8rem] font-semibold border-[1.5px] border-slate-200 rounded-lg bg-slate-50 text-slate-900 outline-none transition-all resize-none focus:border-[#09637E] focus:bg-white focus:ring-[3px] focus:ring-[#09637E]/[0.08]"></textarea>
-            </div>
-            @if (contactForm.priority === 'urgente') {
-              <div class="flex items-center gap-2 p-3 bg-red-50 border border-red-100 rounded-lg text-xs font-bold text-red-600">
-                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                I messaggi urgenti hanno un tempo di risposta garantito di 2 ore.
-              </div>
-            }
-          </div>
-          <div class="p-5 border-t border-slate-100 flex gap-3">
-            <button (click)="closeContactModal()" class="flex-1 py-3 text-xs font-black text-slate-400 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all uppercase">Annulla</button>
-            <button (click)="sendContactForm()" [disabled]="!contactForm.insurance || !contactForm.message"
-              class="flex-1 py-3 text-xs font-black text-white bg-teal-600 rounded-lg hover:bg-teal-700 transition-all uppercase disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-teal-900/15">
-              Invia Messaggio
-            </button>
-          </div>
-        }
       </div>
     </div>
   }

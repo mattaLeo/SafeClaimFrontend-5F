@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { sinistro } from '../models/sinistro.model';
-import { SinistriService } from '../services/sinistri';
+import { Sinistri } from '../services/sinistri';
 
 @Component({
   selector: 'app-dettaglio-sinistro',
@@ -22,7 +22,7 @@ export class DettaglioSinistroComponent implements OnInit {
   uploadSuccess = '';
 
   constructor(
-    private sinistriService: SinistriService,
+    private Sinistri: Sinistri,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -68,7 +68,7 @@ export class DettaglioSinistroComponent implements OnInit {
     this.uploadSuccess = '';
     this.cdr.detectChanges();
 
-    this.sinistriService.uploadImmagini(this.sinistro._id, this.uploadingFiles).subscribe({
+    this.Sinistri.uploadImmagini(this.sinistro._id, this.uploadingFiles).subscribe({
       next: () => {
         this.immagini = [...this.immagini, ...this.previewUrls];
         this.previewUrls = [];
