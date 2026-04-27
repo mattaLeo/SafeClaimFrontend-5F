@@ -71,6 +71,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ClaimCardComponent } from '../componenti/claim-card/claim-card.component';
 import { Perizie } from '../services/perizie.service';
 import { AuthService } from '../services/auth';
+import { timer, Subscription } from 'rxjs';
 import jsPDF from 'jspdf';
 
 @Component({
@@ -222,21 +223,34 @@ export class Perito implements OnInit, OnDestroy {
   confirmDeleteClaim:     Claim | null     = null;
   confirmDeleteRelazione: Relazione | null = null;
 
+
   constructor(
     private perizie:   Perizie,
     private auth:      AuthService,
     private cdr:       ChangeDetectorRef,
     private sanitizer: DomSanitizer,
   ) {}
-
+  private refreshSub?: Subscription;
   ngOnInit(): void {
     this.loadUser();
     this.loadClaims();
     this.loadRelazioni();
+    this.startAutoRefresh();
+  }
+  private startAutoRefresh(): void {
+    // timer(ritardoIniziale, intervallo)
+    // 0 = parte subito, 30000 = ogni 30 secondi
+    this.refreshSub = timer(0, 30000).subscribe(() => {
+      console.log('Refreshing claims...');
+      this.loadClaims();
+    });
   }
 
   ngOnDestroy(): void {
     this.stopAIPoll();
+    if (this.refreshSub) {
+      this.refreshSub.unsubscribe();
+    }
   }
 
   // ── Caricamento utente ────────────────────────────────────────────────────────
@@ -255,7 +269,8 @@ export class Perito implements OnInit, OnDestroy {
 
   // ── Caricamento pratiche ──────────────────────────────────────────────────────
 
-  private loadClaims(): void {
+ private loadClaims(): void {
+    // Il tuo codice originale rimane quasi identico
     this.isLoading = true;
     const u = this.auth.currentUser as any;
     const peritoId = String(u?.id ?? 'demo');
@@ -268,7 +283,6 @@ export class Perito implements OnInit, OnDestroy {
         this.cdr.detectChanges();
       },
       error: () => {
-        // Fallback: usa tutti i sinistri se il nuovo endpoint non è ancora live
         this.perizie.askTuttiSinistri().subscribe({
           next: (data: any) => {
             const lista = Array.isArray(data) ? data : (data.data ?? []);
@@ -277,7 +291,10 @@ export class Perito implements OnInit, OnDestroy {
             this.isLoading = false;
             this.cdr.detectChanges();
           },
-          error: () => { this.isLoading = false; this.cdr.detectChanges(); }
+          error: () => { 
+            this.isLoading = false; 
+            this.cdr.detectChanges(); 
+          }
         });
       }
     });
