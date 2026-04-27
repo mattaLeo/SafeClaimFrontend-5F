@@ -11,9 +11,9 @@ import { Relazione, Claim } from '../perito/perito';
 export class Perizie {
 
   // Porta 8000 → pratiche/perizie (MongoDB)
-  private praticheLink = 'https://congenial-barnacle-pj99w67975qh9454-8000.app.github.dev/';
+  private praticheLink = 'https://special-goldfish-g44gg566q9463w757-8000.app.github.dev/';
   // Porta 7000 → sinistri (MongoDB)
-  private sinistriLink = 'https://congenial-barnacle-pj99w67975qh9454-7000.app.github.dev/';
+  private sinistriLink = 'https://special-goldfish-g44gg566q9463w757-7000.app.github.dev/';
 
   constructor(public http: HttpClient) {}
 

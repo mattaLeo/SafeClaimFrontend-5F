@@ -9,6 +9,7 @@ import { VeicoliService } from '../services/veicoli';
 import { Sinistri } from '../services/sinistri';
 import { AuthService } from '../services/auth';
 import { User } from '../models/user.model';
+import { timer, Subscription } from 'rxjs'; // Importati per il refresh
 
 @Component({
   selector: 'app-automobilista',
@@ -38,15 +39,17 @@ export class Automobilista implements OnInit {
   }
 
   caricaDati(): void {
+    const userId = this.auth.currentUser?.id;
+
     this.Sinistri.sinistri$.subscribe({
       next: (data: sinistro[]) => {
         this.sinistri = data;
         this.cdr.detectChanges();
       }
     });
-    this.Sinistri.askSinistri();
 
-    const userId = this.auth.currentUser?.id;
+    this.Sinistri.askSinistri(userId);
+
     if (userId) {
       this.veicoliService.getVeicoliUtente(userId).subscribe({
         next: (data) => {

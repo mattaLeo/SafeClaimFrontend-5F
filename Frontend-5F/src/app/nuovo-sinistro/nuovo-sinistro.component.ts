@@ -36,9 +36,15 @@ export class NuovoSinistroComponent implements OnInit {
   ngOnInit(): void {
     const userId = this.auth.currentUser?.id;
     if (userId) {
-      // Carichiamo i veicoli dell'utente per permettere la selezione della targa
       this.veicoliService.getVeicoliUtente(userId).subscribe();
     }
+
+    // Data di oggi come valore di default
+    const oggi = new Date();
+    const anno = oggi.getFullYear();
+    const mese = String(oggi.getMonth() + 1).padStart(2, '0');
+    const giorno = String(oggi.getDate()).padStart(2, '0');
+    this.formData.data_evento = `${anno}-${mese}-${giorno}`;
   }
 
   /**

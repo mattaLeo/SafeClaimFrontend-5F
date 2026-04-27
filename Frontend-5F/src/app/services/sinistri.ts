@@ -9,8 +9,8 @@ import { Pratica } from '../models/pratica.model';
   providedIn: 'root',
 })
 export class Sinistri {
-  link = "https://congenial-barnacle-pj99w67975qh9454-7000.app.github.dev/"
-  link2 = "https://congenial-barnacle-pj99w67975qh9454-8000.app.github.dev/"
+  link = "https://special-goldfish-g44gg566q9463w757-7000.app.github.dev/"
+  link2 = "https://special-goldfish-g44gg566q9463w757-8000.app.github.dev/"
 
   obsSinistri!: Observable<sinistro[]>
   obsSinistroId!: Observable<sinistro>
@@ -22,12 +22,15 @@ export class Sinistri {
 
   constructor(public http: HttpClient) {}
 
-  askSinistri() {
-    this.http.get<sinistro[]>(`${this.link}sinistri`).subscribe({
+  askSinistri(userId?: number) {
+    const url = userId 
+      ? `${this.link}sinistri?automobilista_id=${userId}`
+      : `${this.link}sinistri`;
+      
+    this.http.get<sinistro[]>(url).subscribe({
       next: (data) => {
         this.sinistri = data;
         this.sinistriSubject.next(data);
-        console.log("Sinistri caricati:", data);
       },
       error: (err: any) => console.error("Errore download sinistri:", err)
     });
