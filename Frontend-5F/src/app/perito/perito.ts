@@ -239,8 +239,8 @@ export class Perito implements OnInit, OnDestroy {
   }
   private startAutoRefresh(): void {
     // timer(ritardoIniziale, intervallo)
-    // 0 = parte subito, 30000 = ogni 30 secondi
-    this.refreshSub = timer(0, 30000).subscribe(() => {
+    // 0 = parte subito, 15000 = ogni 15OK secondi
+    this.refreshSub = timer(0, 15000).subscribe(() => {
       console.log('Refreshing claims...');
       this.loadClaims();
     });

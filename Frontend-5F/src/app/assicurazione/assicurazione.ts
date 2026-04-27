@@ -33,8 +33,8 @@ export class Assicurazione implements OnInit, OnDestroy {
 
   startAutoRefresh(): void {
     // timer(ritardo_iniziale, intervallo_periodico)
-    // 0 = parte subito, 30000 = 30 secondi
-    this.refreshSubscription = timer(0, 30000).subscribe(() => {
+    // 0 = parte subito, 15000 = 15 secondi
+    this.refreshSubscription = timer(0, 15000).subscribe(() => {
       console.log('Refresh dati in corso...');
       this.sinistri.askSinistri(); // Chiamata per i sinistri
       this.caricaPratiche();      // Chiamata per le pratiche
