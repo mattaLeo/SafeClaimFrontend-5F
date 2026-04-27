@@ -1,0 +1,139 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center p-6">
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="close()"></div>
+
+  <div (click)="$event.stopPropagation()"
+       class="w-full max-w-2xl bg-white rounded-[40px] shadow-2xl shadow-blue-100/40 p-10 relative max-h-[90vh] overflow-y-auto">
+
+    <!-- Close button -->
+    <button type="button" (click)="close()" aria-label="Chiudi"
+            class="absolute top-4 right-4 p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+
+    <h2 class="text-2xl font-black mb-2 text-[#0F172A]">Dettaglio Pratica</h2>
+    <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-8">
+      {{ pratica.claim_code ?? pratica._id }}
+    </p>
+
+    <div class="flex flex-col gap-6">
+
+      <!-- Info grid -->
+      <div class="grid grid-cols-2 gap-4">
+
+        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Titolo</p>
+          <p class="font-black text-[#0F172A] text-sm">{{ pratica.titolo }}</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Stato</p>
+          <span class="text-xs font-black px-2.5 py-1 rounded-lg uppercase"
+            [ngClass]="{
+              'bg-amber-100 text-amber-700': pratica.stato === 'Bozza',
+              'bg-blue-100 text-blue-700': pratica.stato === 'In Corso',
+              'bg-green-100 text-green-700': pratica.stato === 'Approvata',
+              'bg-red-100 text-red-700': pratica.stato === 'Chiusa'
+            }">
+            {{ pratica.stato ?? 'N/D' }}
+          </span>
+        </div>
+
+        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">ID Perito</p>
+          <p class="font-bold text-slate-400 text-sm">#{{ pratica.perito_id }}</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">ID Sinistro</p>
+          <p class="font-bold text-slate-400 text-sm">#{{ pratica.sinistro_id }}</p>
+        </div>
+
+        <div *ngIf="pratica.tipo_danno" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tipo Danno</p>
+          <p class="font-bold text-[#0F172A] text-sm">{{ pratica.tipo_danno }}</p>
+        </div>
+
+        <div *ngIf="pratica.stima_danno" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Stima Danno</p>
+          <p class="font-bold text-[#0F172A] text-sm">€ {{ pratica.stima_danno | number:'1.2-2' }}</p>
+        </div>
+
+        <div *ngIf="pratica.veicolo" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Veicolo</p>
+          <p class="font-bold text-[#0F172A] text-sm">{{ pratica.veicolo }}</p>
+        </div>
+
+        <div *ngIf="pratica.claim_code" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Claim Code</p>
+          <p class="font-bold text-[#0F172A] text-sm">{{ pratica.claim_code }}</p>
+        </div>
+
+      </div>
+
+      <!-- Descrizione -->
+      <div *ngIf="pratica.descrizione" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Descrizione</p>
+        <p class="text-slate-600 text-sm leading-relaxed">{{ pratica.descrizione }}</p>
+      </div>
+
+      <!-- Parti danneggiate -->
+      <div *ngIf="pratica.parti_danneggiate && pratica.parti_danneggiate.length > 0"
+           class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Parti Danneggiate</p>
+        <div class="flex flex-wrap gap-2">
+          <span *ngFor="let parte of pratica.parti_danneggiate"
+                class="text-[9px] font-black px-3 py-1 rounded-full bg-[#EBF4F6] text-[#09637E] border border-[#7AB2B2]/30 uppercase tracking-widest">
+            {{ parte }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Note tecniche -->
+      <div *ngIf="pratica.note_tecniche" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Note Tecniche</p>
+        <p class="text-slate-600 text-sm leading-relaxed">{{ pratica.note_tecniche }}</p>
+      </div>
+
+      <!-- Note perito -->
+      <div *ngIf="pratica.note_perito" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Note Perito</p>
+        <p class="text-slate-600 text-sm leading-relaxed">{{ pratica.note_perito }}</p>
+      </div>
+
+      <!-- Conclusione -->
+      <div *ngIf="pratica.conclusione" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Conclusione</p>
+        <p class="text-slate-600 text-sm leading-relaxed">{{ pratica.conclusione }}</p>
+      </div>
+
+      <div class="border-t border-slate-100"></div>
+
+      <!-- Date -->
+      <div class="flex items-center gap-6 text-[10px] text-slate-400 font-black uppercase tracking-widest">
+        <span *ngIf="pratica.data_inserimento">
+          <i class="bi bi-calendar-event me-1"></i>
+          Creata: {{ pratica.data_inserimento | date:'d MMM yyyy' }}
+        </span>
+        <span *ngIf="pratica.data_aggiornamento">
+          <i class="bi bi-clock-history me-1"></i>
+          Aggiornata: {{ pratica.data_aggiornamento | date:'d MMM yyyy' }}
+        </span>
+      </div>
+
+      <!-- Footer -->
+      <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+        <button type="button" (click)="close()"
+                class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors">
+          Chiudi
+        </button>
+        <button type="button" (click)="close()"
+                class="py-3 px-8 bg-[#09637E] text-white text-sm font-extrabold rounded-xl shadow-lg transition-all hover:bg-[#088395]">
+          Chiudi
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
