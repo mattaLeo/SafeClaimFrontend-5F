@@ -7,7 +7,7 @@ import { Veicolo } from '../models/veicolo.model';
   providedIn: 'root',
 })
 export class VeicoliService {
-  private link = 'https://congenial-barnacle-pj99w67975qh9454-5000.app.github.dev/'; 
+  private link = 'https://special-space-palm-tree-r44jjrw659xq3gxr-5000.app.github.dev/'; 
 
   public veicoli: Veicolo[] = [];
 
