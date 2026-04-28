@@ -7,7 +7,7 @@ import { Veicolo } from '../models/veicolo.model';
   providedIn: 'root',
 })
 export class VeicoliService {
-  private link = 'https://special-goldfish-g44gg566q9463w757-5000.app.github.dev/'; 
+  private link = 'https://upgraded-space-broccoli-q77ww96jrjxx29g94-5000.app.github.dev/'; 
 
   public veicoli: Veicolo[] = [];
 
