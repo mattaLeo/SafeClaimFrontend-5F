@@ -77,4 +77,8 @@ export class Sinistri {
       `${this.link2}pratiche_assicurazione`
     );
   }
+
+  aggiornaSinistro(id: string, data: Partial<sinistro>): Observable<any> {
+  return this.http.put(`${this.link}sinistro/${id}`, data);
+}
 }
