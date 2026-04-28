@@ -12,9 +12,9 @@ import { Relazione, Claim } from '../perito/perito';
 export class Perizie {
 
   // Porta 8000 → pratiche/perizie (MongoDB)
-  private praticheLink = 'https://upgraded-space-broccoli-q77ww96jrjxx29g94-8000.app.github.dev/';
+  private praticheLink = 'https://special-goldfish-g44gg566q9463w757-8000.app.github.dev/';
   // Porta 7000 → sinistri (MongoDB)
-  private sinistriLink = 'https://upgraded-space-broccoli-q77ww96jrjxx29g94-7000.app.github.dev/';
+  private sinistriLink = 'https://special-goldfish-g44gg566q9463w757-7000.app.github.dev/';
 
   constructor(public http: HttpClient) {}
 
@@ -26,6 +26,10 @@ export class Perizie {
 
   askTuttiSinistri(): Observable<any[]> {
     return this.http.get<any[]>(`${this.sinistriLink}sinistri`);
+  }
+
+  askTuttiPeriti(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.praticheLink}periti`);
   }
 
   getSinistro(sinistroId: string): Observable<any> {
