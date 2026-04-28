@@ -22,12 +22,15 @@ export class Sinistri {
 
   constructor(public http: HttpClient) {}
 
-  askSinistri(): void {
-    this.http.get<sinistro[]>(`${this.link}sinistri`).subscribe({
+  askSinistri(userId?: number) {
+    const url = userId 
+      ? `${this.link}sinistri?automobilista_id=${userId}`
+      : `${this.link}sinistri`;
+      
+    this.http.get<sinistro[]>(url).subscribe({
       next: (data) => {
         this.sinistri = data;
         this.sinistriSubject.next(data);
-        console.log("Sinistri caricati:", data);
       },
       error: (err: any) => console.error("Errore download sinistri:", err)
     });

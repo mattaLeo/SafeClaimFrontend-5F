@@ -19,16 +19,37 @@
 
     <div class="flex flex-col gap-5">
 
-      <!-- ID Perito -->
+      <!-- Selezione Perito -->
       <div>
         <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">
-          ID Perito <span class="text-red-500">*</span>
+          Perito <span class="text-red-500">*</span>
         </label>
-        <input
+
+        <!-- Loading periti -->
+        <div *ngIf="loadingPeriti"
+             class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-400 flex items-center gap-2">
+          <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          Caricamento periti...
+        </div>
+
+        <!-- Dropdown periti -->
+        <select
+          *ngIf="!loadingPeriti"
           [(ngModel)]="peritoId"
-          type="text"
-          placeholder="Es. 42"
-          class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] placeholder-slate-300 focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all" />
+          class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all appearance-none cursor-pointer">
+          <option value="" disabled selected>Seleziona un perito...</option>
+          <option *ngFor="let p of periti" [value]="p.id">
+            {{ p.nome }} {{ p.cognome }}
+          </option>
+        </select>
+
+        <!-- Errore caricamento periti -->
+        <p *ngIf="errorPeriti" class="mt-1 text-[10px] text-red-500 font-semibold">
+          <i class="bi bi-exclamation-triangle me-1"></i>{{ errorPeriti }}
+        </p>
       </div>
 
       <!-- Titolo -->
