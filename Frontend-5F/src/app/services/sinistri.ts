@@ -1,20 +1,20 @@
 import { Injectable } from '@angular/core';
-import { Observable, BehaviorSubject } from 'rxjs';
-import { sinistro } from '../models/sinistro.model';
+import { Observable, BehaviorSubject, forkJoin } from 'rxjs';
+import { switchMap, tap } from 'rxjs/operators';
 import { HttpClient } from '@angular/common/http';
-import { tap } from 'rxjs/operators';
+import { sinistro } from '../models/sinistro.model';
 import { Pratica } from '../models/pratica.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class Sinistri {
-  link = "https://special-goldfish-g44gg566q9463w757-7000.app.github.dev/"
-  link2 = "https://special-goldfish-g44gg566q9463w757-8000.app.github.dev/"
+  link  = "https://fantastic-space-broccoli-4j66vrj4vqg2qggr-7000.app.github.dev/";
+  link2 = "https://fantastic-space-broccoli-4j66vrj4vqg2qggr-8000.app.github.dev/";
 
-  obsSinistri!: Observable<sinistro[]>
-  obsSinistroId!: Observable<sinistro>
-  obsCreateSinistro!: Observable<any>
+  obsSinistri!:      Observable<sinistro[]>;
+  obsSinistroId!:    Observable<sinistro>;
+  obsCreateSinistro!: Observable<any>;
 
   private sinistriSubject = new BehaviorSubject<sinistro[]>([]);
   sinistri$: Observable<sinistro[]> = this.sinistriSubject.asObservable();
@@ -43,21 +43,45 @@ export class Sinistri {
   }
 
   uploadImmagini(sinistroId: string, files: File[]): Observable<any> {
-  const formData = new FormData();
-  files.forEach(file => formData.append('immagini', file, file.name));
-  return this.http.post(`${this.link}sinistro/${sinistroId}/immagini`, formData);
-}
+    const uploads$ = files.map(file =>
+      this.fileToBase64(file).pipe(
+        switchMap(base64 => this.http.post(
+          `${this.link}sinistro/${sinistroId}/immagini`,
+          { immagine_base64: base64 }
+        ))
+      )
+    );
+    return forkJoin(uploads$);
+  }
 
-creaPratica(sinistro_id: string, perito_id: string, data: Partial<Pratica>): Observable<{ status: string; id_perizia: string }> {
-  return this.http.post<{ status: string; id_perizia: string }>(
-    `${this.link2}sinistro/${sinistro_id}/perito/${perito_id}/pratica`, // ← rimosso lo slash in più
-    data
-  );
-}
+  private fileToBase64(file: File): Observable<string> {
+    return new Observable(observer => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const full = reader.result as string;
+        const base64 = full.split(',')[1].trim(); // solo dati puri, senza prefisso
+        observer.next(base64);
+        observer.complete();
+      };
+      reader.onerror = err => observer.error(err);
+      reader.readAsDataURL(file);
+    });
+  }
 
-getPratiche(): Observable<{ totale: number; pratiche: Pratica[] }> {
-  return this.http.get<{ totale: number; pratiche: Pratica[] }>(
-    `${this.link2}pratiche_assicurazione`
-  );
+  creaPratica(sinistro_id: string, perito_id: string, data: Partial<Pratica>): Observable<{ status: string; id_perizia: string }> {
+    return this.http.post<{ status: string; id_perizia: string }>(
+      `${this.link2}sinistro/${sinistro_id}/perito/${perito_id}/pratica`,
+      data
+    );
+  }
+
+  getPratiche(): Observable<{ totale: number; pratiche: Pratica[] }> {
+    return this.http.get<{ totale: number; pratiche: Pratica[] }>(
+      `${this.link2}pratiche_assicurazione`
+    );
+  }
+
+  aggiornaSinistro(id: string, data: Partial<sinistro>): Observable<any> {
+  return this.http.put(`${this.link}sinistro/${id}`, data);
 }
 }

@@ -7,7 +7,7 @@ import { User } from '../models/user.model';
   providedIn: 'root',
 })
 export class AuthService {
-  link = "https://special-goldfish-g44gg566q9463w757-6000.app.github.dev/";
+  link = "https://fantastic-space-broccoli-4j66vrj4vqg2qggr-6000.app.github.dev/";
 
   private _currentUser?: User;
 

@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { sinistro } from '../models/sinistro.model';
 import { Sinistri } from '../services/sinistri';
 import { CreaPraticaComponent } from '../crea-pratica/crea-pratica';
@@ -7,7 +8,7 @@ import { CreaPraticaComponent } from '../crea-pratica/crea-pratica';
 @Component({
   selector: 'app-dettaglio-sinistro',
   standalone: true,
-  imports: [CommonModule, CreaPraticaComponent], // ← aggiunto qui
+  imports: [CommonModule, FormsModule, CreaPraticaComponent],
   templateUrl: './dettagli-sinistro.html',
   styleUrls: ['./dettagli-sinistro.css'],
 })
@@ -17,9 +18,10 @@ export class DettaglioSinistroComponent implements OnInit {
   @Input() ruolo: 'automobilista' | 'assicuratore' = 'automobilista';
 
   stati = ['APERTO', 'IN ANALISI', 'CHIUSO'];
-  mostraCreaPratica = false; // ← assicurati che ci sia
+  mostraCreaPratica = false;
+  descrizioneEditabile = '';
 
-  immagini: string[] = [];
+  immagini: any[] = [];
   uploadingFiles: File[] = [];
   previewUrls: string[] = [];
   uploading = false;
@@ -32,14 +34,26 @@ export class DettaglioSinistroComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.descrizioneEditabile = this.sinistro?.descrizione ?? '';
     if (this.sinistro?.immagini?.length) {
-      this.immagini = this.sinistro.immagini;
+      this.immagini = this.sinistro.immagini.map((img: any) => {
+        if (typeof img === 'string') return img;
+        if (img.secure_url) return img.secure_url;
+        if (img.url) return img.url;
+        if (img.public_id) return `https://res.cloudinary.com/dm6estjhs/image/upload/${img.public_id}`;
+        return null;
+      }).filter(Boolean);
     }
   }
 
   cambiaStato(nuovoStato: string) {
     if (this.sinistro.stato === nuovoStato) return;
     this.sinistro.stato = nuovoStato;
+  }
+
+  salvaDescrizione(): void {
+    this.sinistro.descrizione = this.descrizioneEditabile;
+    // Se hai un endpoint per aggiornare il sinistro, chiamalo qui
   }
 
   onFilesSelected(event: Event): void {
@@ -88,6 +102,22 @@ export class DettaglioSinistroComponent implements OnInit {
   }
 
   close(): void {
+  if (this.ruolo === 'assicuratore' && this.sinistro._id) {
+    this.Sinistri.aggiornaSinistro(this.sinistro._id, {
+      descrizione: this.descrizioneEditabile,
+      stato: this.sinistro.stato
+    }).subscribe({
+      next: () => {
+        this.sinistro.descrizione = this.descrizioneEditabile;
+        this.closed.emit();
+      },
+      error: (err) => {
+        console.error('Errore salvataggio:', err);
+        this.closed.emit();
+      }
+    });
+  } else {
     this.closed.emit();
   }
+}
 }

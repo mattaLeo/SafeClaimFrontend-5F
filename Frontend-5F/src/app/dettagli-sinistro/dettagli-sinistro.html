@@ -50,7 +50,18 @@
       <!-- Descrizione -->
       <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Descrizione</p>
-        <p class="text-slate-600 text-sm leading-relaxed">{{ sinistro.descrizione }}</p>
+        
+        <!-- Solo testo per automobilista -->
+        <p *ngIf="ruolo !== 'assicuratore'" class="text-slate-600 text-sm leading-relaxed">
+          {{ sinistro.descrizione }}
+        </p>
+
+        <!-- Textarea editabile per assicuratore -->
+        <textarea *ngIf="ruolo === 'assicuratore'"
+          [(ngModel)]="descrizioneEditabile"
+          rows="4"
+          class="w-full text-slate-600 text-sm leading-relaxed bg-white border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] resize-none transition-all">
+        </textarea>
       </div>
 
       <div class="border-t border-slate-100"></div>
