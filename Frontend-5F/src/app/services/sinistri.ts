@@ -9,8 +9,8 @@ import { Pratica } from '../models/pratica.model';
   providedIn: 'root',
 })
 export class Sinistri {
-  link  = "https://crispy-space-sniffle-4jjxxg6674pxh5pw-7000.app.github.dev/"
-  link2 = "https://crispy-space-sniffle-4jjxxg6674pxh5pw-8000.app.github.dev/"
+  link  = "https://bug-free-acorn-4jjxxg66745r3qpgg-7000.app.github.dev/"
+  link2 = "https://bug-free-acorn-4jjxxg66745r3qpgg-8000.app.github.dev/"
 
   private sinistriSubject = new BehaviorSubject<sinistro[]>([]);
   sinistri$: Observable<sinistro[]> = this.sinistriSubject.asObservable();
@@ -96,6 +96,10 @@ export class Sinistri {
     return this.http.get<{ totale: number; pratiche: Pratica[] }>(
       `${this.link2}pratiche_assicurazione`
     );
+  }
+
+  askTuttiPeriti(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.link2}periti`);
   }
 
   uploadImmagini(sinistroId: string, files: File[]): Observable<any> {

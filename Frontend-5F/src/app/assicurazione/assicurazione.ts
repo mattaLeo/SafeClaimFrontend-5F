@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { Sinistri } from '../services/sinistri';
+import { Perizie } from '../services/perizie.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { sinistro } from '../models/sinistro.model';
@@ -35,10 +36,19 @@ export class Assicurazione implements OnInit, OnDestroy {
   showNewSinistro = false;
   user: any = null;
 
+  // ── Assegna Perito ────────────────────────────────────────────────────────
+  periti: any[] = [];
+  praticaPerAssegna: Pratica | null = null;
+  peritoSelezionatoId = '';
+  assegnando = false;
+  assegnaErrore = '';
+  assegnaSuccesso = '';
+
   private refreshSubscription?: Subscription;
 
   constructor(
     public sinistri: Sinistri,
+    private perizie: Perizie,
     private cdr: ChangeDetectorRef,
     private auth: AuthService,
     public veicoliService: VeicoliService,
@@ -48,6 +58,7 @@ export class Assicurazione implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.user = this.auth.currentUser;
     this.startAutoRefresh();
+    this.caricaPeriti();
   }
 
   startAutoRefresh(): void {
@@ -73,26 +84,74 @@ export class Assicurazione implements OnInit, OnDestroy {
     });
   }
 
+  caricaPeriti(): void {
+    this.sinistri.askTuttiPeriti().subscribe({
+      next: (data: any) => { this.periti = data; this.cdr.detectChanges(); },
+      error: (err: any) => console.error('Errore caricamento periti:', err)
+    });
+  }
+
+  // ── Assegna Perito ────────────────────────────────────────────────────────
+
+  apriAssegnaPerito(p: Pratica, event: Event): void {
+    event.stopPropagation(); // evita di aprire il dettaglio pratica
+    this.praticaPerAssegna = p;
+    this.peritoSelezionatoId = p.perito_id ?? '';
+    this.assegnaErrore = '';
+    this.assegnaSuccesso = '';
+  }
+
+  chiudiAssegnaPerito(): void {
+    this.praticaPerAssegna = null;
+    this.peritoSelezionatoId = '';
+    this.assegnaErrore = '';
+    this.assegnaSuccesso = '';
+  }
+
+  confermAssegnaPerito(): void {
+    if (!this.praticaPerAssegna?._id || !this.peritoSelezionatoId) {
+      this.assegnaErrore = 'Seleziona un perito prima di confermare.';
+      return;
+    }
+    this.assegnando = true;
+    this.assegnaErrore = '';
+    this.sinistri.assegnaPerito(this.praticaPerAssegna._id, this.peritoSelezionatoId).subscribe({
+      next: () => {
+        this.assegnaSuccesso = 'Perito assegnato con successo!';
+        this.assegnando = false;
+        this.caricaPratiche();
+        this.cdr.detectChanges();
+        setTimeout(() => this.chiudiAssegnaPerito(), 1500);
+      },
+      error: (err: any) => {
+        console.error('Errore assegnazione perito:', err);
+        this.assegnaErrore = 'Errore durante l\'assegnazione. Riprova.';
+        this.assegnando = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // ── Filtri ────────────────────────────────────────────────────────────────
+
   get sinistriFiltrati(): sinistro[] {
     if (!this.searchTerm.trim()) return this.sinistri.sinistri;
     const search = this.searchTerm.toLowerCase();
-    return this.sinistri.sinistri.filter(s => {
-      const targa       = (s.targa       ?? '').toLowerCase();
-      const descrizione = (s.descrizione ?? '').toLowerCase();
-      const stato       = (s.stato       ?? '').toLowerCase();
-      return targa.includes(search) || descrizione.includes(search) || stato.includes(search);
-    });
+    return this.sinistri.sinistri.filter(s =>
+      (s.targa ?? '').toLowerCase().includes(search) ||
+      (s.descrizione ?? '').toLowerCase().includes(search) ||
+      (s.stato ?? '').toLowerCase().includes(search)
+    );
   }
 
   get praticheFiltrate(): Pratica[] {
     if (!this.searchTerm.trim()) return this.pratiche;
     const search = this.searchTerm.toLowerCase();
-    return this.pratiche.filter(p => {
-      const titolo      = (p.titolo      ?? '').toLowerCase();
-      const descrizione = (p.descrizione ?? '').toLowerCase();
-      const stato       = (p.stato       ?? '').toLowerCase();
-      return titolo.includes(search) || descrizione.includes(search) || stato.includes(search);
-    });
+    return this.pratiche.filter(p =>
+      (p.titolo ?? '').toLowerCase().includes(search) ||
+      (p.descrizione ?? '').toLowerCase().includes(search) ||
+      (p.stato ?? '').toLowerCase().includes(search)
+    );
   }
 
   // ── Sinistro ──────────────────────────────────────────────────────────────
@@ -102,8 +161,6 @@ export class Assicurazione implements OnInit, OnDestroy {
 
   openDettaglio(s: sinistro): void  { this.sinistroSelezionato = s; }
   closeDettaglio(): void            { this.sinistroSelezionato = null; this.caricaPratiche(); }
-
-  // alias usati nel vecchio template
   apriDettaglio(s: sinistro): void  { this.openDettaglio(s); }
   chiudiDettaglio(): void           { this.closeDettaglio(); }
 
