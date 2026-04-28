@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
@@ -18,7 +18,11 @@ export class Login {
   loading = false;
   errorMessage = '';
 
-  constructor(private router: Router, private authService: AuthService) {}
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   togglePassword(): void {
     this.showPassword = !this.showPassword;
@@ -33,6 +37,7 @@ export class Login {
     }
 
     this.loading = true;
+    this.cdr.detectChanges();
 
     this.authService.login(this.email, this.password).subscribe({
       next: (res) => {
@@ -42,18 +47,18 @@ export class Login {
             perito: '/perito',
             assicuratore: '/assicurazione',
           };
-
           const route = routeMap[res.user.ruolo] ?? '/';
           this.router.navigate([route]);
         } else {
+          this.loading = false;
           this.errorMessage = 'Credenziali non valide. Riprova.';
+          this.cdr.detectChanges();
         }
       },
       error: (err: any) => {
-        this.errorMessage = err?.error?.message ?? 'Errore di connessione. Riprova.';
-      },
-      complete: () => {
         this.loading = false;
+        this.errorMessage = err?.error?.message ?? 'Credenziali non valide. Riprova.';
+        this.cdr.detectChanges();
       }
     });
   }

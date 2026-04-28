@@ -33,7 +33,14 @@ export class DettaglioSinistroComponent implements OnInit {
 
   ngOnInit(): void {
     if (this.sinistro?.immagini?.length) {
-      this.immagini = this.sinistro.immagini;
+      this.immagini = this.sinistro.immagini.map((img: any) => {
+        if (typeof img === 'string') return img;
+        if (img.secure_url) return img.secure_url;
+        if (img.url) return img.url;
+        // Ricostruisci URL Cloudinary dal public_id
+        if (img.public_id) return `https://res.cloudinary.com/dm6estjhs/image/upload/${img.public_id}`;
+        return null;
+      }).filter(Boolean);
     }
   }
 

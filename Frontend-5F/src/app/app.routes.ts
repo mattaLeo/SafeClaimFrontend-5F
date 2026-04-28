@@ -15,4 +15,6 @@ export const routes: Routes = [
     {path: "signup", component: Signup},
     {path: "nuovo-sinistro", component: NuovoSinistroComponent},
     {path: "veicoli", component: ListaVeicoli},
+    {path: "", redirectTo: "signin", pathMatch: "full"}, 
+    {path: "**", redirectTo: "signin"}
 ];

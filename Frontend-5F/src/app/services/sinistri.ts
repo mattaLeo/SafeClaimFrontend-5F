@@ -9,8 +9,8 @@ import { Pratica } from '../models/pratica.model';
   providedIn: 'root',
 })
 export class Sinistri {
-  link  = "https://special-space-palm-tree-r44jjrw659xq3gxr-7000.app.github.dev/";
-  link2 = "https://special-space-palm-tree-r44jjrw659xq3gxr-8000.app.github.dev/";
+  link  = "https://fantastic-space-broccoli-4j66vrj4vqg2qggr-7000.app.github.dev/";
+  link2 = "https://fantastic-space-broccoli-4j66vrj4vqg2qggr-8000.app.github.dev/";
 
   obsSinistri!:      Observable<sinistro[]>;
   obsSinistroId!:    Observable<sinistro>;

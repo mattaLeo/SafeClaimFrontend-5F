@@ -7,7 +7,7 @@ import { Veicolo } from '../models/veicolo.model';
   providedIn: 'root',
 })
 export class VeicoliService {
-  private link = 'https://special-space-palm-tree-r44jjrw659xq3gxr-5000.app.github.dev/'; 
+  private link = 'https://fantastic-space-broccoli-4j66vrj4vqg2qggr-5000.app.github.dev/'; 
 
   public veicoli: Veicolo[] = [];
 
