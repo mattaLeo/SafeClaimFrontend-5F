@@ -43,30 +43,17 @@ export class Sinistri {
   }
 
   uploadImmagini(sinistroId: string, files: File[]): Observable<any> {
-    const uploads$ = files.map(file =>
-      this.fileToBase64(file).pipe(
-        switchMap(base64 => this.http.post(
-          `${this.link}sinistro/${sinistroId}/immagini`,
-          { immagine_base64: base64 }
-        ))
-      )
+  const uploads$ = files.map(file => {
+    const formData = new FormData();
+    formData.append('immagine', file);
+    return this.http.post(
+      `${this.link}sinistro/${sinistroId}/immagini`,
+      formData
     );
-    return forkJoin(uploads$);
-  }
-
-  private fileToBase64(file: File): Observable<string> {
-    return new Observable(observer => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const full = reader.result as string;
-        const base64 = full.split(',')[1].trim(); // solo dati puri, senza prefisso
-        observer.next(base64);
-        observer.complete();
-      };
-      reader.onerror = err => observer.error(err);
-      reader.readAsDataURL(file);
-    });
-  }
+  });
+  return forkJoin(uploads$);
+}
+  
 
   creaPratica(sinistro_id: string, perito_id: string, data: Partial<Pratica>): Observable<{ status: string; id_perizia: string }> {
     return this.http.post<{ status: string; id_perizia: string }>(
