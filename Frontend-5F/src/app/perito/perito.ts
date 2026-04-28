@@ -423,6 +423,15 @@ export class Perito implements OnInit, OnDestroy {
   doAcceptReject(): void {
     if (!this.confirmActionClaim || this.isProcessingAction) return;
     const { claim, action } = this.confirmActionClaim;
+
+    // Guard: se claim è null/undefined per qualsiasi motivo, resetta tutto ed esci
+    if (!claim?.id) {
+      this.confirmActionClaim = null;
+      this.isProcessingAction = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
     this.isProcessingAction = true;
 
     const u        = this.auth.currentUser as any;
