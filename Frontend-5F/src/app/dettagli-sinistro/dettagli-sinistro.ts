@@ -53,7 +53,6 @@ export class DettaglioSinistroComponent implements OnInit {
 
   salvaDescrizione(): void {
     this.sinistro.descrizione = this.descrizioneEditabile;
-    // Se hai un endpoint per aggiornare il sinistro, chiamalo qui
   }
 
   onFilesSelected(event: Event): void {
@@ -92,7 +91,7 @@ export class DettaglioSinistroComponent implements OnInit {
         this.cdr.detectChanges();
         setTimeout(() => this.close(), 1500);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.uploading = false;
         this.uploadError = 'Errore durante il caricamento. Riprova.';
         this.cdr.detectChanges();
@@ -102,22 +101,22 @@ export class DettaglioSinistroComponent implements OnInit {
   }
 
   close(): void {
-  if (this.ruolo === 'assicuratore' && this.sinistro._id) {
-    this.Sinistri.aggiornaSinistro(this.sinistro._id, {
-      descrizione: this.descrizioneEditabile,
-      stato: this.sinistro.stato
-    }).subscribe({
-      next: () => {
-        this.sinistro.descrizione = this.descrizioneEditabile;
-        this.closed.emit();
-      },
-      error: (err) => {
-        console.error('Errore salvataggio:', err);
-        this.closed.emit();
-      }
-    });
-  } else {
-    this.closed.emit();
+    if (this.ruolo === 'assicuratore' && this.sinistro._id) {
+      this.Sinistri.aggiornaSinistro(this.sinistro._id, {
+        descrizione: this.descrizioneEditabile,
+        stato: this.sinistro.stato
+      }).subscribe({
+        next: () => {
+          this.sinistro.descrizione = this.descrizioneEditabile;
+          this.closed.emit();
+        },
+        error: (err: any) => {
+          console.error('Errore salvataggio:', err);
+          this.closed.emit();
+        }
+      });
+    } else {
+      this.closed.emit();
+    }
   }
-}
 }

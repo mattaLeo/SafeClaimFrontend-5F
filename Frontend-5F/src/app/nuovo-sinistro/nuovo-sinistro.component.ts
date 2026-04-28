@@ -15,45 +15,33 @@ import { sinistro } from '../models/sinistro.model';
 })
 export class NuovoSinistroComponent implements OnInit {
   @Output() created = new EventEmitter<any>();
-  @Output() closed = new EventEmitter<void>();
+  @Output() closed  = new EventEmitter<void>();
 
-  formData = {
-    targa: '',
-    data_evento: '',
-    descrizione: '',
-  };
-
-  loading = false;
-  errorMessage = '';
+  formData = { targa: '', data_evento: '', descrizione: '' };
+  loading        = false;
+  errorMessage   = '';
   successMessage = '';
 
   constructor(
     private sinistriService: Sinistri,
-    public veicoliService: VeicoliService,
-    private auth: AuthService
+    public  veicoliService:  VeicoliService,
+    private auth:            AuthService
   ) {}
 
   ngOnInit(): void {
     const userId = this.auth.currentUser?.id;
-    if (userId) {
-      this.veicoliService.getVeicoliUtente(userId).subscribe();
-    }
+    if (userId) this.veicoliService.getVeicoliUtente(userId).subscribe();
 
-    // Data di oggi come valore di default
-    const oggi = new Date();
-    const anno = oggi.getFullYear();
-    const mese = String(oggi.getMonth() + 1).padStart(2, '0');
+    const oggi   = new Date();
+    const anno   = oggi.getFullYear();
+    const mese   = String(oggi.getMonth() + 1).padStart(2, '0');
     const giorno = String(oggi.getDate()).padStart(2, '0');
     this.formData.data_evento = `${anno}-${mese}-${giorno}`;
   }
 
-  /**
-   * Metodo per selezionare la targa dal template HTML
-   * Risolve l'errore TS2339
-   */
   selectVehicle(targa: string): void {
     this.formData.targa = targa;
-    this.errorMessage = ''; // Resetta l'errore quando l'utente sceglie un veicolo
+    this.errorMessage   = '';
   }
 
   submit(): void {
@@ -63,32 +51,28 @@ export class NuovoSinistroComponent implements OnInit {
     }
 
     this.loading = true;
-    
-    // Creiamo l'oggetto rispettando il modello automobilista_id
+
     const payload: sinistro = {
       automobilista_id: this.auth.currentUser?.id || 0,
-      targa: this.formData.targa,
-      data_evento: new Date(this.formData.data_evento),
-      descrizione: this.formData.descrizione
+      targa:            this.formData.targa,
+      data_evento:      new Date(this.formData.data_evento),
+      descrizione:      this.formData.descrizione
     };
 
     this.sinistriService.createSinistro(payload).subscribe({
       next: (res: any) => {
-        this.loading = false;
-        this.successMessage = "Sinistro inviato con successo!";
+        this.loading        = false;
+        this.successMessage = "Sinistro e pratica creati con successo!";
         this.created.emit(res);
-        // Chiudiamo il popup dopo un secondo e mezzo
         setTimeout(() => this.close(), 1500);
       },
       error: (err: any) => {
-        this.loading = false;
+        this.loading      = false;
         this.errorMessage = "Errore durante il salvataggio. Riprova.";
         console.error("Errore salvataggio sinistro:", err);
       }
     });
   }
 
-  close(): void { 
-    this.closed.emit(); 
-  }
+  close(): void { this.closed.emit(); }
 }
