@@ -123,15 +123,12 @@
                   {{ p.stato ?? 'N/D' }}
                 </span>
 
-                <!-- BOTTONE ASSEGNA PERITO -->
-                <button type="button"
+                <!-- BOTTONE ASSEGNA PERITO SOLO SE NON C'È PERITO -->
+                <button *ngIf="!p.perito_id" type="button"
                         (click)="apriAssegnaPerito(p, $event)"
-                        class="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-xl border transition-all"
-                        [ngClass]="p.perito_id
-                          ? 'bg-[#EBF4F6] text-[#09637E] border-[#7AB2B2]/40 hover:bg-[#09637E] hover:text-white'
-                          : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-500 hover:text-white'">
+                        class="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-xl border transition-all bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-500 hover:text-white">
                   <i class="bi bi-person-check"></i>
-                  {{ p.perito_id ? 'Cambia Perito' : 'Assegna Perito' }}
+                  Assegna Perito
                 </button>
               </div>
             </div>
@@ -151,7 +148,7 @@
               <select [(ngModel)]="peritoSelezionatoId"
                       class="w-full py-3 px-4 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] transition-all mb-4">
                 <option value="" disabled>— Scegli un perito —</option>
-                <option *ngFor="let perito of periti" [value]="perito._id">
+                <option *ngFor="let perito of periti" [value]="perito.id">
                   {{ perito.nome }} {{ perito.cognome }}
                   <ng-container *ngIf="perito.specializzazione"> · {{ perito.specializzazione }}</ng-container>
                 </option>

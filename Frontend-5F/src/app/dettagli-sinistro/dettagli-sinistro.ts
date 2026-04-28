@@ -20,6 +20,9 @@ export class DettaglioSinistroComponent implements OnInit {
   stati = ['APERTO', 'IN ANALISI', 'CHIUSO'];
   mostraCreaPratica = false;
   descrizioneEditabile = '';
+  saving = false;
+  saveError = '';
+  saveSuccess = '';
 
   immagini: any[] = [];
   uploadingFiles: File[] = [];
@@ -46,13 +49,45 @@ export class DettaglioSinistroComponent implements OnInit {
     }
   }
 
+  get puoModificare(): boolean {
+    const stato = this.sinistro?.stato ?? '';
+    return this.ruolo === 'assicuratore' && (stato === 'APERTO' || stato === 'IN ANALISI');
+  }
+
   cambiaStato(nuovoStato: string) {
-    if (this.sinistro.stato === nuovoStato) return;
+    if (!this.puoModificare || this.sinistro.stato === nuovoStato) return;
     this.sinistro.stato = nuovoStato;
   }
 
-  salvaDescrizione(): void {
-    this.sinistro.descrizione = this.descrizioneEditabile;
+  salvaSinistro(): void {
+    if (!this.sinistro?._id) {
+      this.saveError = 'Impossibile salvare il sinistro.';
+      return;
+    }
+
+    this.saving = true;
+    this.saveError = '';
+    this.saveSuccess = '';
+
+    const updateData: Partial<sinistro> = {
+      descrizione: this.descrizioneEditabile,
+      stato: this.sinistro.stato
+    };
+
+    this.Sinistri.aggiornaSinistro(this.sinistro._id, updateData).subscribe({
+      next: () => {
+        this.sinistro.descrizione = this.descrizioneEditabile;
+        this.saveSuccess = 'Sinistro aggiornato con successo.';
+        this.saving = false;
+        this.close();
+      },
+      error: (err: any) => {
+        console.error('Errore salvataggio sinistro:', err);
+        this.saveError = 'Errore durante il salvataggio. Riprova.';
+        this.saving = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   onFilesSelected(event: Event): void {
@@ -101,22 +136,6 @@ export class DettaglioSinistroComponent implements OnInit {
   }
 
   close(): void {
-    if (this.ruolo === 'assicuratore' && this.sinistro._id) {
-      this.Sinistri.aggiornaSinistro(this.sinistro._id, {
-        descrizione: this.descrizioneEditabile,
-        stato: this.sinistro.stato
-      }).subscribe({
-        next: () => {
-          this.sinistro.descrizione = this.descrizioneEditabile;
-          this.closed.emit();
-        },
-        error: (err: any) => {
-          console.error('Errore salvataggio:', err);
-          this.closed.emit();
-        }
-      });
-    } else {
-      this.closed.emit();
-    }
+    this.closed.emit();
   }
 }

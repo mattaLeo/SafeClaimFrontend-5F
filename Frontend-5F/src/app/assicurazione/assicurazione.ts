@@ -85,15 +85,27 @@ export class Assicurazione implements OnInit, OnDestroy {
   }
 
   caricaPeriti(): void {
+    console.log('[Assicurazione] caricaPeriti');
     this.sinistri.askTuttiPeriti().subscribe({
-      next: (data: any) => { this.periti = data; this.cdr.detectChanges(); },
-      error: (err: any) => console.error('Errore caricamento periti:', err)
+      next: (data: any) => {
+        this.periti = (Array.isArray(data) ? data : data?.periti ?? []).map((perito: any) => ({
+          ...perito,
+          id: perito.id ?? perito._id,
+          _id: perito._id ?? perito.id,
+        }));
+        console.log('[Assicurazione] periti caricati', this.periti);
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        console.error('Errore caricamento periti:', err);
+      }
     });
   }
 
   // ── Assegna Perito ────────────────────────────────────────────────────────
 
   apriAssegnaPerito(p: Pratica, event: Event): void {
+    if (p.perito_id) return; // non permettere il cambio di perito una volta assegnato
     event.stopPropagation(); // evita di aprire il dettaglio pratica
     this.praticaPerAssegna = p;
     this.peritoSelezionatoId = p.perito_id ?? '';
