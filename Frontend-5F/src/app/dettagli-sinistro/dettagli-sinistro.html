@@ -64,6 +64,16 @@
             <p class="text-slate-600 text-sm leading-relaxed">{{ sinistro.descrizione }}</p>
           </ng-template>
         </div>
+
+      <!-- Posizione -->
+      <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Posizione</p>
+        <p *ngIf="!hasPosition" class="text-slate-500 text-sm">Posizione non disponibile</p>
+        <p *ngIf="hasPosition" class="text-slate-600 text-sm mb-4">
+          Lat: {{ sinistro.geolocalizzazione?.latitudine || sinistro.latitudine }}, Lng: {{ sinistro.geolocalizzazione?.longitudine || sinistro.longitudine }}
+        </p>
+      </div>
+
       <div class="border-t border-slate-100"></div>
 
       <!-- Immagini (read-only per tutti) -->

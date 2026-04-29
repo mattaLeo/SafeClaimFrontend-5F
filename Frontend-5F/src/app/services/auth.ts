@@ -7,7 +7,7 @@ import { User } from '../models/user.model';
   providedIn: 'root',
 })
 export class AuthService {
-  link = "https://bug-free-acorn-4jjxxg66745r3qpgg-6000.app.github.dev/";
+  link = "https://vigilant-acorn-wrrww9xx7p9gc9gp6-6000.app.github.dev/";
 
   private _currentUser?: User;
 

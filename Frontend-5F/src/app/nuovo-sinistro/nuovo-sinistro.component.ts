@@ -17,7 +17,7 @@ export class NuovoSinistroComponent implements OnInit {
   @Output() created = new EventEmitter<any>();
   @Output() closed  = new EventEmitter<void>();
 
-  formData = { targa: '', data_evento: '', descrizione: '' };
+  formData = { targa: '', data_evento: '', descrizione: '', geolocalizzazione: { latitudine: 0, longitudine: 0 } };
   loading        = false;
   errorMessage   = '';
   successMessage = '';
@@ -44,7 +44,28 @@ export class NuovoSinistroComponent implements OnInit {
     this.errorMessage   = '';
   }
 
-  submit(): void {
+  private getCurrentPosition(): Promise<{ lat: number; lng: number }> {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocalizzazione non supportata dal browser.'));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          reject(new Error('Impossibile ottenere la posizione: ' + error.message));
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+      );
+    });
+  }
+
+  async submit(): Promise<void> {
     if (!this.formData.targa || !this.formData.data_evento || !this.formData.descrizione) {
       this.errorMessage = "Compila tutti i campi obbligatori.";
       return;
@@ -52,11 +73,22 @@ export class NuovoSinistroComponent implements OnInit {
 
     this.loading = true;
 
+    try {
+      const position = await this.getCurrentPosition();
+      this.formData.geolocalizzazione.latitudine = position.lat;
+      this.formData.geolocalizzazione.longitudine = position.lng;
+    } catch (error: any) {
+      this.errorMessage = error.message;
+      this.loading = false;
+      return;
+    }
+
     const payload: sinistro = {
       automobilista_id: this.auth.currentUser?.id || 0,
       targa:            this.formData.targa,
       data_evento:      new Date(this.formData.data_evento),
-      descrizione:      this.formData.descrizione
+      descrizione:      this.formData.descrizione,
+      geolocalizzazione: this.formData.geolocalizzazione
     };
 
     this.sinistriService.createSinistro(payload).subscribe({

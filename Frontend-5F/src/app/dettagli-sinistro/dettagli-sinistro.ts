@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { GoogleMapsModule } from '@angular/google-maps';
 import { sinistro } from '../models/sinistro.model';
 import { Sinistri } from '../services/sinistri';
 import { CreaPraticaComponent } from '../crea-pratica/crea-pratica';
@@ -8,7 +9,7 @@ import { CreaPraticaComponent } from '../crea-pratica/crea-pratica';
 @Component({
   selector: 'app-dettaglio-sinistro',
   standalone: true,
-  imports: [CommonModule, FormsModule, CreaPraticaComponent],
+  imports: [CommonModule, FormsModule, GoogleMapsModule, CreaPraticaComponent],
   templateUrl: './dettagli-sinistro.html',
   styleUrls: ['./dettagli-sinistro.css'],
 })
@@ -31,8 +32,17 @@ export class DettaglioSinistroComponent implements OnInit {
   uploadError = '';
   uploadSuccess = '';
 
+  // Google Maps
+  center: google.maps.LatLngLiteral = { lat: 41.9028, lng: 12.4964 }; // Roma di default
+  zoom = 12;
+  markerOptions: google.maps.MarkerOptions = { draggable: false };
+
+  get hasPosition(): boolean {
+    return !!(this.sinistro?.geolocalizzazione || (this.sinistro?.latitudine && this.sinistro?.longitudine));
+  }
+
   constructor(
-    private Sinistri: Sinistri,
+    private sinistriService: Sinistri,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -46,6 +56,16 @@ export class DettaglioSinistroComponent implements OnInit {
         if (img.public_id) return `https://res.cloudinary.com/dm6estjhs/image/upload/${img.public_id}`;
         return null;
       }).filter(Boolean);
+    }
+
+    // Imposta la mappa se posizione disponibile
+    if (this.hasPosition) {
+      const lat = this.sinistro.geolocalizzazione?.latitudine || this.sinistro.latitudine;
+      const lng = this.sinistro.geolocalizzazione?.longitudine || this.sinistro.longitudine;
+      if (lat !== undefined && lng !== undefined) {
+        this.center = { lat, lng };
+        this.zoom = 15;
+      }
     }
   }
 
@@ -74,7 +94,7 @@ export class DettaglioSinistroComponent implements OnInit {
       stato: this.sinistro.stato
     };
 
-    this.Sinistri.aggiornaSinistro(this.sinistro._id, updateData).subscribe({
+    this.sinistriService.aggiornaSinistro(this.sinistro._id, updateData).subscribe({
       next: () => {
         this.sinistro.descrizione = this.descrizioneEditabile;
         this.saveSuccess = 'Sinistro aggiornato con successo.';
@@ -116,7 +136,7 @@ export class DettaglioSinistroComponent implements OnInit {
     this.uploadError = '';
     this.uploadSuccess = '';
     this.cdr.detectChanges();
-    this.Sinistri.uploadImmagini(this.sinistro._id, this.uploadingFiles).subscribe({
+    this.sinistriService.uploadImmagini(this.sinistro._id, this.uploadingFiles).subscribe({
       next: () => {
         this.immagini = [...this.immagini, ...this.previewUrls];
         this.previewUrls = [];

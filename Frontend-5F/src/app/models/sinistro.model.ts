@@ -7,4 +7,10 @@ export interface sinistro {
     data_creazione?: Date;
     _id?: string;
     immagini?: string[];
+    latitudine?: number;
+    longitudine?: number;
+    geolocalizzazione?: {
+        latitudine: number;
+        longitudine: number;
+    };
 }

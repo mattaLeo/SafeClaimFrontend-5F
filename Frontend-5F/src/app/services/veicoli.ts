@@ -7,7 +7,7 @@ import { Veicolo } from '../models/veicolo.model';
   providedIn: 'root',
 })
 export class VeicoliService {
-  private link = 'https://bug-free-acorn-4jjxxg66745r3qpgg-5000.app.github.dev/'; 
+  private link = 'https://vigilant-acorn-wrrww9xx7p9gc9gp6-5000.app.github.dev/'; 
 
   public veicoli: Veicolo[] = [];
 
