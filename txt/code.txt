@@ -4,6 +4,8 @@ npm install -g @angular/cli
 
 npm install @angular/google-maps
 
+npm view @angular/google-maps@21.2.8 exports --json && npm view @angular/google-maps@21.2.8 version
+
 npm install
 
 ng serve     ng serve --host 0.0.0.0

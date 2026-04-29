@@ -5,13 +5,14 @@ import { FormsModule } from '@angular/forms';
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../services/auth';
 import { User } from '../models/user.model';
+import { AssistenteComponent } from '../assistente/assistente.component';
 
 export type UserRole = 'perito' | 'automobilista' | 'assicuratore';
 
 @Component({
   selector: 'app-base',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, FormsModule],
+  imports: [RouterOutlet, CommonModule, FormsModule, AssistenteComponent],
   templateUrl: './base.html',
   styleUrl: './base.css',
 })

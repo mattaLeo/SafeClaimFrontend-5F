@@ -7,7 +7,7 @@ import { Veicolo } from '../models/veicolo.model';
   providedIn: 'root',
 })
 export class VeicoliService {
-  private link = 'https://cautious-disco-699jjrwwgxwqfrpwj-5000.app.github.dev/'; 
+  private link = 'https://opulent-enigma-wrrww9xx7p79c556r-5000.app.github.dev/'; 
 
   public veicoli: Veicolo[] = [];
 
