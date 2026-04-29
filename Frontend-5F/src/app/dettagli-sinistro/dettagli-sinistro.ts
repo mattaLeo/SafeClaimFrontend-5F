@@ -36,6 +36,12 @@ export class DettaglioSinistroComponent implements OnInit {
   center: google.maps.LatLngLiteral = { lat: 41.9028, lng: 12.4964 }; // Roma di default
   zoom = 12;
   markerOptions: google.maps.MarkerOptions = { draggable: false };
+  mapOptions: google.maps.MapOptions = {
+    disableDefaultUI: false,
+    fullscreenControl: false,
+    mapTypeControl: true,
+    streetViewControl: false
+  };
 
   get hasPosition(): boolean {
     return !!(this.sinistro?.geolocalizzazione || (this.sinistro?.latitudine && this.sinistro?.longitudine));
