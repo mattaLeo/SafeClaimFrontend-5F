@@ -26,9 +26,16 @@
             name="targa"
             required
             placeholder="Es. AB123CD"
-            class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 uppercase placeholder-slate-300 font-medium focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] transition-all"
+            maxlength="7"
+            class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border transition-all uppercase placeholder-slate-300 font-medium focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] bg-slate-50 text-slate-800"
+            [class.border-slate-200]="!formData.targa || targaValida(formData.targa)"
+            [class.border-red-400]="formData.targa && !targaValida(formData.targa)"
           />
         </div>
+        <p *ngIf="formData.targa && !targaValida(formData.targa)"
+           class="text-red-500 text-xs font-medium mt-0.5">
+          Formato non valido. Esempio: AB123CD
+        </p>
       </div>
 
       <!-- Marca -->

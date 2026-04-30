@@ -30,17 +30,28 @@ export class NuovoVeicoloComponent {
     private auth: AuthService
   ) {}
 
+  protected targaValida(targa: string): boolean {
+    return /^[A-Z]{2}\d{3}[A-Z]{2}$/.test(targa.toUpperCase().trim());
+  }
+
   submit(): void {
-    if (!this.formData.targa || !this.formData.marca || !this.formData.modello) {
+    this.errorMessage = '';
+
+    if (!this.formData.targa.trim() || !this.formData.marca.trim() || !this.formData.modello.trim()) {
       this.errorMessage = 'Compila tutti i campi obbligatori.';
       return;
     }
 
+    if (!this.targaValida(this.formData.targa)) {
+      this.errorMessage = 'Formato targa non valido. Esempio: AB123CD';
+      return;
+    }
+
     this.loading = true;
-    this.errorMessage = '';
 
     const payload = {
       ...this.formData,
+      targa: this.formData.targa.toUpperCase().trim(),
       automobilista_id: this.auth.currentUser?.id
     };
 
@@ -53,7 +64,11 @@ export class NuovoVeicoloComponent {
       },
       error: (err: any) => {
         this.loading      = false;
-        this.errorMessage = 'Errore durante il salvataggio. Riprova.';
+        if (err.status === 409) {
+          this.errorMessage = 'Targa già registrata nel sistema.';
+        } else {
+          this.errorMessage = 'Errore durante il salvataggio. Riprova.';
+        }
         console.error(err);
       }
     });
