@@ -1,7 +1,8 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../services/auth';
 
 @Component({
   selector: 'app-signup',
@@ -11,54 +12,41 @@ import { Router, RouterLink } from '@angular/router';
   styleUrl: './signup.css',
 })
 export class Signup {
-  // role state
-  role: 'user' | 'perito' | 'assicuratore' = 'user';
-
-  // models
   user = { nome: '', cognome: '', cf: '', targa: '', email: '', password: '' };
-  perito = { cf: '', email: '', password: '' };
-  assicuratore = { email: '', password: '' };
-
+  showPassword = false;
   loading = false;
   errorMessage = '';
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
-  selectRole(r: 'user' | 'perito' | 'assicuratore'): void {
-    this.role = r;
+  onSubmit(): void {
     this.errorMessage = '';
-  }
 
-  async onSubmit(): Promise<void> {
-    this.errorMessage = '';
-
-    if (this.role === 'user') {
-      if (!this.user.nome || !this.user.cognome || !this.user.cf || !this.user.targa || !this.user.email || !this.user.password) {
-        this.errorMessage = 'Compila tutti i campi richiesti.';
-        return;
-      }
-    } else if (this.role === 'perito') {
-      if (!this.perito.cf || !this.perito.email || !this.perito.password) {
-        this.errorMessage = 'Compila tutti i campi richiesti.';
-        return;
-      }
-    } else {
-      if (!this.assicuratore.email || !this.assicuratore.password) {
-        this.errorMessage = 'Compila tutti i campi richiesti.';
-        return;
-      }
+    if (!this.user.nome || !this.user.cognome || !this.user.cf || !this.user.targa || !this.user.email || !this.user.password) {
+      this.errorMessage = 'Compila tutti i campi richiesti.';
+      return;
     }
 
     this.loading = true;
+    this.cdr.detectChanges();
 
-    try {
-      // simulate network
-      await new Promise((res) => setTimeout(res, 1000));
-      this.router.navigate(['/']);
-    } catch (err: any) {
-      this.errorMessage = err?.message ?? 'Errore durante la registrazione.';
-    } finally {
-      this.loading = false;
-    }
+    this.authService.signup({
+      ...this.user,
+      ruolo: 'automobilista'
+    } as any).subscribe({
+      next: () => {
+        this.loading = false;
+        this.router.navigate(['/signin']);
+      },
+      error: (err: any) => {
+        this.loading = false;
+        this.errorMessage = err?.error?.message ?? 'Errore durante la registrazione.';
+        this.cdr.detectChanges();
+      }
+    });
   }
 }
