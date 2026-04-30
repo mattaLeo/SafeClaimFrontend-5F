@@ -9,6 +9,7 @@ import { NuovoSinistroComponent } from '../nuovo-sinistro/nuovo-sinistro.compone
 import { DettaglioSinistroComponent } from '../dettagli-sinistro/dettagli-sinistro';
 import { sinistro } from '../models/sinistro.model';
 import { User } from '../models/user.model';
+import { Veicolo } from '../models/veicolo.model';
 
 // Import servizi
 import { VeicoliService } from '../services/veicoli';
@@ -25,6 +26,7 @@ import { AuthService } from '../services/auth';
 export class Automobilista implements OnInit, OnDestroy {
   showNewSinistro = false;
   sinistri: sinistro[] = [];
+  veicoli: Veicolo[] = [];
   searchTerm: string = '';
   user?: User;
   sinistroSelezionato?: sinistro;
@@ -54,6 +56,14 @@ export class Automobilista implements OnInit, OnDestroy {
       error: (err: any) => console.error("Errore stream:", err)
     });
 
+    this.dataSub.add(this.veicoliService.veicoli$.subscribe({
+      next: (data: Veicolo[]) => {
+        this.veicoli = data;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => console.error("Errore veicoli:", err)
+    }));
+
     // 2. Avvii il timer per dire al servizio di caricare i dati ogni 30 secondi
     this.startAutoRefresh();
   }
@@ -68,14 +78,8 @@ export class Automobilista implements OnInit, OnDestroy {
     const userId = this.auth.currentUser?.id;
     if (!userId) return;
 
-    // Richiama il caricamento dei veicoli
-    this.veicoliService.getVeicoliUtente(userId).subscribe({
-      next: (data) => {
-        this.veicoliService.veicoli = data;
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => console.error(err)
-    });
+    // Comando al servizio di aggiornare i veicoli (senza .subscribe perché è void)
+    this.veicoliService.askVeicoliUtente(userId);
 
     // Comando al servizio di aggiornare i sinistri (senza .subscribe perché è void)
     this.SinistriService.askSinistri(userId);
