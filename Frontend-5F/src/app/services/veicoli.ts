@@ -7,7 +7,7 @@ import { Veicolo } from '../models/veicolo.model';
   providedIn: 'root',
 })
 export class VeicoliService {
-  private link = 'https://bug-free-acorn-4jjxxg66745r3qpgg-5000.app.github.dev/'; 
+  private link = 'https://curly-space-goggles-699jjrw5xqvvf5pg5-5000.app.github.dev/'; 
 
   public veicoli: Veicolo[] = [];
 
@@ -41,6 +41,13 @@ export class VeicoliService {
   askVeicoli(): Observable<Veicolo[]> {
     return this.http.get<Veicolo[]>(`${this.link}veicoli`).pipe(
       tap((data) => this.veicoli = data)
+    );
+  }
+
+  createVeicolo(payload: any): Observable<any> {
+    const userId = payload.automobilista_id;
+    return this.http.post<any>(`${this.link}veicolo/user/${userId}`, payload).pipe(
+      tap(() => this.askVeicoli().subscribe())
     );
   }
 }
