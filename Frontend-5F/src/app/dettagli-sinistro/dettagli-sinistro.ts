@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GoogleMapsModule } from '@angular/google-maps';
 import { sinistro } from '../models/sinistro.model';
-import { Sinistri } from '../services/sinistri';
+import { Sinistri } from '../services/sinistri.service';
 import { CreaPraticaComponent } from '../crea-pratica/crea-pratica';
 
 @Component({

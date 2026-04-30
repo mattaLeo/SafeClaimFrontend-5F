@@ -12,9 +12,9 @@ import { User } from '../models/user.model';
 import { Veicolo } from '../models/veicolo.model';
 
 // Import servizi
-import { VeicoliService } from '../services/veicoli';
-import { Sinistri } from '../services/sinistri';
-import { AuthService } from '../services/auth';
+import { VeicoliService } from '../services/veicoli.service';
+import { Sinistri } from '../services/sinistri.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-automobilista',

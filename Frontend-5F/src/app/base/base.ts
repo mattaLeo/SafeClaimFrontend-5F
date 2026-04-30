@@ -3,7 +3,7 @@ import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { filter } from 'rxjs/operators';
-import { AuthService } from '../services/auth';
+import { AuthService } from '../services/auth.service';
 import { User } from '../models/user.model';
 import { AssistenteComponent } from '../assistente/assistente.component';
 

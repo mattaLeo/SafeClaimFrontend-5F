@@ -74,7 +74,7 @@ import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ClaimCardComponent } from '../componenti/claim-card/claim-card.component';
 import { Perizie } from '../services/perizie.service';
-import { AuthService } from '../services/auth';
+import { AuthService } from '../services/auth.service';
 import { timer, Subscription } from 'rxjs';
 import jsPDF from 'jspdf';
 

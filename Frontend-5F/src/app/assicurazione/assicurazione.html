@@ -32,10 +32,10 @@
       </div>
       <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-[#7AB2B2] flex items-center justify-between">
         <div class="flex items-center gap-4">
-          <div class="bg-[#EBF4F6] p-3 rounded-lg text-[#7AB2B2]"><i class="bi bi-folder-check fs-4"></i></div>
+          <div class="bg-[#EBF4F6] p-3 rounded-lg text-[#7AB2B2]"><i class="bi bi-shield-check fs-4"></i></div>
           <div>
-            <h3 class="text-2xl font-black text-[#09637E] tracking-tight">—</h3>
-            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-0.5">Pratiche Chiuse</p>
+            <h3 class="text-2xl font-black text-[#09637E] tracking-tight">{{ polizze.length }}</h3>
+            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-0.5">Polizze Attive</p>
           </div>
         </div>
       </div>
@@ -50,17 +50,58 @@
       </div>
     </div>
 
+    <!-- TAB NAV -->
+    <div class="flex items-center gap-2 mb-6 bg-white rounded-2xl p-1.5 shadow-sm border border-[#7AB2B2]/30 w-fit">
+      <button type="button" (click)="setTab('sinistri')"
+        [class]="activeTab === 'sinistri'
+          ? 'bg-[#09637E] text-white shadow-md'
+          : 'text-slate-500 hover:text-[#09637E] hover:bg-[#EBF4F6]'"
+        class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">
+        <i class="bi bi-exclamation-circle"></i> Sinistri
+        <span class="ml-1 px-1.5 py-0.5 rounded-full text-[9px]"
+          [class]="activeTab === 'sinistri' ? 'bg-white/20 text-white' : 'bg-[#EBF4F6] text-[#09637E]'">
+          {{ sinistri.sinistri.length }}
+        </span>
+      </button>
+      <button type="button" (click)="setTab('pratiche')"
+        [class]="activeTab === 'pratiche'
+          ? 'bg-[#09637E] text-white shadow-md'
+          : 'text-slate-500 hover:text-[#09637E] hover:bg-[#EBF4F6]'"
+        class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">
+        <i class="bi bi-folder2-open"></i> Pratiche
+        <span class="ml-1 px-1.5 py-0.5 rounded-full text-[9px]"
+          [class]="activeTab === 'pratiche' ? 'bg-white/20 text-white' : 'bg-[#EBF4F6] text-[#09637E]'">
+          {{ pratiche.length }}
+        </span>
+      </button>
+      <button type="button" (click)="setTab('polizze')"
+        [class]="activeTab === 'polizze'
+          ? 'bg-[#09637E] text-white shadow-md'
+          : 'text-slate-500 hover:text-[#09637E] hover:bg-[#EBF4F6]'"
+        class="flex items-center gap-2 px-5 py-2.5 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all">
+        <i class="bi bi-shield-check"></i> Polizze
+        <span class="ml-1 px-1.5 py-0.5 rounded-full text-[9px]"
+          [class]="activeTab === 'polizze' ? 'bg-white/20 text-white' : 'bg-[#EBF4F6] text-[#09637E]'">
+          {{ polizze.length }}
+        </span>
+      </button>
+    </div>
+
     <!-- SEZIONE PRINCIPALE -->
     <div>
       <div class="flex flex-col gap-4 mb-6">
         <div class="flex justify-between items-center">
           <h2 class="text-xl font-black text-[#09637E] uppercase tracking-tight">
-            {{ mostraSinistri ? 'Sinistri da Visionare' : 'Pratiche' }}
+            <ng-container [ngSwitch]="activeTab">
+              <span *ngSwitchCase="'sinistri'">Sinistri da Visionare</span>
+              <span *ngSwitchCase="'pratiche'">Pratiche</span>
+              <span *ngSwitchCase="'polizze'">Polizze Assicurative</span>
+            </ng-container>
           </h2>
-          <button type="button" (click)="mostraSinistri = !mostraSinistri; searchTerm = ''"
+          <!-- Bottone Nuova Polizza solo nel tab polizze -->
+          <button *ngIf="activeTab === 'polizze'" type="button" (click)="apriNuovaPolizza()"
             class="bg-[#09637E] hover:bg-[#088395] text-white font-black text-[10px] uppercase tracking-[0.2em] py-3 px-6 rounded-xl transition-all flex items-center gap-2">
-            <i [class]="mostraSinistri ? 'bi bi-folder2-open' : 'bi bi-exclamation-circle'"></i>
-            {{ mostraSinistri ? 'Vedi Pratiche' : 'Vedi Sinistri' }}
+            <i class="bi bi-plus-lg"></i> Nuova Polizza
           </button>
         </div>
 
@@ -69,14 +110,58 @@
             <i class="bi bi-search"></i>
           </span>
           <input type="text" [(ngModel)]="searchTerm"
-            [placeholder]="mostraSinistri ? 'Cerca per targa, descrizione o stato...' : 'Cerca per titolo, descrizione o stato...'"
+            [placeholder]="activeTab === 'sinistri' ? 'Cerca per targa, descrizione o stato...'
+                         : activeTab === 'pratiche' ? 'Cerca per titolo, descrizione o stato...'
+                         : 'Cerca per n° polizza, compagnia o tipo copertura...'"
             class="w-full pl-12 pr-4 py-4 rounded-2xl border border-[#7AB2B2]/30 focus:outline-none focus:ring-4 focus:ring-[#088395]/10 focus:border-[#088395] transition-all bg-white shadow-sm font-medium text-slate-700" />
         </div>
       </div>
 
-      <!-- ══ VISTA PRATICHE ══ -->
-      <div *ngIf="!mostraSinistri">
+      <!-- ══ VISTA SINISTRI ══ -->
+      <div *ngIf="activeTab === 'sinistri'" class="space-y-4">
+        <div *ngIf="sinistriFiltrati.length === 0"
+             class="bg-white p-10 rounded-2xl shadow-sm border border-[#7AB2B2]/30 text-center text-slate-400">
+          <i class="bi bi-clipboard2 text-4xl mb-3 block text-[#7AB2B2]"></i>
+          <p class="text-xs font-black uppercase tracking-widest">
+            {{ searchTerm ? 'Nessun risultato per "' + searchTerm + '"' : 'Nessun sinistro presente' }}
+          </p>
+        </div>
 
+        <div *ngFor="let s of sinistriFiltrati"
+             (click)="apriDettaglio(s)"
+             class="bg-white p-6 rounded-2xl shadow-sm border border-[#7AB2B2]/30 hover:border-[#088395] transition-all cursor-pointer group">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-4">
+              <div class="bg-[#EBF4F6] p-3 rounded-xl text-[#7AB2B2]">
+                <i class="bi bi-car-front text-xl"></i>
+              </div>
+              <div>
+                <p class="font-black text-[#09637E] uppercase text-sm tracking-tight">{{ s.targa }}</p>
+                <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">ID automobilista: {{ s.automobilista_id }}</p>
+              </div>
+            </div>
+            <span class="text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest border"
+              [ngClass]="{
+                'bg-green-50 text-green-600 border-green-200': s.stato === 'APERTO',
+                'bg-slate-100 text-slate-500 border-slate-200': s.stato === 'CHIUSO',
+                'bg-amber-50 text-amber-600 border-amber-200': s.stato === 'IN ANALISI',
+                'bg-[#EBF4F6] text-[#09637E] border-[#7AB2B2]/30': !s.stato
+              }">
+              {{ s.stato ?? 'N/D' }}
+            </span>
+          </div>
+          <div class="bg-[#EBF4F6] rounded-xl p-4 mb-4">
+            <p class="text-xs font-bold text-slate-500">{{ s.descrizione }}</p>
+          </div>
+          <div class="flex items-center gap-6 text-[10px] text-slate-400 font-black uppercase tracking-widest">
+            <span><i class="bi bi-calendar-event me-1"></i>Evento: {{ s.data_evento | date: 'd MMM yyyy' }}</span>
+            <span *ngIf="s.data_creazione"><i class="bi bi-clock-history me-1"></i>Creato: {{ s.data_creazione | date: 'd MMM yyyy' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ VISTA PRATICHE ══ -->
+      <div *ngIf="activeTab === 'pratiche'">
         <div *ngIf="loadingPratiche"
              class="bg-white p-10 rounded-2xl shadow-sm border border-[#7AB2B2]/30 text-center text-slate-400">
           <svg class="w-6 h-6 animate-spin mx-auto mb-3 text-[#7AB2B2]" fill="none" viewBox="0 0 24 24">
@@ -98,7 +183,6 @@
           <div *ngFor="let p of praticheFiltrate"
                (click)="apriDettaglioPratica(p)"
                class="bg-white p-6 rounded-2xl shadow-sm border border-[#7AB2B2]/30 hover:border-[#088395] transition-all cursor-pointer group">
-
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-4">
                 <div class="bg-[#EBF4F6] p-3 rounded-xl text-[#7AB2B2] group-hover:bg-[#088395] group-hover:text-white transition-all">
@@ -111,7 +195,6 @@
                   </p>
                 </div>
               </div>
-
               <div class="flex items-center gap-3">
                 <span class="text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest border"
                   [ngClass]="{
@@ -122,29 +205,22 @@
                   }">
                   {{ p.stato ?? 'N/D' }}
                 </span>
-
-                <!-- BOTTONE ASSEGNA PERITO SOLO SE NON C'È PERITO -->
                 <button *ngIf="!p.perito_id" type="button"
                         (click)="apriAssegnaPerito(p, $event)"
                         class="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-xl border transition-all bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-500 hover:text-white">
-                  <i class="bi bi-person-check"></i>
-                  Assegna Perito
+                  <i class="bi bi-person-check"></i> Assegna Perito
                 </button>
               </div>
             </div>
-
             <div class="bg-[#EBF4F6] rounded-xl p-4 mb-4">
               <p class="text-xs font-bold text-slate-500">{{ p.descrizione }}</p>
             </div>
 
-            <!-- Modale inline assegna perito per questa pratica -->
+            <!-- Modale inline assegna perito -->
             <div *ngIf="praticaPerAssegna?._id === p._id"
                  (click)="$event.stopPropagation()"
                  class="mt-4 bg-white border-2 border-[#09637E]/20 rounded-2xl p-5 shadow-lg">
-              <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">
-                Seleziona Perito da Assegnare
-              </p>
-
+              <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Seleziona Perito da Assegnare</p>
               <select [(ngModel)]="peritoSelezionatoId"
                       class="w-full py-3 px-4 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 bg-white focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] transition-all mb-4">
                 <option value="" disabled>— Scegli un perito —</option>
@@ -153,19 +229,11 @@
                   <ng-container *ngIf="perito.specializzazione"> · {{ perito.specializzazione }}</ng-container>
                 </option>
               </select>
-
-              <div *ngIf="assegnaErrore" class="mb-3 text-xs text-red-600 font-semibold p-2 bg-red-50 rounded-lg">
-                {{ assegnaErrore }}
-              </div>
-              <div *ngIf="assegnaSuccesso" class="mb-3 text-xs text-green-600 font-semibold p-2 bg-green-50 rounded-lg">
-                {{ assegnaSuccesso }}
-              </div>
-
+              <div *ngIf="assegnaErrore" class="mb-3 text-xs text-red-600 font-semibold p-2 bg-red-50 rounded-lg">{{ assegnaErrore }}</div>
+              <div *ngIf="assegnaSuccesso" class="mb-3 text-xs text-green-600 font-semibold p-2 bg-green-50 rounded-lg">{{ assegnaSuccesso }}</div>
               <div class="flex items-center justify-between">
                 <button type="button" (click)="chiudiAssegnaPerito()"
-                        class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors">
-                  Annulla
-                </button>
+                        class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors">Annulla</button>
                 <button type="button" (click)="confermAssegnaPerito()"
                         [disabled]="!peritoSelezionatoId || assegnando"
                         class="py-2.5 px-6 bg-[#09637E] text-white text-[10px] font-extrabold rounded-xl shadow transition-all hover:bg-[#088395] disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2">
@@ -188,49 +256,76 @@
         </div>
       </div>
 
-      <!-- ══ VISTA SINISTRI (solo lettura) ══ -->
-      <div *ngIf="mostraSinistri" class="space-y-4">
+      <!-- ══ VISTA POLIZZE ══ -->
+      <div *ngIf="activeTab === 'polizze'">
 
-        <div *ngIf="sinistriFiltrati.length === 0"
+        <div *ngIf="loadingPolizze"
              class="bg-white p-10 rounded-2xl shadow-sm border border-[#7AB2B2]/30 text-center text-slate-400">
-          <i class="bi bi-clipboard2 text-4xl mb-3 block text-[#7AB2B2]"></i>
+          <svg class="w-6 h-6 animate-spin mx-auto mb-3 text-[#7AB2B2]" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+          </svg>
+          <p class="text-xs font-black uppercase tracking-widest">Caricamento polizze...</p>
+        </div>
+
+        <div *ngIf="!loadingPolizze && polizzeFiltrate.length === 0"
+             class="bg-white p-10 rounded-2xl shadow-sm border border-[#7AB2B2]/30 text-center text-slate-400">
+          <i class="bi bi-shield text-4xl mb-3 block text-[#7AB2B2]"></i>
           <p class="text-xs font-black uppercase tracking-widest">
-            {{ searchTerm ? 'Nessun risultato per "' + searchTerm + '"' : 'Nessun sinistro presente' }}
+            {{ searchTerm ? 'Nessun risultato per "' + searchTerm + '"' : 'Nessuna polizza presente' }}
           </p>
         </div>
 
-        <div *ngFor="let s of sinistriFiltrati"
-             (click)="apriDettaglio(s)"
-             class="bg-white p-6 rounded-2xl shadow-sm border border-[#7AB2B2]/30 hover:border-[#088395] transition-all cursor-pointer group">
-
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-4">
-              <div class="bg-[#EBF4F6] p-3 rounded-xl text-[#7AB2B2]">
-                <i class="bi bi-car-front text-xl"></i>
+        <div *ngIf="!loadingPolizze && polizzeFiltrate.length > 0" class="space-y-4">
+          <div *ngFor="let pol of polizzeFiltrate"
+               class="bg-white p-6 rounded-2xl shadow-sm border border-[#7AB2B2]/30 hover:border-[#088395] transition-all group">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-4">
+                <div class="bg-[#EBF4F6] p-3 rounded-xl text-[#7AB2B2] group-hover:bg-[#088395] group-hover:text-white transition-all">
+                  <i class="bi bi-shield-check text-xl"></i>
+                </div>
+                <div>
+                  <p class="font-black text-[#09637E] uppercase text-sm tracking-tight">N° {{ pol.n_polizza }}</p>
+                  <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+                    {{ pol.compagnia_assicurativa ?? '—' }} &nbsp;·&nbsp; Veicolo: #{{ pol.veicolo_id }}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p class="font-black text-[#09637E] uppercase text-sm tracking-tight">{{ s.targa }}</p>
-                <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">ID automobilista: {{ s.automobilista_id }}</p>
+              <div class="flex items-center gap-3">
+                <span class="text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest border"
+                  [ngClass]="isPolizzaAttiva(pol)
+                    ? 'bg-green-50 text-green-600 border-green-200'
+                    : 'bg-red-50 text-red-500 border-red-200'">
+                  {{ isPolizzaAttiva(pol) ? 'Attiva' : 'Scaduta' }}
+                </span>
+                <button type="button" (click)="apriEliminaPolizza(pol, $event)"
+                  class="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-xl border transition-all bg-red-50 text-red-500 border-red-200 hover:bg-red-500 hover:text-white">
+                  <i class="bi bi-trash"></i>
+                </button>
               </div>
             </div>
-            <span class="text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest border"
-              [ngClass]="{
-                'bg-green-50 text-green-600 border-green-200': s.stato === 'APERTO',
-                'bg-slate-100 text-slate-500 border-slate-200': s.stato === 'CHIUSO',
-                'bg-amber-50 text-amber-600 border-amber-200': s.stato === 'IN ANALISI',
-                'bg-[#EBF4F6] text-[#09637E] border-[#7AB2B2]/30': !s.stato
-              }">
-              {{ s.stato ?? 'N/D' }}
-            </span>
-          </div>
 
-          <div class="bg-[#EBF4F6] rounded-xl p-4 mb-4">
-            <p class="text-xs font-bold text-slate-500">{{ s.descrizione }}</p>
-          </div>
-
-          <div class="flex items-center gap-6 text-[10px] text-slate-400 font-black uppercase tracking-widest">
-            <span><i class="bi bi-calendar-event me-1"></i>Evento: {{ s.data_evento | date: 'd MMM yyyy' }}</span>
-            <span *ngIf="s.data_creazione"><i class="bi bi-clock-history me-1"></i>Creato: {{ s.data_creazione | date: 'd MMM yyyy' }}</span>
+            <!-- Dettagli polizza -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div class="bg-[#EBF4F6] rounded-xl p-3">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tipo Copertura</p>
+                <p class="text-xs font-black text-[#09637E]">{{ pol.tipo_copertura ?? '—' }}</p>
+              </div>
+              <div class="bg-[#EBF4F6] rounded-xl p-3">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Massimale</p>
+                <p class="text-xs font-black text-[#09637E]">{{ pol.massimale ? '€ ' + (pol.massimale | number:'1.2-2') : '—' }}</p>
+              </div>
+              <div class="bg-[#EBF4F6] rounded-xl p-3">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Inizio</p>
+                <p class="text-xs font-black text-[#09637E]">{{ pol.data_inizio | date:'d MMM yyyy' }}</p>
+              </div>
+              <div class="bg-[#EBF4F6] rounded-xl p-3">
+                <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Scadenza</p>
+                <p class="text-xs font-black" [class]="isPolizzaAttiva(pol) ? 'text-[#09637E]' : 'text-red-500'">
+                  {{ pol.data_scadenza | date:'d MMM yyyy' }}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -239,7 +334,103 @@
   </div>
 </div>
 
-<!-- Modali -->
+<!-- Modale Nuova Polizza -->
+<!-- Modale Nuova Polizza -->
+<div *ngIf="showNuovaPolizza"
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+     (click)="chiudiNuovaPolizza()">
+  <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 border border-[#7AB2B2]/30"
+       (click)="$event.stopPropagation()">
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-3">
+        <div class="bg-[#09637E] p-2.5 rounded-xl">
+          <i class="bi bi-shield-plus text-white text-lg"></i>
+        </div>
+        <h3 class="text-lg font-black text-[#09637E] uppercase tracking-tight">Nuova Polizza</h3>
+      </div>
+      <button type="button" (click)="chiudiNuovaPolizza()" class="text-slate-400 hover:text-slate-600 transition-colors">
+        <i class="bi bi-x-lg text-lg"></i>
+      </button>
+    </div>
+
+    <div class="flex flex-col gap-4">
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">N° Polizza</label>
+          <input type="text" [(ngModel)]="nuovaPolizza.n_polizza" placeholder="POL-2024-001"
+            class="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] transition-all" />
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Compagnia</label>
+          <input type="text" [(ngModel)]="nuovaPolizza.compagnia_assicurativa" placeholder="Es. Generali"
+            class="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] transition-all" />
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Tipo Copertura</label>
+        <select [(ngModel)]="nuovaPolizza.tipo_copertura"
+          class="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] transition-all">
+          <option value="RCA">RCA</option>
+          <option value="Kasko">Kasko</option>
+          <option value="Full">Full</option>
+        </select>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Data Inizio</label>
+          <input type="date" [(ngModel)]="nuovaPolizza.data_inizio"
+            class="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] transition-all" />
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Data Scadenza</label>
+          <input type="date" [(ngModel)]="nuovaPolizza.data_scadenza"
+            class="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] transition-all" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Massimale (€)</label>
+          <input type="number" [(ngModel)]="nuovaPolizza.massimale" placeholder="100000"
+            class="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] transition-all" />
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Veicolo</label>
+          <select [(ngModel)]="nuovaPolizza.veicolo_id"
+            class="w-full px-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] transition-all">
+            <option [ngValue]="undefined" disabled>— Seleziona —</option>
+            <option *ngFor="let v of veicoliService.veicoli" [ngValue]="v.id">
+              {{ v.targa }} — {{ v.marca }} {{ v.modello }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div *ngIf="polizzaErrore" class="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-xs font-semibold">
+        <i class="bi bi-exclamation-circle shrink-0"></i> {{ polizzaErrore }}
+      </div>
+      <div *ngIf="polizzaSuccesso" class="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-100 rounded-xl text-green-600 text-xs font-semibold">
+        <i class="bi bi-check-circle shrink-0"></i> {{ polizzaSuccesso }}
+      </div>
+
+      <button type="button" (click)="salvaPolizza()"
+        [disabled]="salvandoPolizza"
+        class="w-full py-3 bg-[#09637E] hover:bg-[#088395] text-white text-sm font-black rounded-xl shadow-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+        <svg *ngIf="salvandoPolizza" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        </svg>
+        {{ salvandoPolizza ? 'Salvataggio...' : 'Salva Polizza' }}
+      </button>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modali esistenti -->
 <app-dettaglio-sinistro
   *ngIf="sinistroSelezionato"
   [sinistro]="sinistroSelezionato!"

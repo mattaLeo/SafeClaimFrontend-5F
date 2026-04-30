@@ -1,9 +1,9 @@
 import { Component, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Sinistri } from '../services/sinistri';
-import { VeicoliService } from '../services/veicoli';
-import { AuthService } from '../services/auth';
+import { Sinistri } from '../services/sinistri.service';
+import { VeicoliService } from '../services/veicoli.service';
+import { AuthService } from '../services/auth.service';
 import { sinistro } from '../models/sinistro.model';
 
 @Component({

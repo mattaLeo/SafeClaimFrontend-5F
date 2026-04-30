@@ -1,8 +1,8 @@
 import { Component, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { VeicoliService } from '../services/veicoli';
-import { AuthService } from '../services/auth';
+import { VeicoliService } from '../services/veicoli.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-nuovo-veicolo',

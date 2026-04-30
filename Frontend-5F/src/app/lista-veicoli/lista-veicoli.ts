@@ -2,8 +2,8 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { VeicoliService } from '../services/veicoli';
-import { AuthService } from '../services/auth';
+import { VeicoliService } from '../services/veicoli.service';
+import { AuthService } from '../services/auth.service';
 import { VeicoloItem } from '../veicolo-item/veicolo-item';
 import { NuovoVeicoloComponent } from '../nuovo-veicolo/nuovo-veicolo';
 
