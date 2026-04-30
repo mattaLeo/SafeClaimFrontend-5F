@@ -42,12 +42,14 @@ export class Login {
     this.authService.login(this.email, this.password).subscribe({
       next: (res) => {
         if (res.status === 'success') {
+          const role = String(res.user.ruolo ?? '').toLowerCase();
           const routeMap: Record<string, string> = {
             automobilista: '/automobilista',
             perito: '/perito',
             assicuratore: '/assicurazione',
+            assicurazione: '/assicurazione',
           };
-          const route = routeMap[res.user.ruolo] ?? '/';
+          const route = routeMap[role] ?? '/';
           this.router.navigate([route]);
         } else {
           this.loading = false;

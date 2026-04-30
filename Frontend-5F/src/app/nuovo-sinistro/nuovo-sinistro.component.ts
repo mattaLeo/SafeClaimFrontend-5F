@@ -17,9 +17,10 @@ export class NuovoSinistroComponent implements OnInit {
   @Output() created = new EventEmitter<any>();
   @Output() closed  = new EventEmitter<void>();
 
-  formData = { targa: '', data_evento: '', descrizione: '', geolocalizzazione: { latitudine: 0, longitudine: 0 } };
+  formData = { targa: '', data_evento: '', descrizione: '', luogo: '', geolocalizzazione: { latitudine: 0, longitudine: 0 } };
   loading        = false;
   errorMessage   = '';
+  warningMessage = '';
   successMessage = '';
 
   constructor(
@@ -72,15 +73,18 @@ export class NuovoSinistroComponent implements OnInit {
     }
 
     this.loading = true;
+    this.errorMessage = '';
+    this.warningMessage = '';
+
+    let hasPosition = false;
 
     try {
       const position = await this.getCurrentPosition();
       this.formData.geolocalizzazione.latitudine = position.lat;
       this.formData.geolocalizzazione.longitudine = position.lng;
+      hasPosition = true;
     } catch (error: any) {
-      this.errorMessage = error.message;
-      this.loading = false;
-      return;
+      this.warningMessage = 'Posizione non disponibile: il sinistro verrà creato comunque. Inserisci la via se vuoi indicarla manualmente.';
     }
 
     const payload: sinistro = {
@@ -88,7 +92,8 @@ export class NuovoSinistroComponent implements OnInit {
       targa:            this.formData.targa,
       data_evento:      new Date(this.formData.data_evento),
       descrizione:      this.formData.descrizione,
-      geolocalizzazione: this.formData.geolocalizzazione
+      luogo:            this.formData.luogo?.trim() || undefined,
+      ...(hasPosition ? { geolocalizzazione: this.formData.geolocalizzazione } : {})
     };
 
     this.sinistriService.createSinistro(payload).subscribe({

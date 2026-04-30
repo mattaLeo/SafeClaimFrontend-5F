@@ -18,7 +18,6 @@ export type UserRole = 'perito' | 'automobilista' | 'assicuratore';
 })
 export class Base implements OnInit {
   sidebarOpen = false;
-  currentRole: UserRole = 'perito';
   isAuthPage = false;
 
   // --- Edit profilo ---
@@ -27,6 +26,19 @@ export class Base implements OnInit {
   savingProfile = false;
   saveMessage = '';
   saveError = '';
+
+  private readonly validRoles = ['perito', 'automobilista', 'assicuratore'];
+
+  get currentRole(): UserRole | '' {
+    const role = (this.auth.currentUser?.ruolo ?? localStorage.getItem('userRole') ?? '').toLowerCase();
+    if (this.validRoles.includes(role)) {
+      return role as UserRole;
+    }
+    if (role === 'assicurazione') {
+      return 'assicuratore';
+    }
+    return '';
+  }
 
   constructor(
     private router: Router,
@@ -44,13 +56,12 @@ export class Base implements OnInit {
         this.cdr.detectChanges();
       });
 
-    const savedRole = localStorage.getItem('userRole') as UserRole;
+    const savedRole = localStorage.getItem('userRole');
     if (!savedRole) {
       this.router.navigate(['/signin']);
       this.cdr.detectChanges();
       return;
     }
-    this.currentRole = savedRole;
   }
 
   get user() {
@@ -73,6 +84,14 @@ export class Base implements OnInit {
       assicurazione: 'Assicuratore',
     };
     return map[this.currentRole] ?? this.currentRole;
+  }
+
+  private get actualRole(): string {
+    return this.auth.currentUser?.ruolo ?? localStorage.getItem('userRole') ?? '';
+  }
+
+  get showAssistente(): boolean {
+    return !this.isAuthPage && this.actualRole === 'automobilista';
   }
 
   private checkAuthPage(url: string): boolean {

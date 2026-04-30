@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../services/auth';
+import { User } from '../models/user.model';
 
 @Component({
   selector: 'app-signup',
@@ -22,14 +24,17 @@ export class Signup {
   loading = false;
   errorMessage = '';
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private authService: AuthService
+  ) {}
 
   selectRole(r: 'user' | 'perito' | 'assicuratore'): void {
     this.role = r;
     this.errorMessage = '';
   }
 
-  async onSubmit(): Promise<void> {
+  onSubmit(): void {
     this.errorMessage = '';
 
     if (this.role === 'user') {
@@ -49,16 +54,35 @@ export class Signup {
       }
     }
 
+    if (this.role !== 'user') {
+      this.errorMessage = 'Al momento la registrazione è supportata solo per l\'automobilista.';
+      return;
+    }
+
     this.loading = true;
 
-    try {
-      // simulate network
-      await new Promise((res) => setTimeout(res, 1000));
-      this.router.navigate(['/']);
-    } catch (err: any) {
-      this.errorMessage = err?.message ?? 'Errore durante la registrazione.';
-    } finally {
-      this.loading = false;
-    }
+    const nuovoUtente: User = {
+      nome: this.user.nome.trim(),
+      cognome: this.user.cognome.trim(),
+      cf: this.user.cf.trim().toUpperCase(),
+      email: this.user.email.trim().toLowerCase(),
+      psw: this.user.password,
+      ruolo: 'automobilista',
+    };
+
+    this.authService.signup(nuovoUtente).subscribe({
+      next: (res) => {
+        this.loading = false;
+        if (res.status === 'success') {
+          this.router.navigate(['/automobilista']);
+        } else {
+          this.errorMessage = res.error ?? 'Registrazione fallita. Riprovare.';
+        }
+      },
+      error: (err: any) => {
+        this.loading = false;
+        this.errorMessage = err?.error?.error ?? err?.message ?? 'Errore durante la registrazione.';
+      },
+    });
   }
 }

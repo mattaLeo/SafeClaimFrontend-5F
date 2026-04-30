@@ -7,7 +7,7 @@ import { User } from '../models/user.model';
   providedIn: 'root',
 })
 export class AuthService {
-  link = "https://opulent-enigma-wrrww9xx7p79c556r-6000.app.github.dev/";
+  link = "https://stunning-yodel-x55jj9xxw7wrfj7j-6000.app.github.dev/";
 
   private _currentUser?: User;
 
@@ -41,7 +41,32 @@ export class AuthService {
   }
 
   signup(nuovoUtente: User): Observable<any> {
-    return this.http.post<any>(`${this.link}registrazione`, nuovoUtente);
+    const payload = {
+      nome: nuovoUtente.nome?.trim(),
+      cognome: nuovoUtente.cognome?.trim(),
+      cf: nuovoUtente.cf?.trim().toUpperCase(),
+      email: nuovoUtente.email?.trim().toLowerCase(),
+      psw: nuovoUtente.psw,
+    };
+
+    return this.http.post<any>(`${this.link}registrazione`, payload).pipe(
+      tap(res => {
+        if (res.status === 'success') {
+          const registeredUser: User = {
+            id: res.id,
+            nome: payload.nome ?? '',
+            cognome: payload.cognome ?? '',
+            cf: payload.cf ?? '',
+            email: payload.email ?? '',
+            psw: payload.psw ?? '',
+            ruolo: 'automobilista',
+          };
+          this._currentUser = registeredUser;
+          localStorage.setItem('currentUser', JSON.stringify(registeredUser));
+          localStorage.setItem('userRole', 'automobilista');
+        }
+      })
+    );
   }
 
   // 🆕 Aggiornamento profilo utente loggato
