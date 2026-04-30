@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { VeicoliService } from '../services/veicoli';
+import { AuthService } from '../services/auth';
 import { VeicoloItem } from '../veicolo-item/veicolo-item';
 import { NuovoVeicoloComponent } from '../nuovo-veicolo/nuovo-veicolo';
 
@@ -12,16 +14,40 @@ import { NuovoVeicoloComponent } from '../nuovo-veicolo/nuovo-veicolo';
   templateUrl: './lista-veicoli.html',
   styleUrl: './lista-veicoli.css'
 })
-export class ListaVeicoli implements OnInit {
+export class ListaVeicoli implements OnInit, OnDestroy {
   showNuovoVeicolo = false;
+
+  private refreshInterval?: ReturnType<typeof setInterval>;
+  private dataSub?: Subscription;
 
   constructor(
     public veicoliService: VeicoliService,
-    private router: Router
+    private auth: AuthService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
-    this.veicoliService.askVeicoli().subscribe();
+    const userId = this.auth.currentUser?.id;
+    if (!userId) return;
+
+    // Prima chiamata
+    this.veicoliService.getVeicoliUtente(userId).subscribe();
+
+    // Sottoscrizione allo stream
+    this.dataSub = this.veicoliService.veicoli$.subscribe(() => {
+      this.cdr.detectChanges();
+    });
+
+    // Polling ogni 15 secondi con l'endpoint corretto
+    this.refreshInterval = setInterval(() => {
+      this.veicoliService.askVeicoliAll();
+    }, 15000);
+  }
+
+  ngOnDestroy(): void {
+    clearInterval(this.refreshInterval);
+    this.dataSub?.unsubscribe();
   }
 
   tornaAllaDashboard(): void {
@@ -30,6 +56,6 @@ export class ListaVeicoli implements OnInit {
 
   onVeicoloCreato(): void {
     this.showNuovoVeicolo = false;
-    this.veicoliService.askVeicoli().subscribe();
+    this.veicoliService.askVeicoliAll();
   }
 }
