@@ -7,7 +7,7 @@ import { Veicolo } from '../models/veicolo.model';
   providedIn: 'root',
 })
 export class VeicoliService {
-  private link = 'https://stunning-yodel-x55jj9xxw7wrfj7j-5000.app.github.dev/'; 
+  private link = 'https://ominous-potato-q77ww966qjwvcvgj-5000.app.github.dev/'; 
 
   public veicoli: Veicolo[] = [];
 

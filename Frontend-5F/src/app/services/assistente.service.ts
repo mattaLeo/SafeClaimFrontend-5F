@@ -12,7 +12,7 @@ export interface AssistenteChatResponse {
   providedIn: 'root',
 })
 export class AssistenteService {
-  private readonly baseUrl = 'https://stunning-yodel-x55jj9xxw7wrfj7j-12000.app.github.dev/assistente/';
+  private readonly baseUrl = 'https://ominous-potato-q77ww966qjwvcvgj-12000.app.github.dev/assistente/';
 
   constructor(private http: HttpClient) {}
 
