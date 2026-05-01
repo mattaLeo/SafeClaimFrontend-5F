@@ -7,24 +7,14 @@ import { sinistro } from '../models/sinistro.model';
 import { Pratica } from '../models/pratica.model';
 import { DettaglioSinistroComponent } from '../dettagli-sinistro/dettagli-sinistro';
 import { DettaglioPraticaComponent } from '../dettagli-pratica/dettagli-pratica';
+import { DettaglioPolizzaComponent } from '../dettagli-polizza/dettagli-polizza';
 import { NuovoSinistroComponent } from '../nuovo-sinistro/nuovo-sinistro.component';
 import { timer, Subscription } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { VeicoliService } from '../services/veicoli.service';
 import { Router } from '@angular/router';
 import { PolizzeService } from '../services/polizze.service';
-
-export interface Polizza {
-  id?:                     number;
-  n_polizza:               string;
-  compagnia_assicurativa?: string;
-  data_inizio:             string;
-  data_scadenza:           string;
-  massimale?:              number;
-  tipo_copertura?:         string;
-  veicolo_id:              number;
-  assicuratore_id?:        number;
-}
+import { Polizza } from '../models/polizza.model';
 
 @Component({
   selector: 'app-assicurazione',
@@ -34,6 +24,7 @@ export interface Polizza {
     FormsModule,
     DettaglioSinistroComponent,
     DettaglioPraticaComponent,
+    DettaglioPolizzaComponent,
     NuovoSinistroComponent
   ],
   templateUrl: './assicurazione.html',
@@ -61,6 +52,7 @@ export class Assicurazione implements OnInit, OnDestroy {
   polizzaErrore = '';
   polizzaSuccesso = '';
   nuovaPolizza: Partial<Polizza> = { tipo_copertura: 'RCA' };
+  polizzaSelezionata: Polizza | null = null;
 
   // ── Shared ────────────────────────────────────────────────────────────────
   searchTerm = '';
@@ -88,7 +80,6 @@ export class Assicurazione implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.user = this.auth.currentUser;
-    console.log('[Assicurazione] user:', this.user);
     this.startAutoRefresh();
     this.caricaPeriti();
     this.caricaPolizze();
@@ -248,7 +239,6 @@ export class Assicurazione implements OnInit, OnDestroy {
 
     if (!assicuratoreId) {
       this.polizzaErrore = 'Utente non riconosciuto. Rieffettua il login.';
-      console.error('[salvaPolizza] user object:', this.user);
       return;
     }
 
@@ -268,8 +258,6 @@ export class Assicurazione implements OnInit, OnDestroy {
       assicuratore_id:        assicuratoreId
     };
 
-    console.log('[salvaPolizza] payload:', payload);
-
     this.polizzeService.creaPolizza(payload).subscribe({
       next: () => {
         this.polizzaSuccesso = 'Polizza creata con successo!';
@@ -287,17 +275,26 @@ export class Assicurazione implements OnInit, OnDestroy {
     });
   }
 
-  apriEliminaPolizza(pol: Polizza, event: Event): void {
+  apriDettaglioPolizza(pol: Polizza, event: Event): void {
     event.stopPropagation();
-    if (!pol.id) return;
-    if (!confirm(`Eliminare la polizza N° ${pol.n_polizza}?`)) return;
-    this.polizzeService.eliminaPolizza(pol.id).subscribe({
-      next: () => {
-        this.caricaPolizze();
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => console.error('Errore eliminazione polizza:', err)
-    });
+    this.polizzaSelezionata = pol;
+  }
+
+  chiudiDettaglioPolizza(): void {
+    this.polizzaSelezionata = null;
+  }
+
+  onPolizzaAggiornata(polizzaAggiornata: Polizza): void {
+    const idx = this.polizze.findIndex(p => p.id === polizzaAggiornata.id);
+    if (idx !== -1) this.polizze[idx] = polizzaAggiornata;
+    this.polizzaSelezionata = polizzaAggiornata;
+    this.cdr.detectChanges();
+  }
+
+  onPolizzaEliminata(): void {
+    this.caricaPolizze();
+    this.polizzaSelezionata = null;
+    this.cdr.detectChanges();
   }
 
   // ── Filtri ────────────────────────────────────────────────────────────────

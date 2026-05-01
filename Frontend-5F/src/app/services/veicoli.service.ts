@@ -7,7 +7,7 @@ import { Veicolo } from '../models/veicolo.model';
   providedIn: 'root',
 })
 export class VeicoliService {
-  private link = 'https://ominous-potato-q77ww966qjwvcvgj-5000.app.github.dev/'; 
+  private link = 'https://silver-space-guide-7vvggrww9qv7cvq7-5000.app.github.dev/'; 
 
   public veicoli: Veicolo[] = [];
   private veicoliSubject = new BehaviorSubject<Veicolo[]>([]);

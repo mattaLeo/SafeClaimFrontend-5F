@@ -278,7 +278,8 @@
 
         <div *ngIf="!loadingPolizze && polizzeFiltrate.length > 0" class="space-y-4">
           <div *ngFor="let pol of polizzeFiltrate"
-               class="bg-white p-6 rounded-2xl shadow-sm border border-[#7AB2B2]/30 hover:border-[#088395] transition-all group">
+               (click)="apriDettaglioPolizza(pol, $event)"
+               class="bg-white p-6 rounded-2xl shadow-sm border border-[#7AB2B2]/30 hover:border-[#088395] transition-all group cursor-pointer">
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-4">
                 <div class="bg-[#EBF4F6] p-3 rounded-xl text-[#7AB2B2] group-hover:bg-[#088395] group-hover:text-white transition-all">
@@ -291,22 +292,15 @@
                   </p>
                 </div>
               </div>
-              <div class="flex items-center gap-3">
-                <span class="text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest border"
-                  [ngClass]="isPolizzaAttiva(pol)
-                    ? 'bg-green-50 text-green-600 border-green-200'
-                    : 'bg-red-50 text-red-500 border-red-200'">
-                  {{ isPolizzaAttiva(pol) ? 'Attiva' : 'Scaduta' }}
-                </span>
-                <button type="button" (click)="apriEliminaPolizza(pol, $event)"
-                  class="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-xl border transition-all bg-red-50 text-red-500 border-red-200 hover:bg-red-500 hover:text-white">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </div>
+              <span class="text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest border"
+                [ngClass]="isPolizzaAttiva(pol)
+                  ? 'bg-green-50 text-green-600 border-green-200'
+                  : 'bg-red-50 text-red-500 border-red-200'">
+                {{ isPolizzaAttiva(pol) ? 'Attiva' : 'Scaduta' }}
+              </span>
             </div>
 
-            <!-- Dettagli polizza -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
               <div class="bg-[#EBF4F6] rounded-xl p-3">
                 <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tipo Copertura</p>
                 <p class="text-xs font-black text-[#09637E]">{{ pol.tipo_copertura ?? '—' }}</p>
@@ -329,7 +323,6 @@
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </div>
@@ -443,3 +436,12 @@
   [pratica]="praticaSelezionata!"
   (closed)="chiudiDettaglioPratica()">
 </app-dettaglio-pratica>
+
+<app-dettaglio-polizza
+  *ngIf="polizzaSelezionata"
+  [polizza]="polizzaSelezionata!"
+  [isAttiva]="isPolizzaAttiva(polizzaSelezionata!)"
+  (closed)="chiudiDettaglioPolizza()"
+  (eliminata)="onPolizzaEliminata()"
+  (aggiornata)="onPolizzaAggiornata($event)">
+</app-dettaglio-polizza>

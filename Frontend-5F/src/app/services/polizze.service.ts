@@ -9,7 +9,7 @@ import { Polizza } from '../models/polizza.model';
 
 export class PolizzeService {
 
-  private readonly base = 'https://ominous-potato-q77ww966qjwvcvgj-9000.app.github.dev/';
+  private readonly base = 'https://silver-space-guide-7vvggrww9qv7cvq7-9000.app.github.dev/';
 
   constructor(private http: HttpClient) {}
 
@@ -27,10 +27,7 @@ export class PolizzeService {
   }
 
   // ── PUT aggiorna polizza ──────────────────────────────────────────────────
-  aggiornaPolizza(
-    id: number,
-    data: Pick<Polizza, 'n_polizza' | 'data_scadenza'>
-  ): Observable<{ message: string }> {
+  aggiornaPolizza(id: number, data: Partial<Polizza>): Observable<{ message: string }> {
     return this.http.put<{ message: string }>(
       `${this.base}polizze/${id}`,
       data
