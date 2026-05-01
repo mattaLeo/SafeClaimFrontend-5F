@@ -1,7 +1,9 @@
 export interface Veicolo {
     id: number;
-    cf: string;
+    targa: string;
+    n_telaio: string; // Aggiunto
     marca: string;
     modello: string;
-    targa: string;
+    anno_immatricolazione: number; // Aggiunto
+    automobilista_id: number;
 }

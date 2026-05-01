@@ -15,13 +15,16 @@ export class NuovoVeicoloComponent {
   @Output() created = new EventEmitter<any>();
   @Output() closed  = new EventEmitter<void>();
 
+  // formData aggiornato con i nuovi campi
   formData = {
     targa: '',
     marca: '',
-    modello: ''
+    modello: '',
+    n_telaio: '',
+    anno_immatricolazione: new Date().getFullYear()
   };
 
-  loading        = false;
+  loading      = false;
   errorMessage   = '';
   successMessage = '';
 
@@ -37,8 +40,10 @@ export class NuovoVeicoloComponent {
   submit(): void {
     this.errorMessage = '';
 
-    if (!this.formData.targa.trim() || !this.formData.marca.trim() || !this.formData.modello.trim()) {
-      this.errorMessage = 'Compila tutti i campi obbligatori.';
+    // Validazione estesa ai nuovi campi
+    if (!this.formData.targa.trim() || !this.formData.marca.trim() || 
+        !this.formData.modello.trim() || !this.formData.n_telaio.trim()) {
+      this.errorMessage = 'Compila tutti i campi obbligatori compreso il telaio.';
       return;
     }
 
@@ -52,7 +57,7 @@ export class NuovoVeicoloComponent {
     const payload = {
       ...this.formData,
       targa: this.formData.targa.toUpperCase().trim(),
-      automobilista_id: this.auth.currentUser?.id
+      automobilista_id: this.auth.currentUser?.id // Risolve l'errore TS (2345)
     };
 
     this.veicoliService.createVeicolo(payload).subscribe({
@@ -65,7 +70,7 @@ export class NuovoVeicoloComponent {
       error: (err: any) => {
         this.loading      = false;
         if (err.status === 409) {
-          this.errorMessage = 'Targa già registrata nel sistema.';
+          this.errorMessage = 'Targa o numero telaio già esistenti.';
         } else {
           this.errorMessage = 'Errore durante il salvataggio. Riprova.';
         }

@@ -26,7 +26,7 @@ export class ListaVeicoli implements OnInit, OnDestroy {
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
-
+  
   ngOnInit(): void {
     const userId = this.auth.currentUser?.id;
     if (!userId) return;
@@ -41,7 +41,7 @@ export class ListaVeicoli implements OnInit, OnDestroy {
 
     // Polling ogni 15 secondi con l'endpoint corretto
     this.refreshInterval = setInterval(() => {
-      this.veicoliService.askVeicoliAll();
+      this.veicoliService.getVeicoliUtente(userId).subscribe();
     }, 15000);
   }
 
@@ -55,7 +55,9 @@ export class ListaVeicoli implements OnInit, OnDestroy {
   }
 
   onVeicoloCreato(): void {
+    const userId = this.auth.currentUser?.id;
+     if (!userId) return;
     this.showNuovoVeicolo = false;
-    this.veicoliService.askVeicoliAll();
+    this.veicoliService.getVeicoliUtente(userId).subscribe();
   }
 }
