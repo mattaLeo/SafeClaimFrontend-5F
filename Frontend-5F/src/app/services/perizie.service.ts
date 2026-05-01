@@ -12,9 +12,9 @@ import { Relazione, Claim } from '../perito/perito';
 export class Perizie {
 
   // Porta 8000 → pratiche/perizie (MongoDB)
-  private praticheLink = 'https://silver-space-guide-7vvggrww9qv7cvq7-8000.app.github.dev/';
+  private praticheLink = 'https://studious-enigma-jjjxx4995xp7cppvr-8000.app.github.dev/';
   // Porta 7000 → sinistri (MongoDB)
-  private sinistriLink = 'https://silver-space-guide-7vvggrww9qv7cvq7-7000.app.github.dev/';
+  private sinistriLink = 'https://studious-enigma-jjjxx4995xp7cppvr-7000.app.github.dev/';
 
   constructor(public http: HttpClient) {}
 

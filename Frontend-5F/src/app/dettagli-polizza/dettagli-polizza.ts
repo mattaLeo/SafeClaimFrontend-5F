@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Polizza } from '../models/polizza.model';
 import { PolizzeService } from '../services/polizze.service';
+import { VeicoliService } from '../services/veicoli.service';
 
 @Component({
   selector: 'app-dettaglio-polizza',
@@ -13,40 +14,64 @@ import { PolizzeService } from '../services/polizze.service';
 export class DettaglioPolizzaComponent {
   @Input() polizza!: Polizza;
   @Input() isAttiva = false;
-  @Output() closed     = new EventEmitter<void>();
-  @Output() eliminata  = new EventEmitter<void>();
+  @Output() closed = new EventEmitter<void>();
+  @Output() eliminata = new EventEmitter<void>();
   @Output() aggiornata = new EventEmitter<Polizza>();
 
-  // ── Modal states ──────────────────────────────────────────────────────────
+  // Modal states
   showConfermaElimina = false;
-  eliminando          = false;
-  eliminaErrore       = '';
+  eliminando = false;
+  eliminaErrore = '';
 
-  showModifica      = false;
-  salvandoModifica  = false;
-  modificaErrore    = '';
-  modificaSuccesso  = '';
+  showModifica = false;
+  salvandoModifica = false;
+  modificaErrore = '';
+  modificaSuccesso = '';
   polizzaModifica: Partial<Polizza> = {};
 
-  constructor(private polizzeService: PolizzeService) {}
+  constructor(
+    private polizzeService: PolizzeService,
+    public veicoliService: VeicoliService
+  ) {}
+
+  // --- Getters ---
+
+  /**
+   * Recupera la targa del veicolo tramite ID
+   */
+  get targaVeicolo(): string {
+    const veicolo = this.veicoliService.veicoli.find((v: any) => v.id === this.polizza.veicolo_id);
+    return veicolo ? veicolo.targa : `#${this.polizza.veicolo_id}`;
+  }
+
+  /**
+   * Calcola la percentuale di tempo trascorso
+   */
+  get progressPercentual(): number {
+    if (!this.polizza.data_inizio || !this.polizza.data_scadenza) return 0;
+    
+    const inizio = new Date(this.polizza.data_inizio).getTime();
+    const fine = new Date(this.polizza.data_scadenza).getTime();
+    const oggi = new Date().getTime();
+
+    if (oggi < inizio) return 0;
+    if (oggi > fine) return 100;
+
+    const totale = fine - inizio;
+    const trascorso = oggi - inizio;
+    return Math.round((trascorso / totale) * 100);
+  }
+
+  // --- Logica ---
 
   close(): void { this.closed.emit(); }
 
-  // ── Utility per formattare la data in YYYY-MM-DD per MySQL ──────────────
-  private formattaDataPerBackend(data: any): string | undefined {
-    if (!data) return undefined;
-    // Se è già una stringa (es. da input type="date"), prendiamo solo i primi 10 caratteri
-    if (typeof data === 'string') {
-      return data.split('T')[0];
-    }
-    // Se è un oggetto Date
-    if (data instanceof Date) {
-      return data.toISOString().split('T')[0];
-    }
-    return data;
+  private formattaData(data: any): string {
+    if (!data) return '';
+    const d = new Date(data);
+    return isNaN(d.getTime()) ? '' : d.toISOString().split('T')[0];
   }
 
-  // ── Elimina ───────────────────────────────────────────────────────────────
   apriConfermaElimina(): void {
     this.showConfermaElimina = true;
     this.eliminaErrore = '';
@@ -54,81 +79,63 @@ export class DettaglioPolizzaComponent {
 
   chiudiConfermaElimina(): void {
     this.showConfermaElimina = false;
-    this.eliminaErrore = '';
   }
 
   confermElimina(): void {
     if (!this.polizza.id) return;
     this.eliminando = true;
-    this.eliminaErrore = '';
     this.polizzeService.eliminaPolizza(this.polizza.id).subscribe({
       next: () => {
         this.eliminando = false;
         this.eliminata.emit();
         this.closed.emit();
       },
-      error: (err: any) => {
-        console.error('Errore eliminazione polizza:', err);
-        this.eliminaErrore = 'Errore durante l\'eliminazione. Riprova.';
+      error: () => {
+        this.eliminaErrore = "Errore durante l'eliminazione.";
         this.eliminando = false;
       }
     });
   }
 
-  // ── Modifica ──────────────────────────────────────────────────────────────
   apriModifica(): void {
-    this.polizzaModifica = { ...this.polizza };
-    this.modificaErrore   = '';
-    this.modificaSuccesso = '';
-    this.showModifica     = true;
+    this.polizzaModifica = { 
+      ...this.polizza,
+      data_inizio: this.formattaData(this.polizza.data_inizio),
+      data_scadenza: this.formattaData(this.polizza.data_scadenza)
+    };
+    this.showModifica = true;
   }
 
   chiudiModifica(): void {
-    this.showModifica     = false;
-    this.modificaErrore   = '';
+    this.showModifica = false;
+    this.modificaErrore = '';
     this.modificaSuccesso = '';
   }
 
   salvaModifica(): void {
-    if (!this.polizzaModifica.n_polizza   ||
-        !this.polizzaModifica.data_inizio  ||
-        !this.polizzaModifica.data_scadenza) {
-      this.modificaErrore = 'Compila tutti i campi obbligatori.';
+    if (!this.polizzaModifica.n_polizza || !this.polizzaModifica.data_inizio || !this.polizzaModifica.data_scadenza) {
+      this.modificaErrore = 'Campi obbligatori mancanti.';
       return;
     }
+    
     if (!this.polizza.id) return;
-
     this.salvandoModifica = true;
-    this.modificaErrore   = '';
 
-    // Creiamo il payload pulendo le date prima dell'invio
-    const payload: Partial<Polizza> = {
-      n_polizza:              this.polizzaModifica.n_polizza,
-      compagnia_assicurativa: this.polizzaModifica.compagnia_assicurativa,
-      data_inizio:            this.formattaDataPerBackend(this.polizzaModifica.data_inizio),
-      data_scadenza:          this.formattaDataPerBackend(this.polizzaModifica.data_scadenza),
-      massimale:              this.polizzaModifica.massimale
-                                ? Number(this.polizzaModifica.massimale)
-                                : undefined,
-      tipo_copertura:         this.polizzaModifica.tipo_copertura,
+    const payload = {
+      ...this.polizzaModifica,
+      massimale: Number(this.polizzaModifica.massimale) || 0
     };
 
     this.polizzeService.aggiornaPolizza(this.polizza.id, payload).subscribe({
       next: () => {
-        this.modificaSuccesso = 'Polizza aggiornata con successo!';
+        this.modificaSuccesso = 'Polizza aggiornata!';
         this.salvandoModifica = false;
-        
-        // Uniamo i dati per aggiornare la UI localmente
-        const polizzaAggiornata: Polizza = { ...this.polizza, ...payload } as Polizza;
-        this.aggiornata.emit(polizzaAggiornata);
-        
+        this.aggiornata.emit({ ...this.polizza, ...payload } as Polizza);
         setTimeout(() => this.chiudiModifica(), 1500);
       },
-      error: (err: any) => {
-        console.error('Errore aggiornamento polizza:', err);
-        // Ora l'errore 1292 dovrebbe sparire e vedrai il messaggio di successo
-        this.modificaErrore   = 'Errore durante il salvataggio. Riprova.';
+      error: (err) => {
         this.salvandoModifica = false;
+        this.modificaErrore = err.error?.error || 'Errore nel salvataggio.';
       }
     });
   }

@@ -7,42 +7,69 @@ import { Veicolo } from '../models/veicolo.model';
   providedIn: 'root',
 })
 export class VeicoliService {
-  private link = 'https://silver-space-guide-7vvggrww9qv7cvq7-5000.app.github.dev/'; 
+  private link = 'https://studious-enigma-jjjxx4995xp7cppvr-5000.app.github.dev/';
 
+  // Stato interno dei veicoli (riflette l'ultima operazione di caricamento fatta)
   public veicoli: Veicolo[] = [];
   private veicoliSubject = new BehaviorSubject<Veicolo[]>([]);
-  veicoli$: Observable<Veicolo[]> = this.veicoliSubject.asObservable();
-
-  private currentUserId?: number;
+  
+  // Stream a cui si iscriveranno i componenti
+  veicoli$ = this.veicoliSubject.asObservable();
 
   constructor(private http: HttpClient) {}
 
-  getVeicoliUtente(userId: number): Observable<Veicolo[]> {
-    this.currentUserId = userId;
-    return this.http.get<Veicolo[]>(`${this.link}veicoli-utente/${userId}`).pipe(
-      tap((data) => {
+  // --- METODI PER TUTTI I VEICOLI ---
+
+  /**
+   * Prende TUTTI i veicoli dal database
+   */
+  getVeicoli(): Observable<Veicolo[]> {
+    return this.http.get<Veicolo[]>(`${this.link}veicoli`).pipe(
+      tap((data: Veicolo[]) => {
         this.veicoli = data;
         this.veicoliSubject.next(data);
-        console.log("Veicoli caricati per l'utente:", this.veicoli);
+        console.log("Caricati tutti i veicoli del sistema:", data);
       })
     );
   }
 
-  askVeicoliUtente(userId: number): void {
-    this.getVeicoliUtente(userId).subscribe();
+  /**
+   * Trigger per caricare tutti i veicoli senza gestire la sottoscrizione nel componente
+   */
+  askVeicoliAll(): void {
+    this.getVeicoli().subscribe({
+      error: (err) => console.error("Errore nel caricamento totale veicoli:", err)
+    });
   }
 
-  getVeicoloById(id: number): Observable<Veicolo> {
-    return this.http.get<Veicolo>(`${this.link}veicoli/${id}`).pipe(
-      tap((data) => console.log(`Dettaglio veicolo ${id}:`, data))
+  // --- METODI PER VEICOLI UTENTE ---
+
+  /**
+   * Prende i veicoli di un singolo utente
+   */
+  getVeicoliUtente(userId: number): Observable<Veicolo[]> {
+    return this.http.get<Veicolo[]>(`${this.link}veicoli-utente/${userId}`).pipe(
+      tap((data: Veicolo[]) => {
+        this.veicoli = data;
+        this.veicoliSubject.next(data);
+        console.log(`Veicoli caricati per l'utente ${userId}:`, data);
+      })
     );
   }
 
-  // Ora usa getVeicoliUtente invece di GET /veicoli (che non esiste)
-  askVeicoliAll(): void {
-    if (this.currentUserId) {
-      this.getVeicoliUtente(this.currentUserId).subscribe();
-    }
+  /**
+   * Trigger per caricare i veicoli di un utente specifico
+   */
+  askVeicoliUtente(userId: number): void {
+    this.getVeicoliUtente(userId).subscribe({
+      error: (err) => console.error("Errore nel refresh veicoli utente:", err)
+    });
+  }
+
+  // --- METODI DI DETTAGLIO E CREAZIONE ---
+
+  getVeicoloById(id: number): Observable<Veicolo> {
+    return this.http.get<Veicolo>(`${this.link}veicoli/${id}`);
   }
 
   createVeicolo(payload: any): Observable<any> {

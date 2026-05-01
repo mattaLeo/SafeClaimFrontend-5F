@@ -9,6 +9,7 @@ import { DettaglioSinistroComponent } from '../dettagli-sinistro/dettagli-sinist
 import { DettaglioPraticaComponent } from '../dettagli-pratica/dettagli-pratica';
 import { DettaglioPolizzaComponent } from '../dettagli-polizza/dettagli-polizza';
 import { NuovoSinistroComponent } from '../nuovo-sinistro/nuovo-sinistro.component';
+import { CreaPolizzaComponent } from '../crea-polizza/crea-polizza';
 import { timer, Subscription } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { VeicoliService } from '../services/veicoli.service';
@@ -25,7 +26,8 @@ import { Polizza } from '../models/polizza.model';
     DettaglioSinistroComponent,
     DettaglioPraticaComponent,
     DettaglioPolizzaComponent,
-    NuovoSinistroComponent
+    NuovoSinistroComponent,
+    CreaPolizzaComponent,
   ],
   templateUrl: './assicurazione.html',
   styleUrl: './assicurazione.css',
@@ -48,10 +50,6 @@ export class Assicurazione implements OnInit, OnDestroy {
   polizze: Polizza[] = [];
   loadingPolizze = false;
   showNuovaPolizza = false;
-  salvandoPolizza = false;
-  polizzaErrore = '';
-  polizzaSuccesso = '';
-  nuovaPolizza: Partial<Polizza> = { tipo_copertura: 'RCA' };
   polizzaSelezionata: Polizza | null = null;
 
   // ── Shared ────────────────────────────────────────────────────────────────
@@ -86,6 +84,27 @@ export class Assicurazione implements OnInit, OnDestroy {
     this.caricaVeicoli();
   }
 
+  // ── GETTER PER STATISTICHE (BARRA SUPERIORE) ──────────────────────────────
+  
+  get countSinistriDaVisionare(): number {
+    // Conta solo i sinistri APERTI o quelli che non hanno ancora uno stato (da assegnare/visionare)
+    return this.sinistri.sinistri.filter(s => 
+      s.stato === 'APERTO' || !s.stato || s.stato === 'da_assegnare'
+    ).length;
+  }
+
+  get countPraticheDaAssegnare(): number {
+    // Conta solo le pratiche aperte che non hanno ancora un perito associato
+    return this.pratiche.filter(p => !p.perito_id).length;
+  }
+
+  get countPolizzeAttive(): number {
+    // Filtra le polizze usando la logica del servizio per escludere le scadute
+    return this.polizze.filter(pol => this.isPolizzaAttiva(pol)).length;
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+
   setTab(tab: 'sinistri' | 'pratiche' | 'polizze'): void {
     this.activeTab = tab;
     this.searchTerm = '';
@@ -98,7 +117,6 @@ export class Assicurazione implements OnInit, OnDestroy {
     });
   }
 
-  // ── Pratiche ──────────────────────────────────────────────────────────────
   caricaPratiche(): void {
     this.loadingPratiche = true;
     this.sinistri.getPratiche().subscribe({
@@ -115,7 +133,6 @@ export class Assicurazione implements OnInit, OnDestroy {
     });
   }
 
-  // ── Periti ────────────────────────────────────────────────────────────────
   caricaPeriti(): void {
     this.sinistri.askTuttiPeriti().subscribe({
       next: (data: any) => {
@@ -170,14 +187,8 @@ export class Assicurazione implements OnInit, OnDestroy {
     });
   }
 
-  // ── Veicoli ───────────────────────────────────────────────────────────────
   caricaVeicoli(): void {
-    const userId = Number(
-      this.user?.id        ??
-      this.user?.utente_id ??
-      this.user?.userId    ??
-      this.user?._id
-    );
+    const userId = Number(this.auth.currentUser?.id);
     if (!userId) return;
     this.veicoliService.getVeicoliUtente(userId).subscribe({
       next: () => this.cdr.detectChanges(),
@@ -187,7 +198,6 @@ export class Assicurazione implements OnInit, OnDestroy {
 
   vaiAVeicoli(): void { this.router.navigate(['/veicoli']); }
 
-  // ── Polizze ───────────────────────────────────────────────────────────────
   caricaPolizze(): void {
     this.loadingPolizze = true;
     this.polizzeService.getPolizze().subscribe({
@@ -208,81 +218,16 @@ export class Assicurazione implements OnInit, OnDestroy {
     return this.polizzeService.isAttiva(pol);
   }
 
-  apriNuovaPolizza(): void {
-    this.nuovaPolizza = { tipo_copertura: 'RCA' };
-    this.polizzaErrore = '';
-    this.polizzaSuccesso = '';
-    this.showNuovaPolizza = true;
-  }
-
-  chiudiNuovaPolizza(): void {
-    this.showNuovaPolizza = false;
-    this.polizzaErrore = '';
-    this.polizzaSuccesso = '';
-  }
-
-  salvaPolizza(): void {
-    if (!this.nuovaPolizza.n_polizza    ||
-        !this.nuovaPolizza.data_inizio  ||
-        !this.nuovaPolizza.data_scadenza ||
-        !this.nuovaPolizza.veicolo_id) {
-      this.polizzaErrore = 'Compila tutti i campi obbligatori.';
-      return;
-    }
-
-    const assicuratoreId = Number(
-      this.user?.id        ??
-      this.user?.utente_id ??
-      this.user?.userId    ??
-      this.user?._id
-    );
-
-    if (!assicuratoreId) {
-      this.polizzaErrore = 'Utente non riconosciuto. Rieffettua il login.';
-      return;
-    }
-
-    this.salvandoPolizza = true;
-    this.polizzaErrore = '';
-
-    const payload: Polizza = {
-      n_polizza:              this.nuovaPolizza.n_polizza!,
-      compagnia_assicurativa: this.nuovaPolizza.compagnia_assicurativa,
-      data_inizio:            this.nuovaPolizza.data_inizio!,
-      data_scadenza:          this.nuovaPolizza.data_scadenza!,
-      massimale:              this.nuovaPolizza.massimale
-                                ? Number(this.nuovaPolizza.massimale)
-                                : undefined,
-      tipo_copertura:         this.nuovaPolizza.tipo_copertura ?? 'RCA',
-      veicolo_id:             Number(this.nuovaPolizza.veicolo_id),
-      assicuratore_id:        assicuratoreId
-    };
-
-    this.polizzeService.creaPolizza(payload).subscribe({
-      next: () => {
-        this.polizzaSuccesso = 'Polizza creata con successo!';
-        this.salvandoPolizza = false;
-        this.caricaPolizze();
-        this.cdr.detectChanges();
-        setTimeout(() => this.chiudiNuovaPolizza(), 1500);
-      },
-      error: (err: any) => {
-        console.error('Errore creazione polizza:', err);
-        this.polizzaErrore = 'Errore durante il salvataggio. Riprova.';
-        this.salvandoPolizza = false;
-        this.cdr.detectChanges();
-      }
-    });
-  }
+  apriNuovaPolizza(): void { this.showNuovaPolizza = true; }
+  chiudiNuovaPolizza(): void { this.showNuovaPolizza = false; }
+  onPolizzaCreata(res: any): void { this.caricaPolizze(); this.chiudiNuovaPolizza(); }
 
   apriDettaglioPolizza(pol: Polizza, event: Event): void {
     event.stopPropagation();
     this.polizzaSelezionata = pol;
   }
 
-  chiudiDettaglioPolizza(): void {
-    this.polizzaSelezionata = null;
-  }
+  chiudiDettaglioPolizza(): void { this.polizzaSelezionata = null; }
 
   onPolizzaAggiornata(polizzaAggiornata: Polizza): void {
     const idx = this.polizze.findIndex(p => p.id === polizzaAggiornata.id);
@@ -297,14 +242,14 @@ export class Assicurazione implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // ── Filtri ────────────────────────────────────────────────────────────────
+  // ── Filtri Lista ──────────────────────────────────────────────────────────
   get sinistriFiltrati(): sinistro[] {
     if (!this.searchTerm.trim()) return this.sinistri.sinistri;
     const s = this.searchTerm.toLowerCase();
     return this.sinistri.sinistri.filter((x: sinistro) =>
-      (x.targa       ?? '').toLowerCase().includes(s) ||
+      (x.targa        ?? '').toLowerCase().includes(s) ||
       (x.descrizione ?? '').toLowerCase().includes(s) ||
-      (x.stato       ?? '').toLowerCase().includes(s)
+      (x.stato        ?? '').toLowerCase().includes(s)
     );
   }
 
@@ -312,9 +257,9 @@ export class Assicurazione implements OnInit, OnDestroy {
     if (!this.searchTerm.trim()) return this.pratiche;
     const s = this.searchTerm.toLowerCase();
     return this.pratiche.filter((p: Pratica) =>
-      (p.titolo      ?? '').toLowerCase().includes(s) ||
+      (p.titolo       ?? '').toLowerCase().includes(s) ||
       (p.descrizione ?? '').toLowerCase().includes(s) ||
-      (p.stato       ?? '').toLowerCase().includes(s)
+      (p.stato        ?? '').toLowerCase().includes(s)
     );
   }
 
@@ -322,23 +267,19 @@ export class Assicurazione implements OnInit, OnDestroy {
     if (!this.searchTerm.trim()) return this.polizze;
     const s = this.searchTerm.toLowerCase();
     return this.polizze.filter((p: Polizza) =>
-      (p.n_polizza              ?? '').toLowerCase().includes(s) ||
+      (p.n_polizza               ?? '').toLowerCase().includes(s) ||
       (p.compagnia_assicurativa ?? '').toLowerCase().includes(s) ||
-      (p.tipo_copertura         ?? '').toLowerCase().includes(s)
+      (p.tipo_copertura          ?? '').toLowerCase().includes(s)
     );
   }
 
-  // ── Sinistro ──────────────────────────────────────────────────────────────
   openNewSinistro(): void  { this.showNewSinistro = true; }
   closeNewSinistro(): void { this.showNewSinistro = false; }
   onCreated(): void        { this.showNewSinistro = false; this.sinistri.askSinistri(); }
 
   openDettaglio(s: sinistro): void { this.sinistroSelezionato = s; }
   closeDettaglio(): void           { this.sinistroSelezionato = null; this.caricaPratiche(); }
-  apriDettaglio(s: sinistro): void { this.openDettaglio(s); }
-  chiudiDettaglio(): void          { this.closeDettaglio(); }
 
-  // ── Pratica ───────────────────────────────────────────────────────────────
   apriDettaglioPratica(p: Pratica): void { this.praticaSelezionata = p; }
   chiudiDettaglioPratica(): void         { this.praticaSelezionata = null; }
 

@@ -4,14 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { timer, Subscription } from 'rxjs';
 
-// Import componenti e modelli
 import { NuovoSinistroComponent } from '../nuovo-sinistro/nuovo-sinistro.component';
 import { DettaglioSinistroComponent } from '../dettagli-sinistro/dettagli-sinistro';
 import { sinistro } from '../models/sinistro.model';
 import { User } from '../models/user.model';
 import { Veicolo } from '../models/veicolo.model';
 
-// Import servizi
 import { VeicoliService } from '../services/veicoli.service';
 import { Sinistri } from '../services/sinistri.service';
 import { AuthService } from '../services/auth.service';
@@ -31,14 +29,13 @@ export class Automobilista implements OnInit, OnDestroy {
   user?: User;
   sinistroSelezionato?: sinistro;
 
-  // Sottoscrizioni per evitare memory leak
   private refreshSub?: Subscription;
-  private dataSub?: Subscription;
+  private dataSub = new Subscription(); // Inizializzato per add()
 
   constructor(
     public auth: AuthService,
     public veicoliService: VeicoliService,
-    private SinistriService: Sinistri, // Assicurati che il nome della classe sia corretto
+    private sinistriService: Sinistri,
     private router: Router,
     private cdr: ChangeDetectorRef
   ) {}
@@ -46,29 +43,27 @@ export class Automobilista implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.user = this.auth.currentUser;
 
-    // 1. Ti iscrivi allo stream dei dati UNA VOLTA SOLA.
-    // Questo risolve il problema del "vederli tutti" perché ascolti lo stato del servizio.
-    this.dataSub = this.SinistriService.sinistri$.subscribe({
-      next: (data: sinistro[]) => {
+    // 1. Ascolto stream Sinistri
+    this.dataSub.add(
+      this.sinistriService.sinistri$.subscribe((data: sinistro[]) => {
         this.sinistri = data;
         this.cdr.detectChanges();
-      },
-      error: (err: any) => console.error("Errore stream:", err)
-    });
+      })
+    );
 
-    this.dataSub.add(this.veicoliService.veicoli$.subscribe({
-      next: (data: Veicolo[]) => {
+    // 2. Ascolto stream Veicoli (Risolve il problema del caricamento dati)
+    this.dataSub.add(
+      this.veicoliService.veicoli$.subscribe((data: Veicolo[]) => {
         this.veicoli = data;
         this.cdr.detectChanges();
-      },
-      error: (err: any) => console.error("Errore veicoli:", err)
-    }));
+      })
+    );
 
-    // 2. Avvii il timer per dire al servizio di caricare i dati ogni 30 secondi
     this.startAutoRefresh();
   }
 
   startAutoRefresh(): void {
+    // Aggiorna ogni 15 secondi
     this.refreshSub = timer(0, 15000).subscribe(() => {
       this.caricaDati();
     });
@@ -76,42 +71,33 @@ export class Automobilista implements OnInit, OnDestroy {
 
   caricaDati(): void {
     const userId = this.auth.currentUser?.id;
-    if (!userId) return;
-
-    // Comando al servizio di aggiornare i veicoli (senza .subscribe perché è void)
-    this.veicoliService.askVeicoliUtente(userId);
-
-    // Comando al servizio di aggiornare i sinistri (senza .subscribe perché è void)
-    this.SinistriService.askSinistri(userId);
+    if (userId) {
+      // Carica solo dati filtrati per l'utente loggato
+      this.veicoliService.askVeicoliUtente(userId);
+      this.sinistriService.askSinistri(userId);
+    }
   }
 
   ngOnDestroy(): void {
-    // Pulizia totale
     this.refreshSub?.unsubscribe();
-    this.dataSub?.unsubscribe();
+    this.dataSub.unsubscribe();
   }
 
-  // --- Altri Metodi ---
-
+  // --- Logica Filtri ---
   get sinistriFiltrati(): sinistro[] {
     if (!this.searchTerm.trim()) return this.sinistri;
     const search = this.searchTerm.toLowerCase();
-    return this.sinistri.filter(s => {
-      const targa = (s.targa ?? '').toLowerCase();
-      const descrizione = (s.descrizione ?? '').toLowerCase();
-      const stato = (s.stato ?? '').toLowerCase();
-      return targa.includes(search) || descrizione.includes(search) || stato.includes(search);
-    });
+    return this.sinistri.filter(s => 
+      (s.targa?.toLowerCase().includes(search)) || 
+      (s.descrizione?.toLowerCase().includes(search)) || 
+      (s.stato?.toLowerCase().includes(search))
+    );
   }
 
+  // --- Gestione UI ---
   openDettaglio(s: sinistro): void { this.sinistroSelezionato = s; }
   closeDettaglio(): void { this.sinistroSelezionato = undefined; }
-
-  onCreated(): void {
-    this.caricaDati();
-    this.closeNewSinistro();
-  }
-
+  onCreated(): void { this.caricaDati(); this.closeNewSinistro(); }
   openNewSinistro(): void { this.showNewSinistro = true; }
   closeNewSinistro(): void { this.showNewSinistro = false; }
   vaiAVeicoli(): void { this.router.navigate(['/veicoli']); }
