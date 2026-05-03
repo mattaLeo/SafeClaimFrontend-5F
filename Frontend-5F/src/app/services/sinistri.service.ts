@@ -9,8 +9,8 @@ import { Pratica } from '../models/pratica.model';
   providedIn: 'root',
 })
 export class Sinistri {
-  link  = "https://solid-giggle-wrrww94466w43gpjq-7000.app.github.dev/"
-  link2 = "https://solid-giggle-wrrww94466w43gpjq-8000.app.github.dev/"
+  link  = "https://fictional-waddle-v66xxgwwvx69cvx5-7000.app.github.dev/"
+  link2 = "https://fictional-waddle-v66xxgwwvx69cvx5-8000.app.github.dev/"
 
   private sinistriSubject = new BehaviorSubject<sinistro[]>([]);
   sinistri$: Observable<sinistro[]> = this.sinistriSubject.asObservable();

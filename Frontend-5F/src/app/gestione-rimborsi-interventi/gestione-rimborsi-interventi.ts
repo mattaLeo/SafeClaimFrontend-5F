@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Perizie } from '../services/perizie.service';
-import { AuthService } from '../services/auth';
+import { AuthService } from '../services/auth.service';
 import { timer, Subscription } from 'rxjs';
 
 @Component({
