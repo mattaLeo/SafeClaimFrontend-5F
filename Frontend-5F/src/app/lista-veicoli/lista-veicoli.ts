@@ -6,16 +6,19 @@ import { VeicoliService } from '../services/veicoli';
 import { AuthService } from '../services/auth';
 import { VeicoloItem } from '../veicolo-item/veicolo-item';
 import { NuovoVeicoloComponent } from '../nuovo-veicolo/nuovo-veicolo';
+import { DettagliVeicoloComponent } from '../dettagli-veicolo/dettagli-veicolo';
+import { Veicolo } from '../models/veicolo.model';
 
 @Component({
   selector: 'app-lista-veicoli',
   standalone: true,
-  imports: [CommonModule, VeicoloItem, NuovoVeicoloComponent],
+  imports: [CommonModule, VeicoloItem, NuovoVeicoloComponent, DettagliVeicoloComponent],
   templateUrl: './lista-veicoli.html',
   styleUrl: './lista-veicoli.css'
 })
 export class ListaVeicoli implements OnInit, OnDestroy {
   showNuovoVeicolo = false;
+  veicoloSelezionato: Veicolo | null = null;
 
   private refreshInterval?: ReturnType<typeof setInterval>;
   private dataSub?: Subscription;
@@ -31,15 +34,12 @@ export class ListaVeicoli implements OnInit, OnDestroy {
     const userId = this.auth.currentUser?.id;
     if (!userId) return;
 
-    // Prima chiamata
     this.veicoliService.getVeicoliUtente(userId).subscribe();
 
-    // Sottoscrizione allo stream
     this.dataSub = this.veicoliService.veicoli$.subscribe(() => {
       this.cdr.detectChanges();
     });
 
-    // Polling ogni 15 secondi con l'endpoint corretto
     this.refreshInterval = setInterval(() => {
       this.veicoliService.askVeicoliAll();
     }, 15000);
@@ -57,5 +57,13 @@ export class ListaVeicoli implements OnInit, OnDestroy {
   onVeicoloCreato(): void {
     this.showNuovoVeicolo = false;
     this.veicoliService.askVeicoliAll();
+  }
+
+  apriDettaglio(v: Veicolo): void {
+    this.veicoloSelezionato = v;
+  }
+
+  chiudiDettaglio(): void {
+    this.veicoloSelezionato = null;
   }
 }
