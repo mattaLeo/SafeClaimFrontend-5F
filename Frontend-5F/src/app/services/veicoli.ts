@@ -7,7 +7,7 @@ import { Veicolo } from '../models/veicolo.model';
   providedIn: 'root',
 })
 export class VeicoliService {
-  private link = 'https://glorious-adventure-7vvggrxxqgjwfrx46-5000.app.github.dev/';
+  private link = 'https://solid-giggle-wrrww94466w43gpjq-5000.app.github.dev/';
 
   public veicoli: Veicolo[] = [];
   private veicoliSubject = new BehaviorSubject<Veicolo[]>([]);
