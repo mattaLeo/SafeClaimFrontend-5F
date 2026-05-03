@@ -6,16 +6,19 @@ import { VeicoliService } from '../services/veicoli.service';
 import { AuthService } from '../services/auth.service';
 import { VeicoloItem } from '../veicolo-item/veicolo-item';
 import { NuovoVeicoloComponent } from '../nuovo-veicolo/nuovo-veicolo';
+import { DettagliVeicoloComponent } from '../dettagli-veicolo/dettagli-veicolo';
+import { Veicolo } from '../models/veicolo.model';
 
 @Component({
   selector: 'app-lista-veicoli',
   standalone: true,
-  imports: [CommonModule, VeicoloItem, NuovoVeicoloComponent],
+  imports: [CommonModule, VeicoloItem, NuovoVeicoloComponent, DettagliVeicoloComponent],
   templateUrl: './lista-veicoli.html',
   styleUrl: './lista-veicoli.css'
 })
 export class ListaVeicoli implements OnInit, OnDestroy {
   showNuovoVeicolo = false;
+  veicoloSelezionato: Veicolo | null = null;
 
   private refreshInterval?: ReturnType<typeof setInterval>;
   private dataSub?: Subscription;
@@ -31,15 +34,12 @@ export class ListaVeicoli implements OnInit, OnDestroy {
     const userId = this.auth.currentUser?.id;
     if (!userId) return;
 
-    // Prima chiamata
     this.veicoliService.getVeicoliUtente(userId).subscribe();
 
-    // Sottoscrizione allo stream
     this.dataSub = this.veicoliService.veicoli$.subscribe(() => {
       this.cdr.detectChanges();
     });
 
-    // Polling ogni 15 secondi con l'endpoint corretto
     this.refreshInterval = setInterval(() => {
       this.veicoliService.getVeicoliUtente(userId).subscribe();
     }, 15000);
@@ -59,5 +59,13 @@ export class ListaVeicoli implements OnInit, OnDestroy {
      if (!userId) return;
     this.showNuovoVeicolo = false;
     this.veicoliService.getVeicoliUtente(userId).subscribe();
+  }
+
+  apriDettaglio(v: Veicolo): void {
+    this.veicoloSelezionato = v;
+  }
+
+  chiudiDettaglio(): void {
+    this.veicoloSelezionato = null;
   }
 }

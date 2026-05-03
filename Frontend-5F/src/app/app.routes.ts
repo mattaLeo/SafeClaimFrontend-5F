@@ -6,6 +6,7 @@ import { Login } from './login/login';
 import { Signup } from './signup/signup';
 import { NuovoSinistroComponent } from './nuovo-sinistro/nuovo-sinistro.component';
 import { ListaVeicoli } from './lista-veicoli/lista-veicoli';
+import { GestioneRimborsiInterventi } from './gestione-rimborsi-interventi/gestione-rimborsi-interventi';
 
 export const routes: Routes = [
     {path: "automobilista", component: Automobilista},
@@ -15,6 +16,7 @@ export const routes: Routes = [
     {path: "signup", component: Signup},
     {path: "nuovo-sinistro", component: NuovoSinistroComponent},
     {path: "veicoli", component: ListaVeicoli},
+    { path: 'gestione-rimborsi-interventi', component: GestioneRimborsiInterventi },
     {path: "", redirectTo: "signin", pathMatch: "full"}, 
     {path: "**", redirectTo: "signin"}
 ];

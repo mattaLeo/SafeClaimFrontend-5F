@@ -3,16 +3,15 @@ import { CommonModule } from '@angular/common';
 import { Veicolo } from '../models/veicolo.model';
 
 @Component({
-  selector: 'app-veicolo-item',
+  selector: 'app-dettagli-veicolo',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './veicolo-item.html',
+  templateUrl: './dettagli-veicolo.html',
+  styleUrl: './dettagli-veicolo.css',
 })
-export class VeicoloItem {
+export class DettagliVeicoloComponent {
   @Input() veicolo!: Veicolo;
-  @Output() veicoloClick = new EventEmitter<Veicolo>();
+  @Output() closed = new EventEmitter<void>();
 
-  apriDettaglio(): void {
-    this.veicoloClick.emit(this.veicolo);
-  }
+  close(): void { this.closed.emit(); }
 }
