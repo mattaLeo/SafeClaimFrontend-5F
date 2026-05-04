@@ -1,158 +1,219 @@
-<div class="w-full min-h-screen bg-[#EBF4F6]">
-  <div class="max-w-6xl mx-auto px-6 py-10">
+<div class="min-h-screen bg-[#F1F5F9] text-[#0F172A] font-sans overflow-x-hidden">
 
-    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
-      <div>
-        <h1 class="text-3xl font-black text-[#09637E] uppercase tracking-tight">
-          Bentornato, <span class="text-[#088395]">{{user?.nome}} {{user?.cognome}}</span>
-        </h1>
-        <p class="text-slate-500 font-medium">Ecco un riepilogo delle tue pratiche e veicoli</p>
+  <!-- ===== HEADER sticky ===== -->
+  <header class="sticky top-0 z-30 bg-white border-b-2 border-slate-200 shadow-sm">
+    <div class="max-w-6xl mx-auto px-6 flex items-center justify-between h-14">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 bg-[#09637E] rounded-lg flex items-center justify-center">
+          <i class="bi bi-person-fill text-white text-xs"></i>
+        </div>
+        <span class="text-xs font-black text-[#09637E] uppercase tracking-widest">Area Personale</span>
       </div>
       <button type="button" (click)="openNewSinistro()"
-              class="bg-[#09637E] hover:bg-[#088395] text-white font-black text-[10px] uppercase tracking-[0.2em] py-3.5 px-8 rounded-xl shadow-lg shadow-[#7AB2B2]/20 transition-all">
+        class="flex items-center gap-2 px-4 py-2 text-xs font-black text-white bg-[#09637E] rounded-lg
+               hover:bg-[#088395] transition-all uppercase tracking-widest shadow-lg shadow-[#09637E]/20">
+        <i class="bi bi-plus-lg"></i>
         Nuovo Sinistro
       </button>
-    </header>
+    </div>
+  </header>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
-      <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-[#09637E] flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="bg-[#EBF4F6] p-3 rounded-lg text-[#09637E]"><i class="bi bi-clock-history fs-4"></i></div>
-          <div>
-            <div class="flex items-center gap-2">
-              <h3 class="text-2xl font-black text-[#09637E] tracking-tight">{{ sinistri.length }}</h3>
-              <span class="bg-[#7AB2B2]/20 text-[#09637E] text-[9px] font-black px-2 py-0.5 rounded-md uppercase">Attivi</span>
-            </div>
-            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-0.5">Sinistri Attivi</p>
-          </div>
-        </div>
-      </div>
+  <main class="max-w-6xl mx-auto p-6 md:p-8 space-y-8">
 
-      <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-[#088395] flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="bg-[#EBF4F6] p-3 rounded-lg text-[#088395]"><i class="bi bi-car-front fs-4"></i></div>
-          <div>
-            <h3 class="text-2xl font-black text-[#09637E] tracking-tight">{{ veicoliService.veicoli.length }}</h3>
-            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-0.5">I Miei Veicoli</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-[#7AB2B2] flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="bg-[#EBF4F6] p-3 rounded-lg text-[#7AB2B2]"><i class="bi bi-check2-all fs-4"></i></div>
-          <div>
-            <h3 class="text-2xl font-black text-[#09637E] tracking-tight">0</h3>
-            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-0.5">Completate</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white p-5 rounded-xl shadow-sm border-l-4 border-[#09637E] flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="bg-[#EBF4F6] p-3 rounded-lg text-[#09637E]"><i class="bi bi-currency-euro fs-4"></i></div>
-          <div>
-            <h3 class="text-2xl font-black text-[#09637E] tracking-tight">€0</h3>
-            <p class="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-0.5">Totale Rimborsi</p>
-          </div>
-        </div>
-      </div>
+    <!-- ===== BENVENUTO ===== -->
+    <div class="animate-fade-down">
+      <h1 class="text-3xl font-black tracking-tight text-slate-900">
+        BENTORNATO, <span class="text-[#09637E]">{{user?.nome}} {{user?.cognome}}</span>
+      </h1>
+      <p class="text-sm text-slate-500 font-semibold mt-1">Ecco un riepilogo delle tue pratiche e veicoli</p>
     </div>
 
+    <!-- ===== STATS ===== -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 animate-fade-down delay-1">
+
+      <div class="bg-white p-5 px-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4
+                  border-l-4 border-l-[#09637E] hover:shadow-md transition-shadow">
+        <div class="w-12 h-12 bg-teal-100 text-[#09637E] rounded-xl flex items-center justify-center">
+          <i class="bi bi-clock-history text-xl"></i>
+        </div>
+        <div>
+          <div class="flex items-baseline gap-2">
+            <p class="text-3xl font-black text-slate-900">{{ sinistri.length }}</p>
+            <span class="text-xs font-bold text-teal-800 bg-teal-100 px-2 py-0.5 rounded-full border border-teal-300">Attivi</span>
+          </div>
+          <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Sinistri Attivi</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 px-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4
+                  border-l-4 border-l-[#088395] hover:shadow-md transition-shadow">
+        <div class="w-12 h-12 bg-teal-100 text-[#088395] rounded-xl flex items-center justify-center">
+          <i class="bi bi-car-front text-xl"></i>
+        </div>
+        <div>
+          <p class="text-3xl font-black text-slate-900">{{ veicoliService.veicoli.length }}</p>
+          <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">I Miei Veicoli</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 px-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4
+                  border-l-4 border-l-[#7AB2B2] hover:shadow-md transition-shadow">
+        <div class="w-12 h-12 bg-teal-50 text-[#7AB2B2] rounded-xl flex items-center justify-center">
+          <i class="bi bi-check2-all text-xl"></i>
+        </div>
+        <div>
+          <p class="text-3xl font-black text-slate-900">0</p>
+          <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Completate</p>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 px-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4
+                  border-l-4 border-l-amber-500 hover:shadow-md transition-shadow">
+        <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
+          <i class="bi bi-currency-euro text-xl"></i>
+        </div>
+        <div>
+          <p class="text-3xl font-black text-slate-900">€0</p>
+          <p class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Totale Rimborsi</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ===== MAIN CONTENT ===== -->
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
 
-      <div class="lg:col-span-3">
-        <div class="flex flex-col mb-6 gap-4">
+      <!-- Sinistri -->
+      <div class="lg:col-span-3 space-y-6 animate-fade-down delay-2">
+
+        <!-- Titolo + ricerca -->
+        <div class="space-y-3">
           <div class="flex items-center gap-3">
-            <h2 class="text-xl font-black text-[#09637E] uppercase tracking-tight">Sinistri Recenti</h2>
-            <span class="bg-white text-[#088395] text-[9px] font-black px-2 py-1 rounded border border-[#7AB2B2] uppercase tracking-tighter">Live Update</span>
+            <h2 class="text-xl font-black tracking-tight text-slate-800">Sinistri Recenti</h2>
+            <div class="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase tracking-wider">
+              <div class="w-2 h-2 bg-teal-500 rounded-full animate-pulse"></div>
+              Live Update
+            </div>
           </div>
 
-          <div class="relative group">
-            <span class="absolute inset-y-0 left-4 flex items-center text-slate-400 group-focus-within:text-[#088395] transition-colors">
-              <i class="bi bi-search"></i>
-            </span>
-            <input
-              type="text"
-              [(ngModel)]="searchTerm"
-              placeholder="Cerca per targa, descrizione o stato..."
-              class="w-full pl-12 pr-4 py-4 rounded-2xl border border-[#7AB2B2]/30 focus:outline-none focus:ring-4 focus:ring-[#088395]/10 focus:border-[#088395] transition-all bg-white shadow-sm font-medium text-slate-700"
-            />
+          <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+            <div class="relative">
+              <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+              <input type="text" [(ngModel)]="searchTerm"
+                placeholder="Cerca per targa, descrizione o stato..."
+                class="w-full pl-9 pr-3 py-2 text-[0.8rem] font-semibold border-[1.5px] border-slate-300
+                       rounded-lg bg-slate-50 text-slate-900 outline-none transition-all
+                       focus:border-[#09637E] focus:bg-white focus:ring-[3px] focus:ring-[#09637E]/[0.08]
+                       placeholder:text-slate-400"/>
+            </div>
           </div>
         </div>
 
         <!-- Stato vuoto -->
         <div *ngIf="sinistri.length === 0"
-             class="bg-white rounded-2xl shadow-sm border border-[#7AB2B2]/30 p-16 text-center group hover:border-[#088395] transition-all">
-          <div class="bg-[#EBF4F6] w-24 h-24 rounded-3xl flex items-center justify-center text-[#7AB2B2] mx-auto mb-6 group-hover:bg-[#088395] group-hover:text-white transition-colors">
-            <i class="bi bi-clipboard2-plus text-5xl"></i>
+             class="bg-white rounded-2xl border border-slate-200 p-16 text-center shadow-sm">
+          <div class="w-16 h-16 bg-teal-100 text-[#7AB2B2] rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <i class="bi bi-clipboard2-plus text-3xl"></i>
           </div>
-          <h3 class="text-[#09637E] font-black text-lg uppercase tracking-tight mb-2">Nessuna pratica in corso</h3>
+          <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest mb-4">Nessuna pratica in corso</h3>
           <button type="button" (click)="openNewSinistro()"
-                  class="bg-[#09637E] text-white px-10 py-3.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em]">
+            class="px-8 py-3 text-xs font-black text-white bg-[#09637E] rounded-xl hover:bg-[#088395]
+                   transition-all uppercase tracking-widest shadow-lg shadow-[#09637E]/20">
             Apri Nuovo Sinistro
           </button>
         </div>
 
         <!-- Nessun risultato ricerca -->
         <div *ngIf="sinistri.length > 0 && sinistriFiltrati.length === 0"
-             class="text-center py-16 bg-white/50 rounded-2xl border-2 border-dashed border-[#7AB2B2]/30">
-          <i class="bi bi-search text-4xl text-[#7AB2B2] mb-3 block"></i>
-          <p class="text-slate-400 font-bold uppercase text-xs tracking-widest">Nessun risultato per "{{ searchTerm }}"</p>
+             class="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
+          <i class="bi bi-search text-3xl text-slate-300 block mb-3"></i>
+          <p class="text-sm font-black text-slate-400">Nessun risultato per "{{ searchTerm }}"</p>
         </div>
 
         <!-- Griglia sinistri -->
         <div *ngIf="sinistriFiltrati.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           <div *ngFor="let s of sinistriFiltrati"
-               class="bg-white rounded-xl shadow-sm border border-[#7AB2B2]/30 p-4 hover:border-[#088395] hover:shadow-md transition-all">
+               class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all
+                      cursor-pointer group animate-card-rise">
 
-            <div class="flex items-center justify-between mb-3">
-              <div class="flex items-center gap-2">
-                <div class="bg-[#EBF4F6] p-2 rounded-lg text-[#09637E]">
-                  <i class="bi bi-car-front text-sm"></i>
+            <div class="p-4">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-9 h-9 bg-teal-100 text-[#09637E] rounded-xl flex items-center justify-center
+                              group-hover:bg-[#09637E] group-hover:text-white transition-all">
+                    <i class="bi bi-car-front text-sm"></i>
+                  </div>
+                  <span class="font-black text-[#09637E] uppercase tracking-tight text-sm">{{ s.targa }}</span>
                 </div>
-                <span class="font-black text-[#09637E] uppercase tracking-tight">{{ s.targa }}</span>
+                <span class="text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-widest border"
+                  [ngClass]="{
+                    'bg-green-50 text-green-700 border-green-200': s.stato === 'APERTO',
+                    'bg-slate-100 text-slate-500 border-slate-200': s.stato === 'CHIUSO',
+                    'bg-amber-50 text-amber-700 border-amber-200': s.stato === 'IN ANALISI'
+                  }">
+                  {{ s.stato }}
+                </span>
               </div>
-              <span class="text-[9px] font-black px-2 py-1 rounded uppercase"
-                [ngClass]="{
-                  'bg-green-100 text-green-700': s.stato === 'APERTO',
-                  'bg-red-100 text-red-700': s.stato === 'CHIUSO',
-                  'bg-yellow-100 text-yellow-700': s.stato === 'IN ANALISI'
-                }">
-                {{ s.stato }}
-              </span>
-            </div>
 
-            <p class="text-slate-500 text-xs line-clamp-2 mb-3">{{ s.descrizione }}</p>
+              <p class="text-xs text-slate-500 font-medium line-clamp-2 mb-3 bg-slate-50 rounded-lg p-2.5">
+                {{ s.descrizione }}
+              </p>
 
-            <div class="flex items-center justify-between pt-3 border-t border-[#EBF4F6]">
-              <span class="text-slate-400 text-[10px]">{{ s.data_evento | date:'dd/MM/yyyy' }}</span>
-              <button type="button" (click)="openDettaglio(s)"
-                      class="text-[9px] font-black text-[#088395] uppercase tracking-wider hover:underline transition-all">
-                Dettagli →
-              </button>
+              <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                <span class="text-[10px] text-slate-400 font-bold">
+                  <i class="bi bi-calendar2 me-1"></i>{{ s.data_evento | date:'dd/MM/yyyy' }}
+                </span>
+                <button type="button" (click)="openDettaglio(s)"
+                  class="text-[10px] font-black text-[#088395] uppercase tracking-wider hover:underline">
+                  Dettagli →
+                </button>
+              </div>
             </div>
 
           </div>
         </div>
       </div>
 
-      <div class="lg:col-span-1">
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-[#7AB2B2]/30">
-          <div class="flex justify-between items-center mb-6">
-            <h2 class="text-[10px] font-black text-[#7AB2B2] uppercase tracking-widest">I Miei Veicoli</h2>
-            <button (click)="vaiAVeicoli()" class="text-[10px] font-black text-[#088395] uppercase hover:underline">Tutti</button>
+      <!-- Sidebar veicoli -->
+      <div class="lg:col-span-1 animate-fade-down delay-3">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 sticky top-20">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-[10px] font-black text-slate-500 uppercase tracking-widest">I Miei Veicoli</h2>
+            <button (click)="vaiAVeicoli()"
+              class="text-[10px] font-black text-[#088395] uppercase hover:underline">
+              Tutti →
+            </button>
           </div>
-          <div *ngFor="let v of veicoliService.veicoli" class="mb-3 p-3 bg-[#EBF4F6] rounded-xl border border-[#7AB2B2]/20">
-            <p class="text-[10px] font-black text-[#09637E] uppercase">{{v.marca}}</p>
-            <p class="text-sm font-bold text-[#088395]">{{v.targa}}</p>
+
+          <div *ngIf="veicoliService.veicoli.length === 0"
+               class="text-center py-6">
+            <i class="bi bi-car-front text-2xl text-slate-300 block mb-2"></i>
+            <p class="text-xs font-black text-slate-400">Nessun veicolo</p>
+          </div>
+
+          <div class="space-y-2">
+            <div *ngFor="let v of veicoliService.veicoli"
+                 class="p-3 bg-teal-50 border border-teal-100 rounded-xl hover:border-teal-300
+                        hover:bg-teal-100 transition-all cursor-pointer group">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 bg-white text-[#09637E] rounded-lg flex items-center justify-center
+                            border border-teal-200 group-hover:bg-[#09637E] group-hover:text-white transition-all">
+                  <i class="bi bi-car-front text-xs"></i>
+                </div>
+                <div>
+                  <p class="text-[10px] font-black text-[#09637E] uppercase">{{v.marca}}</p>
+                  <p class="text-xs font-bold text-[#088395]">{{v.targa}}</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
     </div>
-  </div>
+  </main>
 
+  <!-- Modals -->
   <app-nuovo-sinistro
     *ngIf="showNewSinistro"
     (created)="onCreated()"

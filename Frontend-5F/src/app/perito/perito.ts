@@ -77,7 +77,6 @@ import { Perizie } from '../services/perizie.service';
 import { AuthService } from '../services/auth.service';
 import { timer, Subscription } from 'rxjs';
 import jsPDF from 'jspdf';
-import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-perito',
@@ -178,7 +177,6 @@ export class Perito implements OnInit, OnDestroy {
     private auth:      AuthService,
     private cdr:       ChangeDetectorRef,
     private sanitizer: DomSanitizer,
-    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -982,9 +980,5 @@ export class Perito implements OnInit, OnDestroy {
         day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
       });
     } catch { return isoStr; }
-  }
-
-  vaiARimborsiInterventi(): void {
-    this.router.navigate(['/gestione-rimborsi-interventi']);
   }
 }

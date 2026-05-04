@@ -8,17 +8,19 @@ import { VeicoloItem } from '../veicolo-item/veicolo-item';
 import { NuovoVeicoloComponent } from '../nuovo-veicolo/nuovo-veicolo';
 import { DettagliVeicoloComponent } from '../dettagli-veicolo/dettagli-veicolo';
 import { Veicolo } from '../models/veicolo.model';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-lista-veicoli',
   standalone: true,
-  imports: [CommonModule, VeicoloItem, NuovoVeicoloComponent, DettagliVeicoloComponent],
+  imports: [CommonModule, VeicoloItem,FormsModule, NuovoVeicoloComponent, DettagliVeicoloComponent],
   templateUrl: './lista-veicoli.html',
   styleUrl: './lista-veicoli.css'
 })
 export class ListaVeicoli implements OnInit, OnDestroy {
   showNuovoVeicolo = false;
   veicoloSelezionato: Veicolo | null = null;
+  searchVeicolo: string = '';
 
   private refreshInterval?: ReturnType<typeof setInterval>;
   private dataSub?: Subscription;

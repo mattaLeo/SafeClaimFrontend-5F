@@ -12,9 +12,9 @@ import { Relazione, Claim } from '../perito/perito';
 export class Perizie {
 
   // Porta 8000 → pratiche/perizie (MongoDB)
-  private praticheLink = 'https://fictional-waddle-v66xxgwwvx69cvx5-8000.app.github.dev/';
+  private praticheLink = 'https://symmetrical-chainsaw-7vvggrw6qxqr3pjxp-8000.app.github.dev/';
   // Porta 7000 → sinistri (MongoDB)
-  private sinistriLink = 'https://fictional-waddle-v66xxgwwvx69cvx5-7000.app.github.dev/';
+  private sinistriLink = 'https://symmetrical-chainsaw-7vvggrw6qxqr3pjxp-7000.app.github.dev/';
 
   constructor(public http: HttpClient) {}
 
@@ -67,8 +67,7 @@ export class Perizie {
   }
 
   /**
-   * Elimina una pratica dal sistema (best-effort: se il backend non supporta
-   * questo endpoint, l'errore viene ignorato silenziosamente lato componente).
+   * Elimina una pratica dal sistema (best-effort).
    */
   eliminaPratica(sinistroId: string, peritoId: string): Observable<any> {
     return this.http.delete<any>(
@@ -80,6 +79,16 @@ export class Perizie {
 
   /**
    * Mappa una pratica (con sinistro embedded) all'interfaccia Claim.
+   *
+   * FIX: L'ID viene derivato in ordine di priorità:
+   *   1. p.sinistro_id  → campo esplicito sulla pratica, SEMPRE stabile
+   *   2. s._id          → sinistro embedded (può non essere presente al refresh)
+   *   3. p._id          → fallback sulla pratica stessa
+   *
+   * Usare p.sinistro_id come prima scelta garantisce che l'ID sia identico
+   * in ogni chiamata successiva, indipendentemente dal fatto che il sinistro
+   * sia o meno embedded nella risposta. Questo è necessario perché
+   * rejectedClaimIds/deletedClaimIds confrontano gli ID tra chiamate diverse.
    */
   mapPraticaToClaimCard(p: any): Claim {
     const s = p.sinistro ?? {};
@@ -103,18 +112,21 @@ export class Perizie {
 
     const stima = s.stima_danno ?? p.stima_danno ?? 0;
     let priority = 'media';
-    if      (s.priorita)                      priority = s.priorita;
-    else if (stima > 10000)                   priority = 'alta';
-    else if (stima > 0 && stima < 1000)       priority = 'bassa';
+    if      (s.priorita)                priority = s.priorita;
+    else if (stima > 10000)             priority = 'alta';
+    else if (stima > 0 && stima < 1000) priority = 'bassa';
 
     const vehicle = (
       [s.marca ?? '', s.modello ?? '', s.targa ? `- ${s.targa}` : '']
         .join(' ').trim() || s.targa
     ) ?? 'N/D';
 
+    // ── ID stabile: sempre sinistro_id prima, poi s._id, poi p._id ──────────
+    const stableId = String(p.sinistro_id ?? s._id ?? p._id);
+
     return {
-      id:               String(s._id ?? p.sinistro_id ?? p._id),
-      code:             `SN-${String(s._id ?? p.sinistro_id ?? p._id).slice(-5).toUpperCase()}`,
+      id:               stableId,
+      code:             `SN-${stableId.slice(-5).toUpperCase()}`,
       status:           status as Claim['status'],
       type:             s.tipo_sinistro ?? (s.descrizione?.substring(0, 50) ?? 'Sinistro'),
       location:         s.luogo ?? s.indirizzo ?? 'N/D',
@@ -144,9 +156,11 @@ export class Perizie {
     else if (stima > 10000) priority = 'alta';
     else if (stima < 1000)  priority = 'bassa';
 
+    const stableId = String(s._id ?? s.id);
+
     return {
-      id:               String(s._id ?? s.id),
-      code:             `SN-${String(s._id ?? s.id).slice(-5).toUpperCase()}`,
+      id:               stableId,
+      code:             `SN-${stableId.slice(-5).toUpperCase()}`,
       status:           status as Claim['status'],
       type:             s.tipo_sinistro ?? s.descrizione ?? 'Sinistro',
       location:         s.luogo ?? s.indirizzo ?? 'N/D',

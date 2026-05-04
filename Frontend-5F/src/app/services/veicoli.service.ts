@@ -7,7 +7,7 @@ import { Veicolo } from '../models/veicolo.model';
   providedIn: 'root',
 })
 export class VeicoliService {
-  private link = 'https://fictional-waddle-v66xxgwwvx69cvx5-5000.app.github.dev/';
+  private link = 'https://symmetrical-chainsaw-7vvggrw6qxqr3pjxp-5000.app.github.dev/';
 
   // Stato interno dei veicoli (riflette l'ultima operazione di caricamento fatta)
   public veicoli: Veicolo[] = [];
