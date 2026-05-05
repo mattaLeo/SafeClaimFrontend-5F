@@ -9,8 +9,8 @@ import { Pratica } from '../models/pratica.model';
   providedIn: 'root',
 })
 export class Sinistri {
-  link  = "https://symmetrical-chainsaw-7vvggrw6qxqr3pjxp-7000.app.github.dev/"
-  link2 = "https://symmetrical-chainsaw-7vvggrw6qxqr3pjxp-8000.app.github.dev/"
+  link  = "https://stunning-funicular-jjjxx49956jvhq65p-7000.app.github.dev/"
+  link2 = "https://stunning-funicular-jjjxx49956jvhq65p-8000.app.github.dev/"
 
   private sinistriSubject = new BehaviorSubject<sinistro[]>([]);
   sinistri$: Observable<sinistro[]> = this.sinistriSubject.asObservable();
@@ -104,7 +104,7 @@ export class Sinistri {
 
   uploadImmagini(sinistroId: string, files: File[]): Observable<any> {
     const formData = new FormData();
-    files.forEach(file => formData.append('immagini', file, file.name));
+    files.forEach(file => formData.append('immagine', file, file.name));
     return this.http.post(`${this.link}sinistro/${sinistroId}/immagini`, formData);
   }
 }

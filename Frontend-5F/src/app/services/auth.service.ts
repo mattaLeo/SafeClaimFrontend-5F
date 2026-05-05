@@ -7,7 +7,7 @@ import { User } from '../models/user.model';
   providedIn: 'root',
 })
 export class AuthService {
-  link = "https://symmetrical-chainsaw-7vvggrw6qxqr3pjxp-6000.app.github.dev/";
+  link = "https://stunning-funicular-jjjxx49956jvhq65p-6000.app.github.dev/";
 
   private _currentUser?: User;
 
@@ -26,7 +26,7 @@ export class AuthService {
   login(email_in: string, psw_in: string): Observable<any> {
     return this.http.post<any>(`${this.link}login`, {
       email: email_in,
-      psw: psw_in
+      password_hash: psw_in
     }).pipe(
       tap(res => {
         console.log("Risposta API Login:", res);
@@ -46,7 +46,7 @@ export class AuthService {
       cognome: nuovoUtente.cognome?.trim(),
       cf: nuovoUtente.cf?.trim().toUpperCase(),
       email: nuovoUtente.email?.trim().toLowerCase(),
-      psw: nuovoUtente.psw,
+      password_hash: nuovoUtente.password_hash,
     };
 
     return this.http.post<any>(`${this.link}registrazione`, payload).pipe(
@@ -58,7 +58,7 @@ export class AuthService {
             cognome: payload.cognome ?? '',
             cf: payload.cf ?? '',
             email: payload.email ?? '',
-            psw: payload.psw ?? '',
+            password_hash: payload.password_hash ?? '',
             ruolo: 'automobilista',
           };
           this._currentUser = registeredUser;

@@ -4,6 +4,6 @@ export interface User {
   cognome: string;
   cf: string;
   email: string;
-  psw: string;
+  password_hash: string;
   ruolo?: string;
 }

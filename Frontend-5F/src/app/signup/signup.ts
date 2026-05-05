@@ -48,7 +48,7 @@ export class Signup {
       cognome: this.user.cognome,
       cf: this.user.cf,
       email: this.user.email,
-      psw: this.user.password,
+      password_hash: this.user.password,
       ruolo: 'automobilista',
     }).subscribe({
       next: (res) => {
