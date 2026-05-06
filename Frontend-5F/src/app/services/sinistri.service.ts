@@ -107,4 +107,8 @@ export class Sinistri {
     files.forEach(file => formData.append('immagine', file, file.name));
     return this.http.post(`${this.link}sinistro/${sinistroId}/immagini`, formData);
   }
+
+  getSinistroById(sinistroId: string): Observable<any> {
+    return this.http.get<any>(`${this.link}sinistro/${sinistroId}`);
+  }
 }
