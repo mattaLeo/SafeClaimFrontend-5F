@@ -1,7 +1,7 @@
 import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink, Router } from '@angular/router';
+import { RouterLink, Router, UrlSegment } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 @Component({
@@ -51,6 +51,7 @@ export class Login {
           };
           const route = routeMap[role] ?? '/';
           this.router.navigate([route]);
+          console.log(res.user)
         } else {
           this.loading = false;
           this.errorMessage = 'Credenziali non valide. Riprova.';

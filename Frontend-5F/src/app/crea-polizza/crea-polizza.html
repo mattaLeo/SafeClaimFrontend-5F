@@ -35,12 +35,12 @@
 
         <div class="flex flex-col gap-1">
           <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-            Compagnia
+            Compagnia Assicurativa
           </label>
           <input [(ngModel)]="formData.compagnia_assicurativa" 
                  type="text" 
-                 placeholder="Es. Generali"
-                 class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] placeholder-slate-300 focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all" />
+                 readonly
+                 class="w-full bg-slate-100 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] cursor-not-allowed" />
         </div>
       </div>
 
@@ -80,6 +80,7 @@
                 class="date-input w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all" />
         </div>
       </div>
+
       <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col gap-1">
           <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">
