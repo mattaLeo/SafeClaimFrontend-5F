@@ -1,64 +1,79 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Output, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 
 @Component({
-  selector: 'app-signup',
+  selector: 'app-registra-cliente',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   templateUrl: './signup.html',
-  styleUrl: './signup.css',
 })
 export class Signup {
-  user = { nome: '', cognome: '', cf: '', email: '', password: '' };
+  @Output() created = new EventEmitter<any>();
+  @Output() closed = new EventEmitter<void>();
+
+  nuovoCliente = {
+    nome: '',
+    cognome: '',
+    cf: '',
+    email: '',
+    telefono: '',
+    password: ''
+  };
+
   showPassword = false;
   loading = false;
   errorMessage = '';
+  successMessage = '';
 
-  constructor(
-    private router: Router,
-    private authService: AuthService,
-    private cdr: ChangeDetectorRef
-  ) {}
+  constructor(private authService: AuthService, private cdr: ChangeDetectorRef) {}
 
   get formValido(): boolean {
     return !!(
-      this.user.nome.trim() &&
-      this.user.cognome.trim() &&
-      this.user.cf.trim() &&
-      this.user.email.trim() &&
-      this.user.password.trim()
+      this.nuovoCliente.nome.trim() &&
+      this.nuovoCliente.cognome.trim() &&
+      this.nuovoCliente.cf.trim() &&
+      this.nuovoCliente.email.trim() &&
+      this.nuovoCliente.telefono.trim() &&
+      this.nuovoCliente.password.trim() &&
+      this.nuovoCliente.telefono.trim()
     );
   }
 
-  onSubmit(): void {
+  onOverlayClick(event: MouseEvent): void {
+    if (event.target === event.currentTarget) this.closed.emit();
+  }
+
+  registraCliente(): void {
     if (!this.formValido) {
       this.errorMessage = 'Compila tutti i campi richiesti.';
       return;
     }
-
     this.errorMessage = '';
+    this.successMessage = '';
     this.loading = true;
     this.cdr.detectChanges();
 
     this.authService.signup({
-      nome: this.user.nome,
-      cognome: this.user.cognome,
-      cf: this.user.cf,
-      email: this.user.email,
-      password_hash: this.user.password,
+      nome: this.nuovoCliente.nome,
+      cognome: this.nuovoCliente.cognome,
+      cf: this.nuovoCliente.cf,
+      email: this.nuovoCliente.email,
+      telefono: this.nuovoCliente.telefono,
+      password_hash: this.nuovoCliente.password,
       ruolo: 'automobilista',
     }).subscribe({
       next: (res) => {
+        this.loading = false;
         if (res.status === 'success') {
-          this.router.navigate(['/automobilista']);
+          this.successMessage = `Cliente ${this.nuovoCliente.nome} ${this.nuovoCliente.cognome} registrato con successo!`;
+          this.created.emit(res.data ?? { ...this.nuovoCliente });
+          this.nuovoCliente = { nome: '', cognome: '', cf: '', email: '', telefono: '', password: '' };
         } else {
-          this.loading = false;
           this.errorMessage = res.message ?? 'Errore durante la registrazione.';
-          this.cdr.detectChanges();
         }
+        this.cdr.detectChanges();
       },
       error: (err: any) => {
         this.loading = false;
@@ -66,5 +81,12 @@ export class Signup {
         this.cdr.detectChanges();
       }
     });
+  }
+
+  soloNumeri(event: KeyboardEvent): void {
+    const allowed = /[0-9+\s]/;
+    if (!allowed.test(event.key)) {
+      event.preventDefault();
+    }
   }
 }

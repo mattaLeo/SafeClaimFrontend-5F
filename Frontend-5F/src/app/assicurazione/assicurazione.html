@@ -23,7 +23,7 @@
       <h1 class="text-3xl font-black tracking-tight text-slate-900">
         DASHBOARD <span class="text-[#09637E]">Assicuratore</span>
       </h1>
-      <p class="text-sm text-slate-500 font-semibold mt-1">Gestione Pratiche e Polizze in tempo reale</p>
+      <p class="text-sm text-slate-500 font-semibold mt-1">Gestione Pratiche, Polizze e Clienti in tempo reale</p>
     </div>
 
     <!-- ===== STATS ===== -->
@@ -74,6 +74,7 @@
     <!-- ===== TAB BAR ===== -->
     <div class="animate-fade-down delay-2">
       <div class="bg-white border border-slate-200 rounded-xl p-1.5 shadow-sm flex gap-1 w-fit">
+
         <button type="button" (click)="setTab('pratiche')"
           [ngClass]="activeTab === 'pratiche'
             ? 'px-5 py-2.5 rounded-lg bg-[#09637E] text-white shadow-md text-[11px] font-black uppercase tracking-widest flex items-center gap-2 transition-all'
@@ -95,6 +96,15 @@
             {{ countPolizzeAttive }}
           </span>
         </button>
+
+        <!-- Clienti: counter rimosso come richiesto -->
+        <button type="button" (click)="setTab('clienti')"
+          [ngClass]="activeTab === 'clienti'
+            ? 'px-5 py-2.5 rounded-lg bg-[#09637E] text-white shadow-md text-[11px] font-black uppercase tracking-widest flex items-center gap-2 transition-all'
+            : 'px-5 py-2.5 rounded-lg text-slate-500 hover:text-[#09637E] hover:bg-slate-100 text-[11px] font-black uppercase tracking-widest flex items-center gap-2 transition-all'">
+          <i class="bi bi-people"></i> Clienti
+        </button>
+
       </div>
     </div>
 
@@ -108,21 +118,30 @@
             <ng-container [ngSwitch]="activeTab">
               <span *ngSwitchCase="'pratiche'">Pratiche da Gestire</span>
               <span *ngSwitchCase="'polizze'">Polizze Assicurative Attive</span>
+              <span *ngSwitchCase="'clienti'">Clienti Registrati</span>
             </ng-container>
           </h2>
-          <button *ngIf="activeTab === 'polizze'" type="button" (click)="apriNuovaPolizza()"
-            class="flex items-center gap-2 px-4 py-2 text-xs font-black text-white bg-[#09637E] rounded-lg
-                   hover:bg-[#088395] transition-all uppercase tracking-widest shadow-lg shadow-[#09637E]/20">
-            <i class="bi bi-plus-lg"></i> Nuova Polizza
-          </button>
+          <div class="flex items-center gap-2">
+            <button *ngIf="activeTab === 'polizze'" type="button" (click)="apriNuovaPolizza()"
+              class="flex items-center gap-2 px-4 py-2 text-xs font-black text-white bg-[#09637E] rounded-lg
+                     hover:bg-[#088395] transition-all uppercase tracking-widest shadow-lg shadow-[#09637E]/20">
+              <i class="bi bi-plus-lg"></i> Nuova Polizza
+            </button>
+            <button *ngIf="activeTab === 'clienti'" type="button" (click)="apriNuovoCliente()"
+              class="flex items-center gap-2 px-4 py-2 text-xs font-black text-white bg-[#09637E] rounded-lg
+                     hover:bg-[#088395] transition-all uppercase tracking-widest shadow-lg shadow-[#09637E]/20">
+              <i class="bi bi-person-plus"></i> Nuovo Cliente
+            </button>
+          </div>
         </div>
 
-        <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+        <!-- Ricerca visibile solo per Pratiche e Polizze -->
+        <div *ngIf="activeTab === 'pratiche' || activeTab === 'polizze'"
+             class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
           <div class="relative">
             <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
             <input type="text" [(ngModel)]="searchTerm"
-              [placeholder]="activeTab === 'pratiche' ? 'Cerca per titolo, targa o stato...' 
-                           : 'Cerca per n° polizza, compagnia o veicolo...'"
+              [placeholder]="activeTab === 'pratiche' ? 'Cerca per titolo, targa o stato...' : 'Cerca per n° polizza, compagnia o veicolo...'"
               class="w-full pl-9 pr-3 py-2 text-[0.8rem] font-semibold border-[1.5px] border-slate-300
                      rounded-lg bg-slate-50 text-slate-900 outline-none transition-all
                      focus:border-[#09637E] focus:bg-white focus:ring-[3px] focus:ring-[#09637E]/[0.08]
@@ -144,7 +163,7 @@
              class="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
           <i class="bi bi-folder2 text-3xl text-slate-300 block mb-3"></i>
           <p class="text-sm font-black text-slate-400">
-            {{ searchTerm ? 'Nessun risultato per "' + searchTerm + '"' : 'Nessuna pratica aperta' }}
+            {{ searchTerm ? 'Nessun risultato per \"' + searchTerm + '\"' : 'Nessuna pratica aperta' }}
           </p>
         </div>
 
@@ -197,9 +216,9 @@
                 </option>
               </select>
               <div class="flex justify-between pt-2">
-                <button (click)="chiudiAssegnaPerito()" 
+                <button (click)="chiudiAssegnaPerito()"
                         class="text-[10px] font-black uppercase text-slate-500">Annulla</button>
-                <button (click)="confermAssegnaPerito()" 
+                <button (click)="confermAssegnaPerito()"
                         [disabled]="!peritoSelezionatoId || assegnando"
                         class="px-6 py-2 text-xs font-black bg-[#09637E] text-white rounded-xl hover:bg-[#088395]">
                   {{ assegnando ? 'Assegnando...' : 'Conferma Assegnazione' }}
@@ -226,7 +245,7 @@
              class="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm">
           <i class="bi bi-shield text-3xl text-slate-300 block mb-3"></i>
           <p class="text-sm font-black text-slate-400">
-            {{ searchTerm ? 'Nessun risultato per "' + searchTerm + '"' : 'Nessuna polizza presente' }}
+            {{ searchTerm ? 'Nessun risultato per \"' + searchTerm + '\"' : 'Nessuna polizza presente' }}
           </p>
         </div>
 
@@ -280,27 +299,32 @@
           </div>
         </div>
       </div>
-
     </div>
   </main>
 
   <!-- ===== MODALS ===== -->
-  <app-crea-polizza 
-    *ngIf="showNuovaPolizza" 
-    (created)="onPolizzaCreata($event)" 
+  <app-crea-polizza
+    *ngIf="showNuovaPolizza"
+    (created)="onPolizzaCreata($event)"
     (closed)="chiudiNuovaPolizza()">
   </app-crea-polizza>
 
-  <app-dettaglio-pratica 
-    *ngIf="praticaSelezionata" 
-    [pratica]="praticaSelezionata!" 
+  <app-dettaglio-pratica
+    *ngIf="praticaSelezionata"
+    [pratica]="praticaSelezionata!"
     (closed)="chiudiDettaglioPratica()">
   </app-dettaglio-pratica>
 
-  <app-dettaglio-polizza 
-    *ngIf="polizzaSelezionata" 
-    [polizza]="polizzaSelezionata!" 
+  <app-dettaglio-polizza
+    *ngIf="polizzaSelezionata"
+    [polizza]="polizzaSelezionata!"
     (closed)="chiudiDettaglioPolizza()">
   </app-dettaglio-polizza>
+
+  <app-registra-cliente
+    *ngIf="showNuovoCliente"
+    (created)="onClienteRegistrato($event)"
+    (closed)="chiudiNuovoCliente()">
+  </app-registra-cliente>
 
 </div>

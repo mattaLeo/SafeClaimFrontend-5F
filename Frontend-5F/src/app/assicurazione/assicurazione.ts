@@ -6,6 +6,7 @@ import { Polizza } from '../models/polizza.model';
 import { DettaglioPraticaComponent } from '../dettagli-pratica/dettagli-pratica';
 import { DettaglioPolizzaComponent } from '../dettagli-polizza/dettagli-polizza';
 import { CreaPolizzaComponent } from '../crea-polizza/crea-polizza';
+import { Signup } from '../signup/signup';
 import { timer, Subscription } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { PolizzeService } from '../services/polizze.service';
@@ -20,30 +21,29 @@ import { Sinistri } from '../services/sinistri.service';
     DettaglioPraticaComponent,
     DettaglioPolizzaComponent,
     CreaPolizzaComponent,
+    Signup,
   ],
   templateUrl: './assicurazione.html',
   styleUrl: './assicurazione.css',
 })
 export class Assicurazione implements OnInit, OnDestroy {
+  activeTab: 'pratiche' | 'polizze' | 'clienti' = 'pratiche';
 
-  activeTab: 'pratiche' | 'polizze' = 'pratiche';
-
-  // Pratiche
   pratiche: Pratica[] = [];
-  loadingPratiche = false;
-  praticaSelezionata: Pratica | null = null;
-
-  // Polizze
   polizze: Polizza[] = [];
-  loadingPolizze = false;
-  showNuovaPolizza = false;
-  polizzaSelezionata: Polizza | null = null;
-
-  // Shared
-  searchTerm = '';
+  clienti: any[] = []; // Gestiti solo localmente o tramite push
   periti: any[] = [];
 
-  // Assegna Perito
+  searchTerm = '';
+
+  loadingPratiche = false;
+  loadingPolizze = false;
+
+  praticaSelezionata: Pratica | null = null;
+  polizzaSelezionata: Polizza | null = null;
+  showNuovaPolizza = false;
+  showNuovoCliente = false;
+
   praticaPerAssegna: Pratica | null = null;
   peritoSelezionatoId = '';
   assegnando = false;
@@ -62,6 +62,26 @@ export class Assicurazione implements OnInit, OnDestroy {
     this.caricaPeriti();
     this.caricaPratiche();
     this.caricaPolizze();
+    // NOTA: caricaClienti rimosso perché non esiste l'endpoint
+  }
+
+  // GETTER PER FILTRI (Mantenuti per Pratiche e Polizze)
+  get praticheFiltrate(): Pratica[] {
+    if (!this.searchTerm.trim()) return this.pratiche;
+    const s = this.searchTerm.toLowerCase();
+    return this.pratiche.filter(p => 
+      (p.titolo?.toLowerCase() || '').includes(s) || 
+      (p.descrizione?.toLowerCase() || '').includes(s)
+    );
+  }
+
+  get polizzeFiltrate(): Polizza[] {
+    if (!this.searchTerm.trim()) return this.polizze;
+    const s = this.searchTerm.toLowerCase();
+    return this.polizze.filter(p => 
+      (p.n_polizza?.toLowerCase() || '').includes(s) || 
+      (p.compagnia_assicurativa?.toLowerCase() || '').includes(s)
+    );
   }
 
   get countPraticheDaAssegnare(): number {
@@ -72,9 +92,8 @@ export class Assicurazione implements OnInit, OnDestroy {
     return this.polizze.filter(pol => this.isPolizzaAttiva(pol)).length;
   }
 
-  setTab(tab: 'pratiche' | 'polizze'): void {
+  setTab(tab: 'pratiche' | 'polizze' | 'clienti'): void {
     this.activeTab = tab;
-    this.searchTerm = '';
   }
 
   startAutoRefresh(): void {
@@ -95,16 +114,6 @@ export class Assicurazione implements OnInit, OnDestroy {
     });
   }
 
-  caricaPeriti(): void {
-    this.sinistri.askTuttiPeriti().subscribe({
-      next: (data: any) => {
-        this.periti = Array.isArray(data) ? data : data?.periti ?? [];
-        this.cdr.detectChanges();
-      },
-      error: (err) => console.error(err)
-    });
-  }
-
   caricaPolizze(): void {
     this.loadingPolizze = true;
     this.polizzeService.getPolizze().subscribe({
@@ -117,61 +126,52 @@ export class Assicurazione implements OnInit, OnDestroy {
     });
   }
 
+  caricaPeriti(): void {
+    this.sinistri.askTuttiPeriti().subscribe({
+      next: (data: any) => {
+        this.periti = Array.isArray(data) ? data : data?.periti ?? [];
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error(err)
+    });
+  }
+
   isPolizzaAttiva(pol: Polizza): boolean {
     return this.polizzeService.isAttiva(pol);
   }
 
-  // ==================== MODALS ====================
-
-  apriNuovaPolizza(): void {
-    this.showNuovaPolizza = true;
+  // --- GESTIONE CLIENTI (Solo locale) ---
+  apriNuovoCliente(): void { this.showNuovoCliente = true; }
+  chiudiNuovoCliente(): void { this.showNuovoCliente = false; }
+  onClienteRegistrato(cliente: any): void {
+    // Aggiungiamo il cliente appena creato all'array locale
+    this.clienti.unshift(cliente); 
+    this.chiudiNuovoCliente();
   }
 
-  chiudiNuovaPolizza(): void {
-    this.showNuovaPolizza = false;
-  }
-
-  onPolizzaCreata(res: any): void {     // Accetta $event
-    this.caricaPolizze();
-    this.chiudiNuovaPolizza();
-  }
+  // --- ALTRI METODI ---
+  apriNuovaPolizza(): void { this.showNuovaPolizza = true; }
+  chiudiNuovaPolizza(): void { this.showNuovaPolizza = false; }
+  onPolizzaCreata(res: any): void { this.caricaPolizze(); this.chiudiNuovaPolizza(); }
 
   apriDettaglioPolizza(pol: Polizza, event: Event): void {
     event.stopPropagation();
     this.polizzaSelezionata = pol;
   }
+  chiudiDettaglioPolizza(): void { this.polizzaSelezionata = null; }
 
-  chiudiDettaglioPolizza(): void {
-    this.polizzaSelezionata = null;
-  }
-
-  // ==================== PRATICHE ====================
-
-  apriDettaglioPratica(p: Pratica): void {
-    this.praticaSelezionata = p;
-  }
-
-  chiudiDettaglioPratica(): void {
-    this.praticaSelezionata = null;
-  }
-
-  // ==================== ASSEGNAZIONE PERITO ====================
+  apriDettaglioPratica(p: Pratica): void { this.praticaSelezionata = p; }
+  chiudiDettaglioPratica(): void { this.praticaSelezionata = null; }
 
   apriAssegnaPerito(p: Pratica, event: Event): void {
     event.stopPropagation();
     this.praticaPerAssegna = p;
     this.peritoSelezionatoId = '';
-    this.assegnando = false;
   }
-
-  chiudiAssegnaPerito(): void {
-    this.praticaPerAssegna = null;
-    this.peritoSelezionatoId = '';
-  }
+  chiudiAssegnaPerito(): void { this.praticaPerAssegna = null; }
 
   confermAssegnaPerito(): void {
     if (!this.praticaPerAssegna?._id || !this.peritoSelezionatoId) return;
-
     this.assegnando = true;
     this.sinistri.assegnaPerito(this.praticaPerAssegna._id, this.peritoSelezionatoId).subscribe({
       next: () => {
@@ -179,31 +179,8 @@ export class Assicurazione implements OnInit, OnDestroy {
         this.caricaPratiche();
         this.chiudiAssegnaPerito();
       },
-      error: (err) => {
-        console.error(err);
-        this.assegnando = false;
-      }
+      error: () => this.assegnando = false
     });
-  }
-
-  // ==================== FILTRI ====================
-
-  get praticheFiltrate(): Pratica[] {
-    if (!this.searchTerm.trim()) return this.pratiche;
-    const s = this.searchTerm.toLowerCase();
-    return this.pratiche.filter((p: Pratica) =>
-      (p.titolo?.toLowerCase() || '').includes(s) ||
-      (p.descrizione?.toLowerCase() || '').includes(s)
-    );
-  }
-
-  get polizzeFiltrate(): Polizza[] {
-    if (!this.searchTerm.trim()) return this.polizze;
-    const s = this.searchTerm.toLowerCase();
-    return this.polizze.filter((p: Polizza) =>
-      (p.n_polizza?.toLowerCase() || '').includes(s) ||
-      (p.compagnia_assicurativa?.toLowerCase() || '').includes(s)
-    );
   }
 
   ngOnDestroy(): void {

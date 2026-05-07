@@ -47,6 +47,7 @@ export class AuthService {
       cf: nuovoUtente.cf?.trim().toUpperCase(),
       email: nuovoUtente.email?.trim().toLowerCase(),
       password_hash: nuovoUtente.password_hash,
+      telefono: nuovoUtente.telefono?.trim(),   // ← aggiungi questa riga
     };
 
     return this.http.post<any>(`${this.link}registrazione`, payload).pipe(
@@ -60,6 +61,7 @@ export class AuthService {
             email: payload.email ?? '',
             password_hash: payload.password_hash ?? '',
             ruolo: 'automobilista',
+            telefono: payload.telefono ?? '',   // ← aggiungi questa riga
           };
           this._currentUser = registeredUser;
           localStorage.setItem('currentUser', JSON.stringify(registeredUser));
