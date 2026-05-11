@@ -117,9 +117,18 @@
                 </button>
               </div>
             </div>
-            <p class="text-xs text-slate-400 font-semibold mt-2">
-              La richiesta verrà inviata senza posizione GPS.
-            </p>
+            <div class="mt-4 space-y-3">
+              <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
+                Inserisci l'indirizzo manualmente
+              </label>
+              <input type="text"
+                     [(ngModel)]="indirizzoManuale"
+                     placeholder="Via, numero civico, città"
+                     class="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-200" />
+              <p class="text-[10px] text-slate-400 font-semibold">
+                Se la geolocalizzazione non funziona, inserisci qui l'indirizzo per inviare comunque la richiesta.
+              </p>
+            </div>
           </div>
         </div>
 

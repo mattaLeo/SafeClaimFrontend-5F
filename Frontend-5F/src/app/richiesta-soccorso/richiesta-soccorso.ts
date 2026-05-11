@@ -35,6 +35,7 @@ export class RichiestaSoccorsoComponent implements OnInit {
   indirizzoRilevato = '';
   geoLoading = false;
   geoErrore  = '';
+  indirizzoManuale = '';
 
   // ── Form ──────────────────────────────────────────────────────────────────
   loading  = false;
@@ -130,6 +131,13 @@ export class RichiestaSoccorsoComponent implements OnInit {
       return;
     }
     
+    if (this.lat === null || this.lon === null) {
+      if (!this.indirizzoManuale?.trim()) {
+        this.errore = 'Inserisci un indirizzo manuale se la geolocalizzazione non è disponibile.';
+        return;
+      }
+    }
+
     this.loading = true;
 
     const now = new Date();
@@ -143,6 +151,7 @@ export class RichiestaSoccorsoComponent implements OnInit {
     };
     if (this.lat !== null) payload.lat = this.lat;
     if (this.lon !== null) payload.lon = this.lon;
+    if (this.indirizzoManuale?.trim()) payload.indirizzo = this.indirizzoManuale.trim();
 
     this.http.post<any>(`${this.link}soccorso`, payload).subscribe({
       next: () => {
