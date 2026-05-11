@@ -18,6 +18,7 @@ export class NuovoSinistroComponent implements OnInit {
   @Output() closed  = new EventEmitter<void>();
 
   formData = { targa: '', data_evento: '', descrizione: '', luogo: '', geolocalizzazione: { latitudine: 0, longitudine: 0 } };
+  maxDate       = '';
   loading        = false;
   errorMessage   = '';
   warningMessage = '';
@@ -37,7 +38,8 @@ export class NuovoSinistroComponent implements OnInit {
     const anno   = oggi.getFullYear();
     const mese   = String(oggi.getMonth() + 1).padStart(2, '0');
     const giorno = String(oggi.getDate()).padStart(2, '0');
-    this.formData.data_evento = `${anno}-${mese}-${giorno}`;
+    this.maxDate = `${anno}-${mese}-${giorno}`;
+    this.formData.data_evento = this.maxDate;
   }
 
   selectVehicle(targa: string): void {
@@ -85,6 +87,10 @@ export class NuovoSinistroComponent implements OnInit {
       hasPosition = true;
     } catch (error: any) {
       this.warningMessage = 'Posizione non disponibile: il sinistro verrà creato comunque. Inserisci la via se vuoi indicarla manualmente.';
+    }
+
+    if (this.formData.data_evento > this.maxDate) {
+      this.formData.data_evento = this.maxDate;
     }
 
     const payload: sinistro = {
