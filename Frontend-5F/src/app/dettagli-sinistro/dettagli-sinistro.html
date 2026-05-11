@@ -1,5 +1,5 @@
 <div class="fixed inset-0 z-50 flex items-center justify-center p-6">
-  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="close()"></div>
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
 
   <div (click)="$event.stopPropagation()"
        class="w-full max-w-2xl bg-white rounded-[40px] shadow-2xl shadow-blue-100/40 p-10 relative max-h-[90vh] overflow-y-auto">
@@ -132,11 +132,7 @@
       </div>
 
       <!-- Footer -->
-      <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-        <button type="button" (click)="close()"
-                class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors">
-          Chiudi
-        </button>
+      <div class="flex items-center justify-end pt-2 border-t border-slate-100">
 
         <!-- Invia immagini: solo automobilista -->
         <button *ngIf="ruolo === 'automobilista'"

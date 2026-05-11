@@ -1,8 +1,7 @@
 <div class="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-6">
-  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="close()"></div>
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
 
-  <div (click)="$event.stopPropagation()"
-       class="w-full max-w-2xl bg-white rounded-3xl shadow-2xl relative max-h-[92vh] overflow-y-auto">
+  <div class="w-full max-w-2xl bg-white rounded-3xl shadow-2xl relative max-h-[92vh] overflow-y-auto">
 
     <div class="bg-gradient-to-br from-[#09637E] to-[#088395] rounded-t-3xl p-8 pb-6">
       <div class="flex items-start justify-between">
@@ -23,8 +22,9 @@
             {{ isAttiva ? 'Attiva' : 'Scaduta' }}
           </span>
           <button type="button" (click)="close()"
-                  class="p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/20 transition-all">
-            <i class="bi bi-x-lg text-lg"></i>
+                  class="w-9 h-9 flex items-center justify-center rounded-xl bg-white text-[#09637E]
+                        hover:bg-white/80 transition-all shadow-sm font-black text-base">
+            ✕
           </button>
         </div>
       </div>
@@ -94,11 +94,7 @@
 
       <div class="border-t border-slate-100"></div>
 
-      <div class="flex items-center justify-between gap-3">
-        <button type="button" (click)="close()"
-                class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors px-4 py-2 rounded-xl hover:bg-slate-50">
-          Chiudi
-        </button>
+      <div class="flex items-center justify-end gap-3">
         <div class="flex items-center gap-3">
           <button type="button" (click)="apriConfermaElimina()"
                   class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-5 py-2.5 rounded-xl border-2 transition-all bg-red-50 text-red-500 border-red-200 hover:bg-red-500 hover:text-white hover:border-red-500">

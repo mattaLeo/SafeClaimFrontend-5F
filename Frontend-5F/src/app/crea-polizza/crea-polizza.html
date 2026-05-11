@@ -49,6 +49,7 @@
           Tipo Copertura <span class="text-red-500">*</span>
         </label>
         <select [(ngModel)]="formData.tipo_copertura"
+                required
                 class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all appearance-none cursor-pointer">
           <option value="RCA">RCA</option>
           <option value="Kasko">Kasko</option>
@@ -64,6 +65,7 @@
             <input [(ngModel)]="formData.data_inizio" 
                     type="text"
                     placeholder="dd/mm/yyyy"
+                    required
                     onfocus="(this.type='date')"
                     onblur="if(!this.value)this.type='text'"
                     class="date-input w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all" />
@@ -75,6 +77,7 @@
         <input [(ngModel)]="formData.data_scadenza" 
                 type="text"
                 placeholder="dd/mm/yyyy"
+                required
                 onfocus="(this.type='date')"
                 onblur="if(!this.value)this.type='text'"
                 class="date-input w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all" />
@@ -84,11 +87,12 @@
       <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col gap-1">
           <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">
-            Massimale (€)
+            Massimale (€) <span class="text-red-500">*</span>
           </label>
           <input [(ngModel)]="formData.massimale" 
                  type="number" 
                  placeholder="100000"
+                 required
                  class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] placeholder-slate-300 focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all" />
         </div>
 
@@ -97,6 +101,7 @@
             Veicolo <span class="text-red-500">*</span>
           </label>
           <select [(ngModel)]="formData.veicolo_id"
+                  required
                   class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all appearance-none cursor-pointer">
             <option [ngValue]="undefined" disabled>— Seleziona —</option>
             <option *ngFor="let v of veicoliService.veicoli" [ngValue]="v.id">

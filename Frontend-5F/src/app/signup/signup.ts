@@ -41,10 +41,6 @@ export class Signup {
     );
   }
 
-  onOverlayClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) this.closed.emit();
-  }
-
   registraCliente(): void {
     if (!this.formValido) {
       this.errorMessage = 'Compila tutti i campi richiesti.';

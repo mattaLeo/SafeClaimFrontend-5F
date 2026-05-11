@@ -1,8 +1,7 @@
 <div class="fixed inset-0 z-50 flex items-center justify-center p-6">
-  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="close()"></div>
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
 
-  <div (click)="$event.stopPropagation()"
-       class="w-full max-w-3xl bg-white rounded-[40px] shadow-2xl shadow-blue-100/40 p-10 relative max-h-[90vh] overflow-y-auto">
+  <div class="w-full max-w-3xl bg-white rounded-[40px] shadow-2xl shadow-blue-100/40 p-10 relative max-h-[90vh] overflow-y-auto">
 
     <!-- Close button -->
     <button type="button" (click)="close()" aria-label="Chiudi"
@@ -357,16 +356,7 @@
       </div>
 
       <!-- Footer -->
-      <div class="flex items-center justify-between pt-2 border-t border-slate-100">
-        <button type="button" (click)="close()"
-                class="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors">
-          Chiudi
-        </button>
-        <button type="button" (click)="close()"
-                class="py-3 px-8 bg-[#09637E] text-white text-sm font-extrabold rounded-xl shadow-lg transition-all hover:bg-[#088395]">
-          Chiudi
-        </button>
-      </div>
+      <div class="pt-2 border-t border-slate-100"></div>
 
     </div>
   </div>

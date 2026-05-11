@@ -1,5 +1,5 @@
 <div class="fixed inset-0 z-50 flex items-center justify-center p-6">
-  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" (click)="close()"></div>
+  <div class="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
 
   <div (click)="$event.stopPropagation()"
        class="w-full max-w-lg bg-white rounded-[32px] shadow-2xl shadow-[#09637E]/10 relative overflow-hidden">
@@ -68,13 +68,7 @@
 
     </div>
 
-    <!-- Footer -->
-    <div class="px-8 pb-6">
-      <button (click)="close()"
-        class="w-full py-3 bg-[#EBF4F6] text-[#09637E] text-xs font-black uppercase tracking-widest rounded-xl hover:bg-[#09637E] hover:text-white transition-all">
-        Chiudi
-      </button>
-    </div>
+
 
   </div>
 </div>
