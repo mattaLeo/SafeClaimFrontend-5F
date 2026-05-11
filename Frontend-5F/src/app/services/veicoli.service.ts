@@ -7,7 +7,7 @@ import { Veicolo } from '../models/veicolo.model';
   providedIn: 'root',
 })
 export class VeicoliService {
-  private link = 'https://glowing-zebra-4j66vrgvjjxf595-10000.app.github.dev/';
+  private link = 'https://cuddly-space-barnacle-x5xxp49pwj5297r5-10000.app.github.dev/';
 
   // Stato interno dei veicoli (riflette l'ultima operazione di caricamento fatta)
   public veicoli: Veicolo[] = [];

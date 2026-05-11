@@ -23,7 +23,7 @@ interface RichiestaSoccorso {
 export class RichiestaSoccorsoComponent implements OnInit {
   @Output() closed = new EventEmitter<void>();
 
-  private link = 'https://glowing-zebra-4j66vrgvjjxf595-7000.app.github.dev/';
+  private link = 'https://cuddly-space-barnacle-x5xxp49pwj5297r5-7000.app.github.dev/';
 
   // ── Veicoli ───────────────────────────────────────────────────────────────
   veicoli: Veicolo[] = [];
@@ -106,6 +106,7 @@ export class RichiestaSoccorsoComponent implements OnInit {
     this.loadingRichieste = true;
     this.http.get<RichiestaSoccorso[]>(`${this.link}soccorso/utente/${userId}`).subscribe({
       next: (data) => {
+        console.log('Richieste ricevute dal backend:', data);
         this.richieste = data;
         this.loadingRichieste = false;
         this.cdr.detectChanges();
@@ -122,9 +123,24 @@ export class RichiestaSoccorsoComponent implements OnInit {
       this.errore = 'Seleziona un veicolo.';
       return;
     }
+    
+    const userId = this.auth.currentUser?.id;
+    if (!userId) {
+      this.errore = 'Utente non autenticato.';
+      return;
+    }
+    
     this.loading = true;
 
-    const payload: any = { targa: this.targaSelezionata };
+    const now = new Date();
+    const payload: any = {
+      id_automobilista: userId,
+      targa: this.targaSelezionata,
+      data_richiesta: this.getFormattedDateTime(now),
+      orario_arrivo: null,
+      durata_soccorso: null,
+      note: ''
+    };
     if (this.lat !== null) payload.lat = this.lat;
     if (this.lon !== null) payload.lon = this.lon;
 
@@ -132,7 +148,6 @@ export class RichiestaSoccorsoComponent implements OnInit {
       next: () => {
         this.loading  = false;
         this.successo = 'Richiesta inviata! Il soccorso è in arrivo.';
-        const userId = this.auth.currentUser?.id;
         if (userId) this.caricaRichieste(userId);
         this.cdr.detectChanges();
         setTimeout(() => this.close(), 2500);
@@ -146,6 +161,50 @@ export class RichiestaSoccorsoComponent implements OnInit {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+
+  private getFormattedDateTime(date: Date): string {
+    // Formato semplice: YYYY-MM-DD HH:mm:ss (senza timezone)
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+  }
+
+  formatOraRichiesta(dataString: string): string {
+    // Parsea il datetime dal backend e corregge il timezone
+    try {
+      // Converte "YYYY-MM-DD HH:mm:ss" in ISO string riconoscibile
+      let isoString = dataString.replace(' ', 'T');
+      
+      // Se non ha il suffisso Z, aggiungilo per indicare UTC
+      if (!isoString.includes('+') && !isoString.includes('Z')) {
+        isoString += 'Z';
+      }
+      
+      const date = new Date(isoString);
+      
+      // Ottieni l'offset del timezone locale in ore
+      const offsetMinutes = new Date().getTimezoneOffset();
+      const offsetHours = offsetMinutes / 60;
+      
+      // Aggiungi l'offset (negativo perché getTimezoneOffset ritorna negativo per fusi positivi)
+      date.setHours(date.getHours() - offsetHours);
+      
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${day}/${month}/${year} ${hours}:${minutes}`;
+    } catch (e) {
+      console.error('Errore parsing data:', e);
+      return dataString;
+    }
+  }
 
   getStatoClass(stato: string): string {
     const map: Record<string, string> = {

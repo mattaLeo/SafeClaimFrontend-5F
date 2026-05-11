@@ -174,7 +174,7 @@
               <div>
                 <p class="text-xs font-black text-slate-700">#{{ r.id }}</p>
                 <p class="text-[10px] text-slate-400 font-semibold">
-                  {{ r.data_richiesta | date:'dd/MM/yyyy HH:mm' }}
+                  {{ formatOraRichiesta(r.data_richiesta) }}
                 </p>
               </div>
             </div>
