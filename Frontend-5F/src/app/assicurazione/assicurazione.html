@@ -1,16 +1,16 @@
-<div class="min-h-screen bg-[#F1F5F9] text-[#0F172A] font-sans overflow-x-hidden">
+<div class="min-h-screen bg-[#F4F4F4] text-[#061E29] font-sans overflow-x-hidden">
 
   <!-- ===== HEADER sticky ===== -->
-  <header class="sticky top-0 z-30 bg-white border-b-2 border-slate-200 shadow-sm">
+  <header class="sticky top-0 z-30 bg-[#088395] border-b-2 border-[#09637E] shadow-sm">
     <div class="max-w-6xl mx-auto px-6 flex items-center justify-between h-14">
       <div class="flex items-center gap-2">
-        <div class="w-7 h-7 bg-[#09637E] rounded-lg flex items-center justify-center">
+        <div class="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center">
           <i class="bi bi-shield-fill text-white text-xs"></i>
         </div>
-        <span class="text-xs font-black text-[#09637E] uppercase tracking-widest">Dashboard Assicuratore</span>
+        <span class="text-xs font-black text-white uppercase tracking-widest">Dashboard Assicuratore</span>
       </div>
-      <div class="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase tracking-wider">
-        <div class="w-2 h-2 bg-teal-500 rounded-full animate-pulse"></div>
+      <div class="flex items-center gap-1.5 text-[10px] font-black text-[#EBF4F6] uppercase tracking-wider">
+        <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
         Aggiornamento in tempo reale
       </div>
     </div>
@@ -60,7 +60,7 @@
 
       <div class="bg-white p-5 px-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4
                   border-l-4 border-l-[#7AB2B2] hover:shadow-md transition-shadow">
-        <div class="w-12 h-12 bg-teal-50 text-[#7AB2B2] rounded-xl flex items-center justify-center">
+        <div class="w-12 h-12 bg-[#EBF4F6] text-[#088395] rounded-xl flex items-center justify-center">
           <i class="bi bi-cash-stack text-xl"></i>
         </div>
         <div>
@@ -143,7 +143,7 @@
             <input type="text" [(ngModel)]="searchTerm"
               [placeholder]="activeTab === 'pratiche' ? 'Cerca per titolo, targa o stato...' : 'Cerca per n° polizza, compagnia o veicolo...'"
               class="w-full pl-9 pr-3 py-2 text-[0.8rem] font-semibold border-[1.5px] border-slate-300
-                     rounded-lg bg-slate-50 text-slate-900 outline-none transition-all
+                     rounded-lg bg-[#F4F4F4] text-slate-900 outline-none transition-all
                      focus:border-[#09637E] focus:bg-white focus:ring-[3px] focus:ring-[#09637E]/[0.08]
                      placeholder:text-slate-400"/>
           </div>
@@ -168,12 +168,12 @@
         </div>
 
         <div *ngFor="let p of praticheFiltrate" (click)="apriDettaglioPratica(p)"
-             class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-teal-300
+             class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#7AB2B2]
                     transition-all cursor-pointer group animate-card-rise">
           <div class="p-5">
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-3.5">
-                <div class="w-11 h-11 bg-teal-100 text-[#09637E] rounded-xl flex items-center justify-center
+                <div class="w-11 h-11 bg-[#EBF4F6] text-[#09637E] rounded-xl flex items-center justify-center
                             group-hover:bg-[#09637E] group-hover:text-white transition-all">
                   <i class="bi bi-folder2-open text-lg"></i>
                 </div>
@@ -188,7 +188,7 @@
                 <span class="text-[9px] font-black px-3 py-1 rounded-lg uppercase tracking-widest border"
                   [ngClass]="{
                     'bg-amber-50 text-amber-600 border-amber-200': !p.perito_id,
-                    'bg-teal-50 text-teal-700 border-teal-200': p.perito_id
+                    'bg-[#EBF4F6] text-[#09637E] border-[#7AB2B2]': p.perito_id
                   }">
                   {{ p.perito_id ? 'Assegnata' : 'Da Assegnare' }}
                 </span>
@@ -205,8 +205,8 @@
             <!-- Pannello assegnazione perito -->
             <div *ngIf="praticaPerAssegna?._id === p._id"
                  (click)="$event.stopPropagation()"
-                 class="mb-4 bg-teal-50 border border-teal-200 rounded-xl p-4 space-y-3">
-              <p class="text-[9px] font-black text-teal-700 uppercase tracking-widest">Seleziona Perito</p>
+                 class="mb-4 bg-[#EBF4F6] border border-[#7AB2B2] rounded-xl p-4 space-y-3">
+              <p class="text-[9px] font-black text-[#09637E] uppercase tracking-widest">Seleziona Perito</p>
               <select [(ngModel)]="peritoSelezionatoId"
                       class="w-full py-2.5 px-3.5 rounded-xl border-[1.5px] border-slate-300 text-[0.85rem] font-semibold
                              text-slate-900 bg-white outline-none transition-all focus:border-[#09637E]">
@@ -226,7 +226,7 @@
               </div>
             </div>
 
-            <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-100">
+            <div class="bg-[#F4F4F4] rounded-xl p-3.5 border border-slate-100">
               <p class="text-xs font-semibold text-slate-600 line-clamp-2">{{ p.descrizione }}</p>
             </div>
           </div>
@@ -250,12 +250,12 @@
         </div>
 
         <div *ngFor="let pol of polizzeFiltrate" (click)="apriDettaglioPolizza(pol, $event)"
-             class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-teal-300
+             class="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:border-[#7AB2B2]
                     transition-all cursor-pointer group animate-card-rise">
           <div class="p-5">
             <div class="flex items-center justify-between mb-4">
               <div class="flex items-center gap-3.5">
-                <div class="w-11 h-11 bg-teal-100 text-[#09637E] rounded-xl flex items-center justify-center
+                <div class="w-11 h-11 bg-[#EBF4F6] text-[#09637E] rounded-xl flex items-center justify-center
                             group-hover:bg-[#09637E] group-hover:text-white transition-all">
                   <i class="bi bi-shield-check text-lg"></i>
                 </div>
@@ -275,21 +275,21 @@
             </div>
 
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <div class="bg-[#F4F4F4] rounded-xl p-3 border border-slate-100">
                 <p class="text-[9px] font-black text-slate-400">Tipo</p>
                 <p class="text-xs font-black text-[#09637E]">{{ pol.tipo_copertura }}</p>
               </div>
-              <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <div class="bg-[#F4F4F4] rounded-xl p-3 border border-slate-100">
                 <p class="text-[9px] font-black text-slate-400">Massimale</p>
                 <p class="text-xs font-black text-[#09637E]">
                   {{ pol.massimale ? '€ ' + (pol.massimale | number:'1.2-2') : '—' }}
                 </p>
               </div>
-              <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <div class="bg-[#F4F4F4] rounded-xl p-3 border border-slate-100">
                 <p class="text-[9px] font-black text-slate-400">Inizio</p>
                 <p class="text-xs font-black">{{ pol.data_inizio | date:'d MMM yyyy' }}</p>
               </div>
-              <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+              <div class="bg-[#F4F4F4] rounded-xl p-3 border border-slate-100">
                 <p class="text-[9px] font-black text-slate-400">Scadenza</p>
                 <p class="text-xs font-black" [class]="isPolizzaAttiva(pol) ? 'text-[#09637E]' : 'text-red-500'">
                   {{ pol.data_scadenza | date:'d MMM yyyy' }}

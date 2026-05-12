@@ -9,7 +9,7 @@
       </svg>
     </button>
 
-    <h2 class="text-2xl font-black mb-6 text-[#0F172A]">Nuovo Sinistro</h2>
+    <h2 class="text-2xl font-black mb-6 text-[#061E29]">Nuovo Sinistro</h2>
 
     <form (ngSubmit)="submit()" class="flex flex-col gap-6">
 
@@ -29,11 +29,11 @@
             [class.border-slate-200]="formData.targa !== v.targa"
           >
             <div class="text-[10px] text-slate-400 font-bold uppercase">{{ v.marca }}</div>
-            <div class="font-semibold text-[#0F172A]">{{ v.targa }}</div>
+            <div class="font-semibold text-[#061E29]">{{ v.targa }}</div>
             
             <svg
               *ngIf="formData.targa === v.targa"
-              class="w-6 h-6 text-blue-500 absolute top-2 right-2"
+              class="w-6 h-6 text-[#088395] absolute top-2 right-2"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -60,7 +60,7 @@
             name="data_evento"
             [max]="maxDate"
             required
-            class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 transition-all relative z-0"
+            class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-[#F4F4F4] focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 transition-all relative z-0"
           />
         </div>
       </div>
@@ -77,7 +77,7 @@
             rows="4"
             required
             placeholder="Descrivi l'accaduto..."
-            class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 transition-all"
+            class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-[#F4F4F4] text-slate-800 resize-none focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 transition-all"
           ></textarea>
         </div>
       </div>
@@ -93,7 +93,7 @@
             [(ngModel)]="formData.luogo"
             name="luogo"
             placeholder="Via dell'incidente"
-            class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 transition-all"
+            class="w-full pl-10 pr-4 py-3 text-sm rounded-xl border border-slate-200 bg-[#F4F4F4] text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/20 transition-all"
           />
         </div>
       </div>
@@ -105,7 +105,7 @@
       <button
         type="submit"
         [disabled]="loading"
-        class="w-full py-3 bg-[#0F172A] text-white text-sm font-extrabold rounded-xl shadow-lg transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+        class="w-full py-3 bg-[#088395] text-white text-sm font-extrabold rounded-xl shadow-lg transition-all disabled:opacity-60 flex items-center justify-center gap-2"
       >
         <svg *ngIf="loading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

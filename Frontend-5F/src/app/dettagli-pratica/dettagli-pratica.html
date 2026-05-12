@@ -11,7 +11,7 @@
       </svg>
     </button>
 
-    <h2 class="text-2xl font-black mb-2 text-[#0F172A]">Dettaglio Pratica</h2>
+    <h2 class="text-2xl font-black mb-2 text-[#061E29]">Dettaglio Pratica</h2>
     <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-8">
       {{ pratica.claim_code ?? pratica._id }}
     </p>
@@ -20,55 +20,55 @@
 
       <!-- ── INFO GRID ── -->
       <div class="grid grid-cols-2 gap-4">
-        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <div class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
           <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Titolo</p>
-          <p class="font-black text-[#0F172A] text-sm">{{ pratica.titolo }}</p>
+          <p class="font-black text-[#061E29] text-sm">{{ pratica.titolo }}</p>
         </div>
-        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <div class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
           <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Stato</p>
           <span class="text-xs font-black px-2.5 py-1 rounded-lg uppercase"
             [ngClass]="{
               'bg-amber-100 text-amber-700': pratica.stato === 'Bozza',
-              'bg-blue-100 text-blue-700':   pratica.stato === 'In Corso',
+              'bg-[#EBF4F6] text-[#09637E]':   pratica.stato === 'In Corso',
               'bg-green-100 text-green-700': pratica.stato === 'Approvata',
               'bg-red-100 text-red-700':     pratica.stato === 'Chiusa'
             }">{{ pratica.stato ?? 'N/D' }}</span>
         </div>
-        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <div class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
           <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">ID Perito</p>
           <p class="font-bold text-slate-400 text-sm">#{{ pratica.perito_id }}</p>
         </div>
-        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <div class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
           <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">ID Sinistro</p>
           <p class="font-bold text-slate-400 text-sm">#{{ pratica.sinistro_id }}</p>
         </div>
-        <div *ngIf="pratica.tipo_danno" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <div *ngIf="pratica.tipo_danno" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
           <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tipo Danno</p>
-          <p class="font-bold text-[#0F172A] text-sm">{{ pratica.tipo_danno }}</p>
+          <p class="font-bold text-[#061E29] text-sm">{{ pratica.tipo_danno }}</p>
         </div>
-        <div *ngIf="pratica.stima_danno" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <div *ngIf="pratica.stima_danno" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
           <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Stima Danno</p>
-          <p class="font-bold text-[#0F172A] text-sm">€ {{ pratica.stima_danno | number:'1.2-2' }}</p>
+          <p class="font-bold text-[#061E29] text-sm">€ {{ pratica.stima_danno | number:'1.2-2' }}</p>
         </div>
-        <div *ngIf="pratica.veicolo" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <div *ngIf="pratica.veicolo" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
           <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Veicolo</p>
-          <p class="font-bold text-[#0F172A] text-sm">{{ pratica.veicolo }}</p>
+          <p class="font-bold text-[#061E29] text-sm">{{ pratica.veicolo }}</p>
         </div>
-        <div *ngIf="pratica.claim_code" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+        <div *ngIf="pratica.claim_code" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
           <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Claim Code</p>
-          <p class="font-bold text-[#0F172A] text-sm">{{ pratica.claim_code }}</p>
+          <p class="font-bold text-[#061E29] text-sm">{{ pratica.claim_code }}</p>
         </div>
       </div>
 
       <!-- Descrizione -->
-      <div *ngIf="pratica.descrizione" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+      <div *ngIf="pratica.descrizione" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Descrizione</p>
         <p class="text-slate-600 text-sm leading-relaxed">{{ pratica.descrizione }}</p>
       </div>
 
       <!-- Parti danneggiate -->
       <div *ngIf="pratica.parti_danneggiate && pratica.parti_danneggiate.length > 0"
-           class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+           class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Parti Danneggiate</p>
         <div class="flex flex-wrap gap-2">
           <span *ngFor="let parte of pratica.parti_danneggiate"
@@ -79,19 +79,19 @@
       </div>
 
       <!-- Note tecniche -->
-      <div *ngIf="pratica.note_tecniche" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+      <div *ngIf="pratica.note_tecniche" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Note Tecniche</p>
         <p class="text-slate-600 text-sm leading-relaxed">{{ pratica.note_tecniche }}</p>
       </div>
 
       <!-- Note perito -->
-      <div *ngIf="pratica.note_perito" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+      <div *ngIf="pratica.note_perito" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Note Perito</p>
         <p class="text-slate-600 text-sm leading-relaxed">{{ pratica.note_perito }}</p>
       </div>
 
       <!-- Conclusione -->
-      <div *ngIf="pratica.conclusione" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+      <div *ngIf="pratica.conclusione" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
         <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Conclusione</p>
         <p class="text-slate-600 text-sm leading-relaxed">{{ pratica.conclusione }}</p>
       </div>
@@ -117,41 +117,41 @@
         </div>
 
         <div *ngIf="!loadingPerizia && !perizia"
-             class="bg-slate-50 rounded-2xl p-4 border border-dashed border-slate-200 text-center">
+             class="bg-[#F4F4F4] rounded-2xl p-4 border border-dashed border-slate-200 text-center">
           <p class="text-slate-400 text-xs font-bold">Nessuna perizia disponibile</p>
         </div>
 
         <div *ngIf="!loadingPerizia && perizia" class="flex flex-col gap-3">
           <div class="grid grid-cols-2 gap-3">
-            <div *ngIf="perizia.tipo_danno" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+            <div *ngIf="perizia.tipo_danno" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
               <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Tipo Danno</p>
-              <p class="font-bold text-[#0F172A] text-sm">{{ perizia.tipo_danno }}</p>
+              <p class="font-bold text-[#061E29] text-sm">{{ perizia.tipo_danno }}</p>
             </div>
-            <div *ngIf="perizia.stima_danno" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+            <div *ngIf="perizia.stima_danno" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
               <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Stima Danno</p>
-              <p class="font-bold text-[#0F172A] text-sm">€ {{ perizia.stima_danno | number:'1.2-2' }}</p>
+              <p class="font-bold text-[#061E29] text-sm">€ {{ perizia.stima_danno | number:'1.2-2' }}</p>
             </div>
-            <div *ngIf="perizia.stato" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+            <div *ngIf="perizia.stato" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
               <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Stato Perizia</p>
-              <span class="text-xs font-black px-2.5 py-1 rounded-lg uppercase bg-blue-100 text-blue-700">
+              <span class="text-xs font-black px-2.5 py-1 rounded-lg uppercase bg-[#EBF4F6] text-[#09637E]">
                 {{ perizia.stato }}
               </span>
             </div>
-            <div *ngIf="perizia.esito" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+            <div *ngIf="perizia.esito" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
               <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Esito</p>
-              <p class="font-bold text-[#0F172A] text-sm">{{ perizia.esito }}</p>
+              <p class="font-bold text-[#061E29] text-sm">{{ perizia.esito }}</p>
             </div>
           </div>
-          <div *ngIf="perizia.note_perito" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <div *ngIf="perizia.note_perito" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Note del Perito</p>
             <p class="text-slate-600 text-sm leading-relaxed">{{ perizia.note_perito }}</p>
           </div>
-          <div *ngIf="perizia.conclusione" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <div *ngIf="perizia.conclusione" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Conclusione Perizia</p>
             <p class="text-slate-600 text-sm leading-relaxed">{{ perizia.conclusione }}</p>
           </div>
           <div *ngIf="perizia.parti_danneggiate && perizia.parti_danneggiate.length > 0"
-               class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+               class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Parti Danneggiate (Perizia)</p>
             <div class="flex flex-wrap gap-2">
               <span *ngFor="let parte of perizia.parti_danneggiate"
@@ -184,7 +184,7 @@
         </div>
 
         <div *ngIf="!loadingImmagini && immagini.length === 0"
-             class="bg-slate-50 rounded-2xl p-4 border border-dashed border-slate-200 text-center">
+             class="bg-[#F4F4F4] rounded-2xl p-4 border border-dashed border-slate-200 text-center">
           <p class="text-slate-400 text-xs font-bold">Nessuna immagine disponibile</p>
         </div>
 
@@ -260,7 +260,7 @@
         </div>
 
         <div *ngIf="!loadingAnalisi && (!analisiAi || analisiAi.stato === 'non_avviata')"
-             class="bg-slate-50 rounded-2xl p-4 border border-dashed border-slate-200 text-center">
+             class="bg-[#F4F4F4] rounded-2xl p-4 border border-dashed border-slate-200 text-center">
           <p class="text-slate-400 text-xs font-bold">Analisi AI non ancora avviata</p>
         </div>
 
@@ -283,7 +283,7 @@
 
           <!-- Punteggio frode -->
           <div *ngIf="analisiAi.punteggio_frode != null"
-               class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+               class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Punteggio Frode</p>
             <div class="flex items-center gap-3">
               <div class="flex-1 bg-slate-200 rounded-full h-2">
@@ -305,7 +305,7 @@
           </div>
 
           <!-- Sommario -->
-          <div *ngIf="analisiAi.sommario" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <div *ngIf="analisiAi.sommario" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Sommario</p>
             <p class="text-slate-600 text-sm leading-relaxed">{{ analisiAi.sommario }}</p>
           </div>
@@ -333,7 +333,7 @@
           </div>
 
           <!-- Dettagli -->
-          <div *ngIf="analisiAi.dettagli" class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+          <div *ngIf="analisiAi.dettagli" class="bg-[#F4F4F4] rounded-2xl p-4 border border-slate-100">
             <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Dettagli Analisi</p>
             <p class="text-slate-600 text-sm leading-relaxed">{{ analisiAi.dettagli }}</p>
           </div>

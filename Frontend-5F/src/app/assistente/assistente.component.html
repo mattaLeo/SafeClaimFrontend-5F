@@ -18,7 +18,7 @@
     </div>
 
     <div *ngIf="open" class="flex h-[18rem] flex-col">
-      <div class="flex-1 overflow-y-auto bg-slate-50 p-3 space-y-2">
+      <div class="flex-1 overflow-y-auto bg-[#F4F4F4] p-3 space-y-2">
         <div *ngFor="let message of messages" class="flex gap-3" [ngClass]="{ 'justify-end': message.role === 'user' }">
           <div class="max-w-[85%] rounded-3xl px-4 py-3 text-sm leading-6" [ngClass]="{
             'bg-[#09637E] text-white': message.role === 'assistant',
@@ -39,7 +39,7 @@
         <label class="block text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 mb-2">Fai una domanda</label>
         <textarea
           rows="2"
-          class="w-full resize-none rounded-3xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#09637E] focus:ring-2 focus:ring-[#09637E]/20"
+          class="w-full resize-none rounded-3xl border border-slate-200 bg-[#F4F4F4] px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[#09637E] focus:ring-2 focus:ring-[#09637E]/20"
           placeholder="Scrivi qui la tua domanda..."
           [(ngModel)]="query"
           (keydown)="onKeydown($event)"></textarea>

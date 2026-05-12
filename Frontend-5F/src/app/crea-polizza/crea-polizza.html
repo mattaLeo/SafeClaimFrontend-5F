@@ -14,7 +14,7 @@
     </button>
 
     <header class="mb-8">
-      <h2 class="text-2xl font-black mb-1 text-[#0F172A]">Nuova Polizza</h2>
+      <h2 class="text-2xl font-black mb-1 text-[#061E29]">Nuova Polizza</h2>
       <p class="text-xs font-black text-slate-400 uppercase tracking-widest">
         Compila i dati della polizza assicurativa
       </p>
@@ -30,7 +30,7 @@
           <input [(ngModel)]="formData.n_polizza" 
                  type="text" 
                  placeholder="POL-2024-001"
-                 class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] placeholder-slate-300 focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all" />
+                 class="w-full bg-[#F4F4F4] border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#061E29] placeholder-slate-300 focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all" />
         </div>
 
         <div class="flex flex-col gap-1">
@@ -40,7 +40,7 @@
           <input [(ngModel)]="formData.compagnia_assicurativa" 
                  type="text" 
                  readonly
-                 class="w-full bg-slate-100 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] cursor-not-allowed" />
+                 class="w-full bg-slate-100 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#061E29] cursor-not-allowed" />
         </div>
       </div>
 
@@ -50,7 +50,7 @@
         </label>
         <select [(ngModel)]="formData.tipo_copertura"
                 required
-                class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all appearance-none cursor-pointer">
+                class="w-full bg-[#F4F4F4] border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#061E29] focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all appearance-none cursor-pointer">
           <option value="RCA">RCA</option>
           <option value="Kasko">Kasko</option>
           <option value="Full">Full</option>
@@ -68,7 +68,7 @@
                     required
                     onfocus="(this.type='date')"
                     onblur="if(!this.value)this.type='text'"
-                    class="date-input w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all" />
+                    class="date-input w-full bg-[#F4F4F4] border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#061E29] focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all" />
         </div>
         <div class="flex flex-col gap-1">
         <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">
@@ -80,7 +80,7 @@
                 required
                 onfocus="(this.type='date')"
                 onblur="if(!this.value)this.type='text'"
-                class="date-input w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all" />
+                class="date-input w-full bg-[#F4F4F4] border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#061E29] focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all" />
         </div>
       </div>
 
@@ -93,7 +93,7 @@
                  type="number" 
                  placeholder="100000"
                  required
-                 class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] placeholder-slate-300 focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all" />
+                 class="w-full bg-[#F4F4F4] border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#061E29] placeholder-slate-300 focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all" />
         </div>
 
         <div class="flex flex-col gap-1">
@@ -102,7 +102,7 @@
           </label>
           <select [(ngModel)]="formData.veicolo_id"
                   required
-                  class="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#0F172A] focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all appearance-none cursor-pointer">
+                  class="w-full bg-[#F4F4F4] border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-[#061E29] focus:outline-none focus:border-[#088395] focus:ring-2 focus:ring-[#088395]/20 transition-all appearance-none cursor-pointer">
             <option [ngValue]="undefined" disabled>— Seleziona —</option>
             <option *ngFor="let v of veicoliService.veicoli" [ngValue]="v.id">
               {{ v.targa }} — {{ v.marca }} {{ v.modello }}

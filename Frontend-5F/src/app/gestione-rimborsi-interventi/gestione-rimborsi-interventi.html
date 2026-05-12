@@ -214,7 +214,7 @@
                     <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[#7AB2B2] font-bold text-sm">€</span>
                     <input type="number" [(ngModel)]="rimborsoForm.stima_danno"
                       placeholder="0.00"
-                      class="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] transition-all"/>
+                      class="w-full pl-8 pr-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 bg-[#F4F4F4] focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] transition-all"/>
                   </div>
                 </div>
                 <div>
@@ -222,7 +222,7 @@
                     Esito <span class="text-red-500">*</span>
                   </label>
                   <select [(ngModel)]="rimborsoForm.esito"
-                    class="w-full py-3 px-4 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] transition-all appearance-none">
+                    class="w-full py-3 px-4 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 bg-[#F4F4F4] focus:outline-none focus:ring-2 focus:ring-[#09637E]/20 focus:border-[#09637E] transition-all appearance-none">
                     <option value="" disabled>— Seleziona esito —</option>
                     <option *ngFor="let e of esitiDisponibili" [value]="e">{{ e }}</option>
                   </select>
@@ -278,14 +278,14 @@
                   </label>
                   <input type="text" [(ngModel)]="interventoForm.id_officina"
                     placeholder="Es. 1, 2, 3..."
-                    class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-400/20 focus:border-orange-400 transition-all"/>
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 bg-[#F4F4F4] focus:outline-none focus:ring-2 focus:ring-orange-400/20 focus:border-orange-400 transition-all"/>
                 </div>
                 <div>
                   <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5">
                     Data Inizio Lavori
                   </label>
                   <input type="date" [(ngModel)]="interventoForm.data_inizio_lavori"
-                    class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-orange-400/20 focus:border-orange-400 transition-all"/>
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 bg-[#F4F4F4] focus:outline-none focus:ring-2 focus:ring-orange-400/20 focus:border-orange-400 transition-all"/>
                 </div>
               </div>
 

@@ -58,7 +58,7 @@
               <div class="flex items-center justify-between">
                 <div>
                   <p class="text-[10px] font-black text-slate-400 uppercase">{{ v.marca }}</p>
-                  <p class="font-black text-[#0F172A] text-sm">{{ v.modello }}</p>
+                  <p class="font-black text-[#061E29] text-sm">{{ v.modello }}</p>
                 </div>
                 <span class="font-mono font-black text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg">
                   {{ v.targa }}
@@ -82,7 +82,7 @@
           </label>
 
           <div *ngIf="geoLoading"
-               class="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+               class="flex items-center gap-3 p-4 bg-[#F4F4F4] rounded-xl border border-slate-200">
             <svg class="w-4 h-4 animate-spin text-[#09637E]" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
@@ -172,7 +172,7 @@
 
         <div *ngIf="!loadingRichieste && richieste.length > 0" class="space-y-2">
           <div *ngFor="let r of richieste"
-               class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+               class="flex items-center justify-between p-3 bg-[#F4F4F4] rounded-xl border border-slate-100">
             <div class="flex items-center gap-3">
               <div class="w-8 h-8 bg-red-100 text-red-500 rounded-lg flex items-center justify-center">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
