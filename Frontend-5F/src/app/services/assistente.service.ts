@@ -13,7 +13,7 @@ export interface AssistenteChatResponse {
   providedIn: 'root',
 })
 export class AssistenteService {
-  private readonly baseUrl = 'https://cuddly-space-barnacle-x5xxp49pwj5297r5-12000.app.github.dev/assistente/';
+  private readonly baseUrl = 'https://potential-happiness-699jjrw6qvq5c4xgr-12000.app.github.dev/assistente/';
 
   private readonly headers = new HttpHeaders({
     'Content-Type': 'application/json',

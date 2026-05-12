@@ -7,7 +7,8 @@ import { User } from '../models/user.model';
   providedIn: 'root',
 })
 export class AuthService {
-  link = "https://bug-free-computing-machine-977ppqw5g45r2p77x-6000.app.github.dev/";
+  link = "https://potential-happiness-699jjrw6qvq5c4xgr-6000.app.github.dev/";
+  linkAssicurazione = "https://potential-happiness-699jjrw6qvq5c4xgr-5000.app.github.dev/";
 
   private _currentUser?: User;
 
@@ -42,42 +43,30 @@ export class AuthService {
 
   signup(nuovoUtente: User): Observable<any> {
     const payload = {
-      nome: nuovoUtente.nome?.trim(),
-      cognome: nuovoUtente.cognome?.trim(),
-      cf: nuovoUtente.cf?.trim().toUpperCase(),
-      email: nuovoUtente.email?.trim().toLowerCase(),
+      nome:          nuovoUtente.nome?.trim(),
+      cognome:       nuovoUtente.cognome?.trim(),
+      cf:            nuovoUtente.cf?.trim().toUpperCase(),
+      email:         nuovoUtente.email?.trim().toLowerCase(),
       password_hash: nuovoUtente.password_hash,
-      telefono: nuovoUtente.telefono?.trim(),   // ← aggiungi questa riga
+      telefono:      nuovoUtente.telefono?.trim(),
+      ruolo:         'automobilista',
     };
-
-    return this.http.post<any>(`${this.link}registrazione`, payload).pipe(
-      tap(res => {
-        if (res.status === 'success') {
-          const registeredUser: User = {
-            id: res.id,
-            nome: payload.nome ?? '',
-            cognome: payload.cognome ?? '',
-            cf: payload.cf ?? '',
-            email: payload.email ?? '',
-            password_hash: payload.password_hash ?? '',
-            ruolo: 'automobilista',
-            telefono: payload.telefono ?? '',   // ← aggiungi questa riga
-          };
-          this._currentUser = registeredUser;
-          localStorage.setItem('currentUser', JSON.stringify(registeredUser));
-          localStorage.setItem('userRole', 'automobilista');
-        }
-      })
-    );
+    return this.http.post<any>(`${this.link}registrazione`, payload);
   }
 
-  // 🆕 Aggiornamento profilo utente loggato
+  registrazioneCompleta(payload: {
+    utente:  any;
+    veicolo: any;
+    polizza: any;
+  }): Observable<any> {
+    return this.http.post<any>(`${this.linkAssicurazione}registrazione-completa`, payload);
+  }
+
   updateUser(id: number, data: Partial<User>): Observable<any> {
     const ruolo = localStorage.getItem('userRole') ?? '';
     return this.http.put<any>(`${this.link}utente/${id}`, { ...data, ruolo }).pipe(
       tap(res => {
         if (res?.status === 'success') {
-          // Se il backend rimanda l'utente aggiornato lo uso, altrimenti faccio merge locale
           const updated = res.user
             ? { ...res.user, ruolo: this._currentUser?.ruolo ?? ruolo }
             : { ...(this._currentUser as User), ...data };

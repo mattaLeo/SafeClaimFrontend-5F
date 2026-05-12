@@ -6,7 +6,7 @@ import { Polizza } from '../models/polizza.model';
 import { DettaglioPraticaComponent } from '../dettagli-pratica/dettagli-pratica';
 import { DettaglioPolizzaComponent } from '../dettagli-polizza/dettagli-polizza';
 import { CreaPolizzaComponent } from '../crea-polizza/crea-polizza';
-import { Signup } from '../signup/signup';
+import { RegistraClienteComponent } from '../signup/signup';
 import { timer, Subscription } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { PolizzeService } from '../services/polizze.service';
@@ -21,7 +21,7 @@ import { Sinistri } from '../services/sinistri.service';
     DettaglioPraticaComponent,
     DettaglioPolizzaComponent,
     CreaPolizzaComponent,
-    Signup,
+    RegistraClienteComponent,
   ],
   templateUrl: './assicurazione.html',
   styleUrl: './assicurazione.css',
