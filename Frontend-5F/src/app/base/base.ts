@@ -2,10 +2,14 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { filter } from 'rxjs/operators';
+import { filter, switchMap } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
 import { User } from '../models/user.model';
+import { Polizza } from '../models/polizza.model';
 import { AssistenteComponent } from '../assistente/assistente.component';
+import { PolizzeService } from '../services/polizze.service';
+import { VeicoliService } from '../services/veicoli.service';
+import { Veicolo } from '../models/veicolo.model';
 
 export type UserRole = 'perito' | 'automobilista' | 'assicuratore';
 
@@ -27,23 +31,26 @@ export class Base implements OnInit {
   saveMessage = '';
   saveError = '';
 
+  // --- Polizze nella sidebar (solo automobilista) ---
+  polizze: Polizza[] = [];
+  veicoli: Veicolo[] = [];
+  polizzeLoading = false;
+
   private readonly validRoles = ['perito', 'automobilista', 'assicuratore'];
 
   get currentRole(): UserRole | '' {
     const role = (this.auth.currentUser?.ruolo ?? localStorage.getItem('userRole') ?? '').toLowerCase();
-    if (this.validRoles.includes(role)) {
-      return role as UserRole;
-    }
-    if (role === 'assicurazione') {
-      return 'assicuratore';
-    }
+    if (this.validRoles.includes(role)) return role as UserRole;
+    if (role === 'assicurazione') return 'assicuratore';
     return '';
   }
 
   constructor(
     private router: Router,
     private cdr: ChangeDetectorRef,
-    public auth: AuthService
+    public auth: AuthService,
+    private polizzeService: PolizzeService,
+    private veicoliService: VeicoliService
   ) {}
 
   ngOnInit(): void {
@@ -64,16 +71,12 @@ export class Base implements OnInit {
     }
   }
 
-  get user() {
-    return this.auth.currentUser;
-  }
+  get user() { return this.auth.currentUser; }
 
   get initials(): string {
     const u = this.user;
     if (!u) return '?';
-    const n = u.nome?.charAt(0) ?? '';
-    const c = u.cognome?.charAt(0) ?? '';
-    return (n + c).toUpperCase() || '?';
+    return ((u.nome?.charAt(0) ?? '') + (u.cognome?.charAt(0) ?? '')).toUpperCase() || '?';
   }
 
   get roleLabel(): string {
@@ -94,6 +97,26 @@ export class Base implements OnInit {
     return !this.isAuthPage && this.actualRole === 'automobilista';
   }
 
+  get isAutomobilista(): boolean {
+    return this.actualRole === 'automobilista';
+  }
+
+  /** Polizze con il veicolo associato già risolto */
+  get polizzeConVeicolo(): { polizza: Polizza; veicolo: Veicolo | undefined }[] {
+    return this.polizze.map(p => ({
+      polizza: p,
+      veicolo: this.veicoli.find(v => v.id === p.veicolo_id)
+    }));
+  }
+
+  isPolizzaAttiva(p: Polizza): boolean {
+    return new Date(p.data_scadenza) >= new Date();
+  }
+
+  giorniAllaScadenza(p: Polizza): number {
+    return Math.ceil((new Date(p.data_scadenza).getTime() - Date.now()) / 86400000);
+  }
+
   private checkAuthPage(url: string): boolean {
     return ['/signin', '/signup'].some(r => url.startsWith(r));
   }
@@ -101,28 +124,48 @@ export class Base implements OnInit {
   openSidebar(): void {
     this.sidebarOpen = true;
     this.resetEdit();
+    if (this.isAutomobilista) this.caricaContrattiSidebar();
   }
 
-  closeSidebar(): void {
-    this.sidebarOpen = false;
-    this.resetEdit();
+  private caricaContrattiSidebar(): void {
+    const userId = this.auth.currentUser?.id;
+    if (!userId) return;
+
+    this.polizzeLoading = true;
+    this.polizze = [];
+    this.veicoli = [];
+
+    // Prima carica i veicoli dell'utente, poi filtra le polizze per quei veicolo_id
+    this.veicoliService.getVeicoliUtente(userId).pipe(
+      switchMap((veicoli: Veicolo[]) => {
+        this.veicoli = veicoli;
+        return this.polizzeService.getPolizze();
+      })
+    ).subscribe({
+      next: (tutteLePolizze: Polizza[]) => {
+        const idVeicoli = this.veicoli.map(v => v.id);
+        this.polizze = tutteLePolizze.filter(p => idVeicoli.includes(p.veicolo_id));
+        this.polizzeLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.polizzeLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
+
+  closeSidebar(): void { this.sidebarOpen = false; this.resetEdit(); }
 
   enterEditMode(): void {
     if (!this.user) return;
-    this.editForm = {
-      nome: this.user.nome,
-      cognome: this.user.cognome,
-      email: this.user.email,
-    };
+    this.editForm = { nome: this.user.nome, cognome: this.user.cognome, email: this.user.email };
     this.editMode = true;
     this.saveMessage = '';
     this.saveError = '';
   }
 
-  cancelEdit(): void {
-    this.resetEdit();
-  }
+  cancelEdit(): void { this.resetEdit(); }
 
   private resetEdit(): void {
     this.editMode = false;
@@ -154,10 +197,7 @@ export class Base implements OnInit {
     });
   }
 
-  // Click sul logo: ricarica la pagina corrente invece di tornare alla base
-  goHome(): void {
-    window.location.reload();
-  }
+  goHome(): void { window.location.reload(); }
 
   logout(): void {
     this.auth.logout();
