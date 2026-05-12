@@ -4,6 +4,8 @@ export type VehicleType = 'car' | 'motorcycle' | 'truck' | 'van' | 'suv';
 
 export interface Claim {
   id:               string;
+  /** MongoDB _id della Pratica (usato per delete) */
+  _praticaId?:      string;
   code:             string;
   status:           'in_valutazione' | 'assegnato' | 'in_perizia' | 'chiuso' | 'in_attesa' | 'approvato';
   type:             string;
@@ -16,7 +18,7 @@ export interface Claim {
   amount?:          number;
   month?:           number;
   year?:            number;
-  /** ID alternativi per il filtro rifiuto/eliminazione (sinistro._id, pratica._id, ecc.) */
+  /** ID alternativi per il filtro rifiuto/eliminazione */
   _altIds?:         string[];
 }
 
@@ -80,6 +82,10 @@ import { AuthService } from '../services/auth.service';
 import { timer, Subscription } from 'rxjs';
 import jsPDF from 'jspdf';
 
+// ── Chiave sessionStorage (per perito corrente) ─────────────────────────────
+const SS_REJECTED = (id: string) => `safeclaim_rejected_${id}`;
+const SS_DELETED  = (id: string) => `safeclaim_deleted_${id}`;
+
 @Component({
   selector: 'app-perito',
   standalone: true,
@@ -94,6 +100,7 @@ export class Perito implements OnInit, OnDestroy {
   isRelazioneOpen     = false;
   isLoading           = true;
   isRelazioniLoading  = false;
+  isSavingRelazione   = false;
   relazioneError      = '';
 
   selectedClaim:    Claim | null             = null;
@@ -109,6 +116,10 @@ export class Perito implements OnInit, OnDestroy {
   claims:    Claim[] = [];
   allClaims: Claim[] = [];
 
+  /**
+   * ID dei sinistri rifiutati/eliminati, persistiti in sessionStorage.
+   * Vengono caricati in ngOnInit dopo che l'utente è stato letto.
+   */
   private rejectedClaimIds = new Set<string>();
   private deletedClaimIds  = new Set<string>();
 
@@ -174,13 +185,52 @@ export class Perito implements OnInit, OnDestroy {
   ngOnInit(): void {
     window.scrollTo({ top: 0, behavior: 'instant' });
     this.loadUser();
+    this.loadExcludedIds(); // ← carica da sessionStorage DOPO loadUser
     this.loadClaims();
     this.loadRelazioni();
     this.startAutoRefresh();
   }
 
+  // ── sessionStorage: persistenza ID esclusi ──────────────────────────────────
+
+  private loadExcludedIds(): void {
+    if (!this.user.id) return;
+    try {
+      const r = sessionStorage.getItem(SS_REJECTED(this.user.id));
+      const d = sessionStorage.getItem(SS_DELETED(this.user.id));
+      if (r) (JSON.parse(r) as string[]).forEach(id => this.rejectedClaimIds.add(id));
+      if (d) (JSON.parse(d) as string[]).forEach(id => this.deletedClaimIds.add(id));
+    } catch { /* ignore */ }
+  }
+
+  private persistExcludedIds(): void {
+    if (!this.user.id) return;
+    try {
+      sessionStorage.setItem(SS_REJECTED(this.user.id), JSON.stringify([...this.rejectedClaimIds]));
+      sessionStorage.setItem(SS_DELETED(this.user.id),  JSON.stringify([...this.deletedClaimIds]));
+    } catch { /* ignore */ }
+  }
+
+  private addRejected(claim: Claim): void {
+    this.rejectedClaimIds.add(claim.id);
+    claim._altIds?.forEach(alt => this.rejectedClaimIds.add(alt));
+    if (claim._praticaId) this.rejectedClaimIds.add(claim._praticaId);
+    this.persistExcludedIds();
+  }
+
+  private addDeleted(claim: Claim): void {
+    this.deletedClaimIds.add(claim.id);
+    claim._altIds?.forEach(alt => this.deletedClaimIds.add(alt));
+    if (claim._praticaId) this.deletedClaimIds.add(claim._praticaId);
+    this.persistExcludedIds();
+  }
+
+  // ── Auto-refresh ogni 15 secondi ────────────────────────────────────────────
+
   private startAutoRefresh(): void {
-    this.refreshSub = timer(15000, 15000).subscribe(() => { this.loadClaims(); });
+    this.refreshSub = timer(15_000, 15_000).subscribe(() => {
+      this.loadClaims();
+    });
   }
 
   ngOnDestroy(): void {
@@ -188,9 +238,13 @@ export class Perito implements OnInit, OnDestroy {
     this.refreshSub?.unsubscribe();
   }
 
+  // ── Toast notifications ──────────────────────────────────────────────────────
+
   private showNewClaimToast(newCount: number): void {
     const id  = ++this.toastCounter;
-    const msg = newCount === 1 ? '1 nuova pratica assegnata' : `${newCount} nuove pratiche assegnate`;
+    const msg = newCount === 1
+      ? '1 nuova pratica assegnata'
+      : `${newCount} nuove pratiche assegnate`;
     this.toasts = [...this.toasts, { id, message: 'Nuova pratica!', sub: msg }];
     this.cdr.detectChanges();
     setTimeout(() => this.dismissToast(id), 5000);
@@ -201,69 +255,59 @@ export class Perito implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
+  // ── Computed lists ───────────────────────────────────────────────────────────
+
   get pendingClaims(): Claim[] {
-    return this.allClaims.filter(c => c.status === 'assegnato').filter(c => this.matchesDashboardSearch(c));
+    return this.allClaims
+      .filter(c => c.status === 'assegnato')
+      .filter(c => this.matchesDashboardSearch(c));
   }
 
   get activeClaims(): Claim[] {
-    return this.allClaims.filter(c => c.status !== 'assegnato' && c.status !== 'chiuso').filter(c => this.matchesDashboardSearch(c));
+    return this.allClaims
+      .filter(c => c.status !== 'assegnato' && c.status !== 'chiuso')
+      .filter(c => this.matchesDashboardSearch(c));
   }
 
   private matchesDashboardSearch(c: Claim): boolean {
     if (!this.dashboardSearch) return true;
     const q = this.dashboardSearch.toLowerCase();
-    return c.code.toLowerCase().includes(q) || c.vehicle.toLowerCase().includes(q) ||
-           c.location.toLowerCase().includes(q) || c.type.toLowerCase().includes(q) ||
-           c.insuranceCompany.toLowerCase().includes(q);
+    return (
+      c.code.toLowerCase().includes(q) ||
+      c.vehicle.toLowerCase().includes(q) ||
+      c.location.toLowerCase().includes(q) ||
+      c.type.toLowerCase().includes(q) ||
+      c.insuranceCompany.toLowerCase().includes(q)
+    );
   }
 
   get activeClaimsCount(): number {
-    return this.allClaims.filter(c => c.status === 'in_perizia' || c.status === 'in_valutazione' || c.status === 'in_attesa').length;
+    return this.allClaims.filter(c =>
+      c.status === 'in_perizia' || c.status === 'in_valutazione' || c.status === 'in_attesa'
+    ).length;
   }
 
-  get pendingClaimsCount(): number { return this.allClaims.filter(c => c.status === 'assegnato').length; }
-  get totalArchiveAmount(): number { return this.relazioni.reduce((sum, r) => sum + (r.estimatedDamage ?? 0), 0); }
+  get pendingClaimsCount(): number {
+    return this.allClaims.filter(c => c.status === 'assegnato').length;
+  }
+
+  get totalArchiveAmount(): number {
+    return this.relazioni.reduce((sum, r) => sum + (r.estimatedDamage ?? 0), 0);
+  }
+
   get relazioniCount(): number { return this.relazioni.length; }
 
-  private applyFilters(list: Claim[]): Claim[] {
-    return list.filter(c => {
-      const matchSearch = !this.filterSearch ||
-        c.code.toLowerCase().includes(this.filterSearch.toLowerCase()) ||
-        c.vehicle.toLowerCase().includes(this.filterSearch.toLowerCase()) ||
-        c.location.toLowerCase().includes(this.filterSearch.toLowerCase());
-      const matchStatus   = !this.filterStatus   || c.status   === this.filterStatus;
-      const matchPriority = !this.filterPriority || c.priority === this.filterPriority;
-      const parts = c.date?.split(' ');
-      const mesi: Record<string, number> = {
-        'gennaio':1,'febbraio':2,'marzo':3,'aprile':4,'maggio':5,'giugno':6,
-        'luglio':7,'agosto':8,'settembre':9,'ottobre':10,'novembre':11,'dicembre':12,
-      };
-      const claimDate = parts?.length === 3
-        ? new Date(+parts[2], (mesi[parts[1].toLowerCase()] ?? 1) - 1, +parts[0]) : null;
-      const matchFrom = !this.filterDateFrom || !claimDate || claimDate >= new Date(this.filterDateFrom);
-      const matchTo   = !this.filterDateTo   || !claimDate || claimDate <= new Date(this.filterDateTo);
-      return matchSearch && matchStatus && matchPriority && matchFrom && matchTo;
-    });
-  }
-
-  get filteredClaims(): Claim[] { return this.applyFilters(this.allClaims); }
-
-  get archivedEntries(): ArchivedEntry[] {
-    const entries: ArchivedEntry[] = [];
-    for (const c of this.applyFilters(this.allClaims)) {
-      const rel = this.getRelazioneForClaim(c);
-      if (rel) entries.push({ claim: c, relazione: rel });
-    }
-    return entries;
-  }
+  // ── Data loading ─────────────────────────────────────────────────────────────
 
   private loadUser(): void {
     const u = this.auth.currentUser as any;
     if (!u) return;
     this.user = {
       full_name: `${u.nome ?? ''} ${u.cognome ?? ''}`.trim(),
-      id: String(u.id ?? ''), email: u.email ?? '',
-      phone: u.telefono ?? u.phone ?? '', ruolo: u.ruolo ?? '',
+      id:        String(u.id ?? ''),
+      email:     u.email ?? '',
+      phone:     u.telefono ?? u.phone ?? '',
+      ruolo:     u.ruolo ?? '',
     };
   }
 
@@ -271,7 +315,9 @@ export class Perito implements OnInit, OnDestroy {
     const u = this.auth.currentUser as any;
     const peritoId = String(u?.id ?? 'demo');
     this.perizie.getPratichePerito(peritoId).subscribe({
-      next: (data) => { this.applyClaimsData(data.map(p => this.perizie.mapPraticaToClaimCard(p))); },
+      next: (data) => {
+        this.applyClaimsData(data.map(p => this.perizie.mapPraticaToClaimCard(p)));
+      },
       error: () => {
         this.perizie.askTuttiSinistri().subscribe({
           next: (data: any) => {
@@ -284,13 +330,9 @@ export class Perito implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * FIX: controlla sia id che _altIds per entrambi i set di esclusione.
-   * Questo risolve il problema della pratica rifiutata che ricompare al refresh
-   * perché il backend risponde con struttura diversa (sinistro non embedded).
-   */
   private isExcluded(c: Claim, excludeSet: Set<string>): boolean {
     if (excludeSet.has(c.id)) return true;
+    if (c._praticaId && excludeSet.has(c._praticaId)) return true;
     if (c._altIds) {
       for (const alt of c._altIds) { if (excludeSet.has(alt)) return true; }
     }
@@ -299,7 +341,8 @@ export class Perito implements OnInit, OnDestroy {
 
   private applyClaimsData(raw: Claim[]): void {
     const filtered = raw.filter(c =>
-      !this.isExcluded(c, this.rejectedClaimIds) && !this.isExcluded(c, this.deletedClaimIds)
+      !this.isExcluded(c, this.rejectedClaimIds) &&
+      !this.isExcluded(c, this.deletedClaimIds)
     );
     const newPendingCount = filtered.filter(c => c.status === 'assegnato').length;
     if (this.previousPendingCount >= 0 && newPendingCount > this.previousPendingCount) {
@@ -318,38 +361,70 @@ export class Perito implements OnInit, OnDestroy {
     if (!peritoId) { this.isRelazioniLoading = false; return; }
     this.isRelazioniLoading = true;
     this.perizie.getRelazioniPerito(peritoId).subscribe({
-      next: (data: any[]) => {
-        this.relazioni = data.map(d => this.mapBackendToRelazione(d));
+      next: (data: Relazione[]) => {
+        this.relazioni          = data;
         this.isRelazioniLoading = false;
         this.cdr.detectChanges();
       },
-      error: () => { this.relazioni = []; this.isRelazioniLoading = false; this.cdr.detectChanges(); }
+      error: () => {
+        this.relazioni          = [];
+        this.isRelazioniLoading = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
-  private mapBackendToRelazione(d: any): Relazione {
-    return {
-      id:               String(d._id ?? d.id ?? ''),
-      sinistroId:       String(d.sinistro_id ?? ''),
-      claimCode:        d.claim_code ?? d.claimCode ?? '',
-      title:            d.titolo ?? d.title ?? '',
-      vehicle:          d.veicolo ?? d.vehicle ?? '',
-      tipoDanno:        d.tipo_danno ?? d.tipoDanno ?? '',
-      estimatedDamage:  d.stima_danno ?? d.estimatedDamage ?? undefined,
-      partiDanneggiate: d.parti_danneggiate ?? d.partiDanneggiate ?? [],
-      description:      d.descrizione ?? d.description ?? '',
-      conclusione:      d.conclusione ?? '',
-      status:           d.stato ?? d.status ?? 'Bozza',
-      createdAt:        d.data_inserimento
-        ? new Date(d.data_inserimento).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' })
-        : undefined,
-    };
-  }
+  // ── Navigation ───────────────────────────────────────────────────────────────
 
   setView(v: 'dashboard' | 'archivio' | 'relazioni'): void {
     this.currentView = v;
     if (v === 'relazioni' || v === 'archivio') this.loadRelazioni();
   }
+
+  // ── Filters ──────────────────────────────────────────────────────────────────
+
+  private applyFilters(list: Claim[]): Claim[] {
+    return list.filter(c => {
+      const matchSearch = !this.filterSearch ||
+        c.code.toLowerCase().includes(this.filterSearch.toLowerCase()) ||
+        c.vehicle.toLowerCase().includes(this.filterSearch.toLowerCase()) ||
+        c.location.toLowerCase().includes(this.filterSearch.toLowerCase());
+      const matchStatus   = !this.filterStatus   || c.status   === this.filterStatus;
+      const matchPriority = !this.filterPriority || c.priority === this.filterPriority;
+      const mesi: Record<string, number> = {
+        'gennaio':1,'febbraio':2,'marzo':3,'aprile':4,'maggio':5,'giugno':6,
+        'luglio':7,'agosto':8,'settembre':9,'ottobre':10,'novembre':11,'dicembre':12,
+      };
+      const parts     = c.date?.split(' ');
+      const claimDate = parts?.length === 3
+        ? new Date(+parts[2], (mesi[parts[1].toLowerCase()] ?? 1) - 1, +parts[0])
+        : null;
+      const matchFrom = !this.filterDateFrom || !claimDate || claimDate >= new Date(this.filterDateFrom);
+      const matchTo   = !this.filterDateTo   || !claimDate || claimDate <= new Date(this.filterDateTo);
+      return matchSearch && matchStatus && matchPriority && matchFrom && matchTo;
+    });
+  }
+
+  get filteredClaims(): Claim[] { return this.applyFilters(this.allClaims); }
+
+  get archivedEntries(): ArchivedEntry[] {
+    const entries: ArchivedEntry[] = [];
+    for (const c of this.applyFilters(this.allClaims)) {
+      const rel = this.getRelazioneForClaim(c);
+      if (rel) entries.push({ claim: c, relazione: rel });
+    }
+    return entries;
+  }
+
+  resetFilters(): void {
+    this.filterSearch = '';
+    this.filterStatus = '';
+    this.filterPriority = '';
+    this.filterDateFrom = '';
+    this.filterDateTo   = '';
+  }
+
+  // ── Accept / Reject ──────────────────────────────────────────────────────────
 
   openAcceptReject(claim: Claim, action: 'accept' | 'reject'): void {
     this.confirmActionClaim = { claim, action };
@@ -363,7 +438,6 @@ export class Perito implements OnInit, OnDestroy {
   doAcceptReject(): void {
     if (!this.confirmActionClaim || this.isProcessingAction) return;
     const { claim, action } = this.confirmActionClaim;
-
     if (!claim?.id) {
       this.confirmActionClaim = null;
       this.isProcessingAction = false;
@@ -388,10 +462,8 @@ export class Perito implements OnInit, OnDestroy {
         error: () => applyLocally(() => this.updateClaimStatus(claim.id, 'in_perizia')),
       });
     } else {
-      // FIX: aggiunge TUTTI gli ID possibili al set per garantire il filtro
-      // anche se il backend cambia struttura della risposta tra le chiamate.
-      this.rejectedClaimIds.add(claim.id);
-      if (claim._altIds) { claim._altIds.forEach(alt => this.rejectedClaimIds.add(alt)); }
+      // Persiste in sessionStorage → sopravvive al refresh della pagina
+      this.addRejected(claim);
 
       this.perizie.rifiutaPratica(claim.id, peritoId).subscribe({
         next:  () => applyLocally(() => this.removeClaimById(claim.id)),
@@ -412,6 +484,8 @@ export class Perito implements OnInit, OnDestroy {
     this.claims    = this.claims.filter(c => c.id !== id);
     if (this.selectedClaim?.id === id) this.closeClaimDetail();
   }
+
+  // ── Claim detail ─────────────────────────────────────────────────────────────
 
   hasRelazione(claim: Claim): boolean {
     return this.relazioni.some(r => r.sinistroId === claim.id || r.claimCode === claim.code);
@@ -447,20 +521,34 @@ export class Perito implements OnInit, OnDestroy {
       next: (data) => {
         const analisi = data.analisi_ai;
         this.selectedSinistro = {
-          id: String(data._id ?? sinistroId), targa: data.targa, marca: data.marca, modello: data.modello,
-          dataEvento: data.data_evento, descrizione: data.descrizione, luogo: data.luogo ?? data.indirizzo,
-          tipoSinistro: data.tipo_sinistro, stimaDanno: data.stima_danno ?? data.importo, stato: data.stato,
-          compagnia: data.compagnia_assicurativa ?? data.assicurazione,
-          immagini: Array.isArray(data.immagini) ? data.immagini : [],
-          analisiAi: analisi ? {
-            testo: analisi.testo, modello: analisi.modello,
-            stato: analisi.stato ?? 'non_avviata', dataAnalisi: analisi.data_analisi, errore: analisi.errore,
-          } : { stato: 'non_avviata' },
+          id:           String(data._id ?? sinistroId),
+          targa:        data.targa,
+          marca:        data.marca,
+          modello:      data.modello,
+          dataEvento:   data.data_evento,
+          descrizione:  data.descrizione,
+          luogo:        data.luogo ?? data.indirizzo,
+          tipoSinistro: data.tipo_sinistro,
+          stimaDanno:   data.stima_danno ?? data.importo,
+          stato:        data.stato,
+          compagnia:    data.compagnia_assicurativa ?? data.assicurazione,
+          immagini:     Array.isArray(data.immagini) ? data.immagini : [],
+          analisiAi:    analisi
+            ? {
+                testo:       analisi.testo,
+                modello:     analisi.modello,
+                stato:       analisi.stato ?? 'non_avviata',
+                dataAnalisi: analisi.data_analisi,
+                errore:      analisi.errore,
+              }
+            : { stato: 'non_avviata' },
         };
         this.isLoadingSinistro = false;
         const luogo = this.selectedSinistro.luogo ?? this.selectedClaim?.location;
         if (luogo && luogo !== 'N/D') this.geocodeLocation(luogo);
-        if (this.selectedSinistro.analisiAi?.stato === 'in_elaborazione') this.startAIPoll(sinistroId);
+        if (this.selectedSinistro.analisiAi?.stato === 'in_elaborazione') {
+          this.startAIPoll(sinistroId);
+        }
         this.cdr.detectChanges();
       },
       error: () => {
@@ -473,16 +561,21 @@ export class Perito implements OnInit, OnDestroy {
   }
 
   private async geocodeLocation(address: string): Promise<void> {
-    this.mapCoords = null; this.isGeocodingLocation = true; this.cdr.detectChanges();
+    this.mapCoords = null;
+    this.isGeocodingLocation = true;
+    this.cdr.detectChanges();
     try {
       const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1&addressdetails=0`;
       const res = await fetch(url, { headers: { 'Accept-Language': 'it,en' } });
       if (res.ok) {
         const data: any[] = await res.json();
-        if (data?.length > 0) this.mapCoords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+        if (data?.length > 0) {
+          this.mapCoords = { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+        }
       }
     } catch (e) { console.warn('Geocoding failed:', e); }
-    this.isGeocodingLocation = false; this.cdr.detectChanges();
+    this.isGeocodingLocation = false;
+    this.cdr.detectChanges();
   }
 
   getMapUrl(coords: { lat: number; lng: number }): SafeResourceUrl {
@@ -506,8 +599,11 @@ export class Perito implements OnInit, OnDestroy {
         next: (analisi) => {
           if (!this.selectedSinistro) return;
           this.selectedSinistro.analisiAi = {
-            testo: analisi.testo, modello: analisi.modello,
-            stato: analisi.stato ?? 'non_avviata', dataAnalisi: analisi.data_analisi, errore: analisi.errore,
+            testo:       analisi.testo,
+            modello:     analisi.modello,
+            stato:       analisi.stato ?? 'non_avviata',
+            dataAnalisi: analisi.data_analisi,
+            errore:      analisi.errore,
           };
           if (analisi.stato !== 'in_elaborazione') this.stopAIPoll();
           this.cdr.detectChanges();
@@ -517,36 +613,57 @@ export class Perito implements OnInit, OnDestroy {
   }
 
   private stopAIPoll(): void {
-    if (this.aiPollInterval) { clearInterval(this.aiPollInterval); this.aiPollInterval = null; }
+    if (this.aiPollInterval) {
+      clearInterval(this.aiPollInterval);
+      this.aiPollInterval = null;
+    }
   }
 
   openImage(url: string): void { this.lightboxUrl = url; }
   closeLightbox(): void        { this.lightboxUrl = null; }
 
-  askDeleteClaim(c: Claim, event?: Event): void { event?.stopPropagation(); this.confirmDeleteClaim = c; }
+  // ── Delete claim ──────────────────────────────────────────────────────────────
+
+  askDeleteClaim(c: Claim, event?: Event): void {
+    event?.stopPropagation();
+    this.confirmDeleteClaim = c;
+  }
 
   confirmDelete(): void {
     if (!this.confirmDeleteClaim) return;
     const claim = this.confirmDeleteClaim;
-    this.deletedClaimIds.add(claim.id);
-    if (claim._altIds) { claim._altIds.forEach(alt => this.deletedClaimIds.add(alt)); }
+    this.addDeleted(claim);
     this.removeClaimById(claim.id);
     this.confirmDeleteClaim = null;
     if (this.selectedClaim?.id === claim.id) this.closeClaimDetail();
+
     const u = this.auth.currentUser as any;
     const peritoId = String(u?.id ?? '');
-    this.perizie.eliminaPratica(claim.id, peritoId).subscribe({ next: () => {}, error: () => {} });
+    // Usa _praticaId (MongoDB _id della Pratica) se disponibile, altrimenti claim.id
+    const praticaId = claim._praticaId ?? claim.id;
+    this.perizie.eliminaPratica(praticaId, peritoId).subscribe({
+      next: () => {},
+      error: () => {}
+    });
   }
 
   cancelDelete(): void { this.confirmDeleteClaim = null; }
 
-  askDeleteRelazione(rel: Relazione, event?: Event): void { event?.stopPropagation(); this.confirmDeleteRelazione = rel; }
+  // ── Delete relazione ──────────────────────────────────────────────────────────
+
+  askDeleteRelazione(rel: Relazione, event?: Event): void {
+    event?.stopPropagation();
+    this.confirmDeleteRelazione = rel;
+  }
 
   confirmDeleteRel(): void {
     if (!this.confirmDeleteRelazione) return;
-    const rel = this.confirmDeleteRelazione;
+    const rel     = this.confirmDeleteRelazione;
+    const u       = this.auth.currentUser as any;
+    const peritoId = String(u?.id ?? '');
+
     if (rel.id) {
-      this.perizie.eliminaRelazione(rel.id).subscribe({
+      this.perizie.eliminaRelazione(rel.id, peritoId).subscribe({
         next:  () => { this.relazioni = this.relazioni.filter(r => r.id !== rel.id); this.confirmDeleteRelazione = null; this.cdr.detectChanges(); },
         error: () => { this.relazioni = this.relazioni.filter(r => r.id !== rel.id); this.confirmDeleteRelazione = null; this.cdr.detectChanges(); },
       });
@@ -558,55 +675,98 @@ export class Perito implements OnInit, OnDestroy {
 
   cancelDeleteRel(): void { this.confirmDeleteRelazione = null; }
 
+  // ── Relazione CRUD ───────────────────────────────────────────────────────────
+
   openNewRelazione(): void {
-    this.editingRelazione = { partiDanneggiate: [], status: 'Bozza' };
-    this.customParte = ''; this.customTipoDanno = ''; this.relazioneSinistro = null;
-    this.relazioneError = ''; this.isRelazioneOpen = true;
+    this.editingRelazione  = { partiDanneggiate: [], status: 'Bozza' };
+    this.customParte       = '';
+    this.customTipoDanno   = '';
+    this.relazioneSinistro = null;
+    this.relazioneError    = '';
+    this.isRelazioneOpen   = true;
   }
 
   openRelazioneFromClaim(c: Claim): void {
-    this.editingRelazione = { claimCode: c.code, sinistroId: c.id, vehicle: c.vehicle, partiDanneggiate: [], status: 'Bozza' };
-    this.customParte = ''; this.customTipoDanno = ''; this.relazioneError = '';
-    if (this.selectedSinistro?.id === c.id) { this.relazioneSinistro = this.selectedSinistro; }
-    else { this.loadSinistroForRelazione(c.id); }
-    this.isClaimDetailOpen = false; this.isRelazioneOpen = true;
+    this.editingRelazione = {
+      claimCode:       c.code,
+      sinistroId:      c.id,
+      vehicle:         c.vehicle,
+      partiDanneggiate: [],
+      status:          'Bozza',
+    };
+    this.customParte     = '';
+    this.customTipoDanno = '';
+    this.relazioneError  = '';
+
+    if (this.selectedSinistro?.id === c.id) {
+      this.relazioneSinistro = this.selectedSinistro;
+    } else {
+      this.loadSinistroForRelazione(c.id);
+    }
+    this.isClaimDetailOpen = false;
+    this.isRelazioneOpen   = true;
   }
 
   openRelazioneDetail(rel: Relazione): void {
     this.editingRelazione = { ...rel, partiDanneggiate: [...(rel.partiDanneggiate ?? [])] };
     if (rel.tipoDanno && !this.tipiDanno.includes(rel.tipoDanno)) {
-      this.customTipoDanno = rel.tipoDanno; this.editingRelazione.tipoDanno = 'Altro';
-    } else { this.customTipoDanno = ''; }
-    this.customParte = ''; this.relazioneError = '';
+      this.customTipoDanno            = rel.tipoDanno;
+      this.editingRelazione.tipoDanno = 'Altro';
+    } else {
+      this.customTipoDanno = '';
+    }
+    this.customParte    = '';
+    this.relazioneError = '';
     if (rel.sinistroId) this.loadSinistroForRelazione(rel.sinistroId);
     else this.relazioneSinistro = null;
     this.isRelazioneOpen = true;
   }
 
   closeRelazione(): void {
-    this.isRelazioneOpen = false; this.relazioneError = '';
-    this.customParte = ''; this.customTipoDanno = ''; this.relazioneSinistro = null;
+    this.isRelazioneOpen   = false;
+    this.relazioneError    = '';
+    this.customParte       = '';
+    this.customTipoDanno   = '';
+    this.relazioneSinistro = null;
   }
 
   private loadSinistroForRelazione(sinistroId: string): void {
-    this.relazioneSinistro = null; this.isLoadingRelazioneSinistro = true; this.cdr.detectChanges();
+    this.relazioneSinistro = null;
+    this.isLoadingRelazioneSinistro = true;
+    this.cdr.detectChanges();
     this.perizie.getSinistro(sinistroId).subscribe({
       next: (data) => {
         const analisi = data.analisi_ai;
         this.relazioneSinistro = {
-          id: String(data._id ?? sinistroId), targa: data.targa, marca: data.marca, modello: data.modello,
-          dataEvento: data.data_evento, descrizione: data.descrizione, luogo: data.luogo ?? data.indirizzo,
-          tipoSinistro: data.tipo_sinistro, stimaDanno: data.stima_danno ?? data.importo, stato: data.stato,
-          compagnia: data.compagnia_assicurativa ?? data.assicurazione,
-          immagini: Array.isArray(data.immagini) ? data.immagini : [],
-          analisiAi: analisi ? {
-            testo: analisi.testo, modello: analisi.modello, stato: analisi.stato ?? 'non_avviata',
-            dataAnalisi: analisi.data_analisi, errore: analisi.errore,
-          } : { stato: 'non_avviata' },
+          id:           String(data._id ?? sinistroId),
+          targa:        data.targa,
+          marca:        data.marca,
+          modello:      data.modello,
+          dataEvento:   data.data_evento,
+          descrizione:  data.descrizione,
+          luogo:        data.luogo ?? data.indirizzo,
+          tipoSinistro: data.tipo_sinistro,
+          stimaDanno:   data.stima_danno ?? data.importo,
+          stato:        data.stato,
+          compagnia:    data.compagnia_assicurativa ?? data.assicurazione,
+          immagini:     Array.isArray(data.immagini) ? data.immagini : [],
+          analisiAi:    analisi
+            ? {
+                testo:       analisi.testo,
+                modello:     analisi.modello,
+                stato:       analisi.stato ?? 'non_avviata',
+                dataAnalisi: analisi.data_analisi,
+                errore:      analisi.errore,
+              }
+            : { stato: 'non_avviata' },
         };
-        this.isLoadingRelazioneSinistro = false; this.cdr.detectChanges();
+        this.isLoadingRelazioneSinistro = false;
+        this.cdr.detectChanges();
       },
-      error: () => { this.isLoadingRelazioneSinistro = false; this.cdr.detectChanges(); }
+      error: () => {
+        this.isLoadingRelazioneSinistro = false;
+        this.cdr.detectChanges();
+      }
     });
   }
 
@@ -617,40 +777,67 @@ export class Perito implements OnInit, OnDestroy {
 
   saveRelazione(): void {
     this.relazioneError = '';
+
+    // Validazione
+    if (!this.editingRelazione.claimCode) {
+      this.relazioneError = 'Seleziona un sinistro prima di salvare.';
+      return;
+    }
+    if (!this.editingRelazione.title?.trim()) {
+      this.relazioneError = 'Inserisci un titolo per la relazione.';
+      return;
+    }
+
     const claim = this.allClaims.find(c => c.code === this.editingRelazione.claimCode);
-    if (!claim) { this.relazioneError = 'Seleziona un sinistro valido prima di salvare.'; return; }
+    if (!claim) {
+      this.relazioneError = 'Sinistro selezionato non trovato. Ricarica la pagina.';
+      return;
+    }
+
+    // Risolve tipo danno custom
     if (this.editingRelazione.tipoDanno === 'Altro' && this.customTipoDanno?.trim()) {
       this.editingRelazione.tipoDanno = this.customTipoDanno.trim();
     }
+
     this.editingRelazione.sinistroId = claim.id;
     this.editingRelazione.vehicle    = claim.vehicle;
+
     const u = this.auth.currentUser as any;
     const peritoId = String(u?.id ?? '');
-    if (!peritoId) { this.relazioneError = 'Sessione scaduta. Rieffettua il login.'; return; }
-    const sinistroId = this.editingRelazione.sinistroId!;
-    const now = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
+    if (!peritoId) {
+      this.relazioneError = 'Sessione scaduta. Rieffettua il login.';
+      return;
+    }
+
+    const sinistroId = claim.id;
+    this.isSavingRelazione = true;
+
+    const onSuccess = () => {
+      this.isSavingRelazione = false;
+      this.isRelazioneOpen   = false;
+      this.loadRelazioni();   // ricarica da server per avere ID aggiornati
+      this.cdr.detectChanges();
+    };
+
+    const onError = (err: any) => {
+      this.isSavingRelazione = false;
+      this.relazioneError    = 'Errore durante il salvataggio. Riprova.';
+      console.error('[saveRelazione]', err);
+      this.cdr.detectChanges();
+    };
 
     if (this.editingRelazione.id) {
-      this.perizie.aggiornaRelazione(sinistroId, peritoId, this.editingRelazione).subscribe({
-        next: () => {
-          const idx = this.relazioni.findIndex(r => r.id === this.editingRelazione.id);
-          if (idx !== -1) {
-            this.relazioni = [...this.relazioni.slice(0, idx), { ...(this.editingRelazione as Relazione) }, ...this.relazioni.slice(idx + 1)];
-          }
-          this.isRelazioneOpen = false; this.cdr.detectChanges();
-        },
-        error: (err) => { this.relazioneError = 'Errore durante il salvataggio. Riprova.'; console.error(err); }
-      });
+      // Aggiornamento
+      this.perizie.aggiornaRelazione(sinistroId, peritoId, this.editingRelazione)
+        .subscribe({ next: onSuccess, error: onError });
     } else {
-      this.perizie.creaRelazione(sinistroId, peritoId, this.editingRelazione).subscribe({
-        next: (res: any) => {
-          const nuova: Relazione = { ...(this.editingRelazione as Relazione), id: res.id_perizia ?? String(Date.now()), status: 'Bozza', createdAt: now };
-          this.relazioni = [...this.relazioni, nuova]; this.isRelazioneOpen = false; this.cdr.detectChanges();
-        },
-        error: (err) => { this.relazioneError = 'Errore durante il salvataggio. Riprova.'; console.error(err); }
-      });
+      // Creazione (upsert via PUT sul backend)
+      this.perizie.creaRelazione(sinistroId, peritoId, this.editingRelazione)
+        .subscribe({ next: onSuccess, error: onError });
     }
   }
+
+  // ── Parti danneggiate ────────────────────────────────────────────────────────
 
   addParte(p: string): void {
     if (!this.editingRelazione.partiDanneggiate) this.editingRelazione.partiDanneggiate = [];
@@ -658,96 +845,146 @@ export class Perito implements OnInit, OnDestroy {
   }
 
   removeParte(i: number): void {
-    this.editingRelazione.partiDanneggiate = this.editingRelazione.partiDanneggiate?.filter((_, idx) => idx !== i);
+    this.editingRelazione.partiDanneggiate =
+      this.editingRelazione.partiDanneggiate?.filter((_, idx) => idx !== i);
   }
 
   addCustomParte(): void {
     const value = this.customParte?.trim();
     if (!value) return;
     if (!this.editingRelazione.partiDanneggiate) this.editingRelazione.partiDanneggiate = [];
-    const exists = this.editingRelazione.partiDanneggiate.some(p => p.toLowerCase() === value.toLowerCase());
-    if (!exists) this.editingRelazione.partiDanneggiate = [...this.editingRelazione.partiDanneggiate, value];
+    const exists = this.editingRelazione.partiDanneggiate
+      .some(p => p.toLowerCase() === value.toLowerCase());
+    if (!exists) {
+      this.editingRelazione.partiDanneggiate = [...this.editingRelazione.partiDanneggiate, value];
+    }
     this.customParte = '';
   }
 
   get isTipoDannoCustom(): boolean { return this.editingRelazione.tipoDanno === 'Altro'; }
 
+  // ── Priority ─────────────────────────────────────────────────────────────────
+
   updateClaimPriority(claim: Claim, priority: 'alta' | 'media' | 'bassa'): void {
     if (!claim || claim.priority === priority) return;
     claim.priority = priority;
-    const update = (list: Claim[]) => list.map(c => c.id === claim.id ? { ...c, priority } : c);
-    this.claims = update(this.claims); this.allClaims = update(this.allClaims);
-    if (this.selectedClaim?.id === claim.id) this.selectedClaim = { ...this.selectedClaim, priority };
+    const update   = (list: Claim[]) => list.map(c => c.id === claim.id ? { ...c, priority } : c);
+    this.claims    = update(this.claims);
+    this.allClaims = update(this.allClaims);
+    if (this.selectedClaim?.id === claim.id) {
+      this.selectedClaim = { ...this.selectedClaim, priority };
+    }
     this.cdr.detectChanges();
   }
+
+  // ── Export PDF ───────────────────────────────────────────────────────────────
 
   exportRelazione(rel: Relazione, event?: Event): void {
     event?.stopPropagation();
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-    const W = 210, margin = 20; let y = 0;
-    doc.setFillColor(9, 99, 126); doc.rect(0, 0, W, 38, 'F');
+    const W = 210, margin = 20;
+    let y = 0;
+
+    // Header
+    doc.setFillColor(9, 99, 126);
+    doc.rect(0, 0, W, 38, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18); doc.setFont('helvetica', 'bold'); doc.text('SAFECLAIM', margin, 16);
-    doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.text('Relazione Peritale', margin, 23);
-    doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.text(rel.title ?? 'Relazione', margin, 32);
-    doc.setFontSize(8); doc.setTextColor(235, 244, 246); doc.text(rel.status.toUpperCase(), W - margin, 32, { align: 'right' });
-    y = 50; doc.setTextColor(15, 23, 42);
+    doc.setFontSize(18); doc.setFont('helvetica', 'bold');
+    doc.text('SAFECLAIM', margin, 16);
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal');
+    doc.text('Relazione Peritale', margin, 23);
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+    doc.text(rel.title ?? 'Relazione', margin, 32);
+    doc.setFontSize(8); doc.setTextColor(235, 244, 246);
+    doc.text(rel.status.toUpperCase(), W - margin, 32, { align: 'right' });
+
+    y = 50;
+    doc.setTextColor(15, 23, 42);
+
     const section = (label: string) => {
-      doc.setFillColor(241, 245, 249); doc.roundedRect(margin, y, W - margin * 2, 7, 1, 1, 'F');
-      doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 116, 139);
-      doc.text(label.toUpperCase(), margin + 3, y + 4.8); y += 11; doc.setTextColor(15, 23, 42);
+      doc.setFillColor(241, 245, 249);
+      doc.roundedRect(margin, y, W - margin * 2, 7, 1, 1, 'F');
+      doc.setFontSize(7); doc.setFont('helvetica', 'bold');
+      doc.setTextColor(100, 116, 139);
+      doc.text(label.toUpperCase(), margin + 3, y + 4.8);
+      y += 11;
+      doc.setTextColor(15, 23, 42);
     };
+
     const row = (label: string, value: string) => {
-      doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(100, 116, 139); doc.text(label, margin, y);
+      doc.setFontSize(8.5); doc.setFont('helvetica', 'bold');
+      doc.setTextColor(100, 116, 139);
+      doc.text(label, margin, y);
       doc.setFont('helvetica', 'normal'); doc.setTextColor(15, 23, 42);
-      const lines = doc.splitTextToSize(value, W - margin * 2 - 45); doc.text(lines, margin + 45, y); y += 6 * lines.length + 2;
+      const lines = doc.splitTextToSize(value, W - margin * 2 - 45);
+      doc.text(lines, margin + 45, y);
+      y += 6 * lines.length + 2;
     };
+
     section('Riferimento Sinistro');
-    row('Codice Sinistro', rel.claimCode ?? '—'); row('Veicolo', rel.vehicle ?? '—');
-    row('Data Redazione', rel.createdAt ?? new Date().toLocaleDateString('it-IT')); y += 4;
+    row('Codice Sinistro', rel.claimCode ?? '—');
+    row('Veicolo', rel.vehicle ?? '—');
+    row('Data Redazione', rel.createdAt ?? new Date().toLocaleDateString('it-IT'));
+    y += 4;
+
     section('Valutazione Danno');
     row('Tipo Danno', rel.tipoDanno ?? '—');
     row('Stima (€)', rel.estimatedDamage != null ? `€ ${rel.estimatedDamage.toLocaleString('it-IT')}` : '—');
-    row('Parti Danneggiate', rel.partiDanneggiate?.join(', ') || '—'); y += 4;
+    row('Parti Danneggiate', rel.partiDanneggiate?.join(', ') || '—');
+    y += 4;
+
     if (rel.description) {
       section('Descrizione Tecnica');
       doc.setFontSize(8.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(15, 23, 42);
-      const lines = doc.splitTextToSize(rel.description, W - margin * 2); doc.text(lines, margin, y); y += 6 * lines.length + 6;
+      const lines = doc.splitTextToSize(rel.description, W - margin * 2);
+      doc.text(lines, margin, y);
+      y += 6 * lines.length + 6;
     }
+
     if (rel.conclusione) {
-      section('Conclusione Peritale'); doc.setFontSize(10); doc.setFont('helvetica', 'bold');
-      if (rel.conclusione === 'Danno totale') doc.setTextColor(220, 38, 38);
-      else if (rel.conclusione === 'Riparabile') doc.setTextColor(5, 150, 105);
+      section('Conclusione Peritale');
+      doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+      if      (rel.conclusione === 'Danno totale')   doc.setTextColor(220, 38, 38);
+      else if (rel.conclusione === 'Riparabile')     doc.setTextColor(5, 150, 105);
       else if (rel.conclusione === 'Frode sospetta') doc.setTextColor(217, 119, 6);
-      else doc.setTextColor(9, 99, 126);
+      else                                            doc.setTextColor(9, 99, 126);
       doc.text(rel.conclusione, margin, y);
     }
+
     const pageH = 297;
-    doc.setDrawColor(226, 232, 240); doc.line(margin, pageH - 20, W - margin, pageH - 20);
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margin, pageH - 20, W - margin, pageH - 20);
     doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(148, 163, 184);
     doc.text(`SafeClaim · Documento generato il ${new Date().toLocaleDateString('it-IT')}`, margin, pageH - 14);
     doc.text(rel.claimCode ?? '', W - margin, pageH - 14, { align: 'right' });
+
     doc.save(`Relazione_${rel.claimCode ?? 'perizia'}_${Date.now()}.pdf`);
   }
 
-  resetFilters(): void {
-    this.filterSearch = ''; this.filterStatus = ''; this.filterPriority = '';
-    this.filterDateFrom = ''; this.filterDateTo = '';
-  }
+  // ── Helpers (template) ───────────────────────────────────────────────────────
 
   getVehicleType(vehicle: string): VehicleType {
     const v = vehicle.toLowerCase();
-    if (['ducati','yamaha','kawasaki','harley','honda cb','honda cbr','ktm','aprilia','triumph','bmw r','bmw gs','vespa','piaggio'].some(b => v.includes(b))) return 'motorcycle';
-    if (['iveco','scania','man ','daf ','volvo fh','mercedes actros','mercedes arocs'].some(b => v.includes(b))) return 'truck';
-    if (['transporter','transit','sprinter','ducato','master','jumper','vito','crafter','boxer','daily'].some(b => v.includes(b))) return 'van';
-    if (['qashqai','tucson','sportage','tiguan','rav4','cr-v','x5','x3','xc60','discovery','defender','renegade','glc','gle','mokka','captur','kuga'].some(b => v.includes(b))) return 'suv';
+    if (['ducati','yamaha','kawasaki','harley','honda cb','honda cbr','ktm','aprilia',
+         'triumph','bmw r','bmw gs','vespa','piaggio'].some(b => v.includes(b))) return 'motorcycle';
+    if (['iveco','scania','man ','daf ','volvo fh','mercedes actros','mercedes arocs']
+        .some(b => v.includes(b))) return 'truck';
+    if (['transporter','transit','sprinter','ducato','master','jumper','vito','crafter',
+         'boxer','daily'].some(b => v.includes(b))) return 'van';
+    if (['qashqai','tucson','sportage','tiguan','rav4','cr-v','x5','x3','xc60',
+         'discovery','defender','renegade','glc','gle','mokka','captur','kuga']
+        .some(b => v.includes(b))) return 'suv';
     return 'car';
   }
 
   getStatusLabel(status: string): string {
     const map: Record<string, string> = {
-      in_valutazione: 'In Valutazione', assegnato: 'Da Accettare',
-      in_perizia: 'In Corso', chiuso: 'Chiuso', in_attesa: 'In Attesa', approvato: 'Approvato',
+      in_valutazione: 'In Valutazione',
+      assegnato:      'Da Accettare',
+      in_perizia:     'In Corso',
+      chiuso:         'Chiuso',
+      in_attesa:      'In Attesa',
+      approvato:      'Approvato',
     };
     return map[status] ?? status;
   }
@@ -766,14 +1003,18 @@ export class Perito implements OnInit, OnDestroy {
 
   getPriorityClass(priority: string): string {
     const map: Record<string, string> = {
-      alta: 'bg-red-100 text-red-700', media: 'bg-orange-100 text-orange-700', bassa: 'bg-green-100 text-green-700',
+      alta:  'bg-red-100 text-red-700',
+      media: 'bg-orange-100 text-orange-700',
+      bassa: 'bg-green-100 text-green-700',
     };
     return map[priority] ?? '';
   }
 
   getRelazioneStatusClass(status: string): string {
     const map: Record<string, string> = {
-      Bozza: 'bg-slate-200 text-slate-700', Completata: 'bg-green-100 text-green-800', Inviata: 'bg-teal-100 text-teal-800',
+      Bozza:      'bg-slate-200 text-slate-700',
+      Completata: 'bg-green-100 text-green-800',
+      Inviata:    'bg-teal-100 text-teal-800',
     };
     return map[status] ?? 'bg-slate-200 text-slate-700';
   }
@@ -791,7 +1032,10 @@ export class Perito implements OnInit, OnDestroy {
   formatDate(isoStr?: string): string {
     if (!isoStr) return '';
     try {
-      return new Date(isoStr).toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      return new Date(isoStr).toLocaleDateString('it-IT', {
+        day: '2-digit', month: 'long', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
     } catch { return isoStr; }
   }
 }

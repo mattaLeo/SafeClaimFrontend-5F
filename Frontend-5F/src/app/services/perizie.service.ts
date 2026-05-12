@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { map, catchError } from 'rxjs/operators';
 import { Perizia } from '../models/perizia.model';
 import { Pratica } from '../models/pratica.model';
 import { Relazione, Claim } from '../perito/perito';
@@ -68,27 +68,127 @@ export class Perizie {
 
   /**
    * Elimina una pratica dal sistema (best-effort).
+   * Usa il praticaId (MongoDB _id) e il peritoId.
    */
-  eliminaPratica(sinistroId: string, peritoId: string): Observable<any> {
+  eliminaPratica(praticaId: string, peritoId: string): Observable<any> {
     return this.http.delete<any>(
-      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`
+      `${this.praticheLink}pratica/${praticaId}/perito/${peritoId}`
     ).pipe(
       catchError(() => of({ ok: false }))
     );
   }
 
+  // ── Relazioni (salvate come Pratiche su MongoDB) ───────────────────────────────
+  //
+  // Le "relazioni peritali" vengono salvate nella collezione Pratica tramite
+  // l'endpoint PUT /sinistro/:id/perito/:id/pratica (upsert).
+  // Per leggerle usiamo GET /perito/:id/pratiche filtrando quelle con titolo
+  // compilato (= relazione già creata dal perito).
+
+  /**
+   * Legge le relazioni del perito dalle pratiche (che fungono da contenitore).
+   * Filtra solo quelle che hanno un titolo compilato (relazioni effettive).
+   */
+  getRelazioniPerito(peritoId: string): Observable<Relazione[]> {
+    return this.getPratichePerito(peritoId).pipe(
+      map((pratiche: any[]) =>
+        pratiche
+          .filter(p => !!(p.titolo || p.tipo_danno)) // solo pratiche con dati perizia
+          .map(p => this.mapPraticaToRelazione(p))
+      ),
+      catchError(() => of([]))
+    );
+  }
+
+  /**
+   * Crea una relazione aggiornando (upsert) la pratica esistente.
+   * Il backend usa update_one con upsert=True, quindi funziona sia per
+   * creare che per aggiornare.
+   */
+  creaRelazione(sinistroId: string, peritoId: string, rel: Partial<Relazione>): Observable<any> {
+    const body = this.buildRelazioneBody(rel);
+    return this.http.put<any>(
+      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`,
+      body
+    );
+  }
+
+  /**
+   * Aggiorna una relazione esistente (stesso endpoint, stessa logica upsert).
+   */
+  aggiornaRelazione(sinistroId: string, peritoId: string, rel: Partial<Relazione>): Observable<any> {
+    const body = this.buildRelazioneBody(rel);
+    return this.http.put<any>(
+      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`,
+      body
+    );
+  }
+
+  /**
+   * Elimina una relazione (pratica) dal sistema.
+   * Richiede il praticaId (MongoDB _id della pratica) e il peritoId.
+   */
+  eliminaRelazione(praticaId: string, peritoId: string): Observable<any> {
+    return this.http.delete<any>(
+      `${this.praticheLink}pratica/${praticaId}/perito/${peritoId}`
+    ).pipe(
+      catchError(() => of({ ok: false }))
+    );
+  }
+
+  private buildRelazioneBody(rel: Partial<Relazione>): Record<string, any> {
+    return {
+      titolo:            rel.title,
+      tipo_danno:        rel.tipoDanno,
+      stima_danno:       rel.estimatedDamage,
+      parti_danneggiate: rel.partiDanneggiate ?? [],
+      descrizione:       rel.description,
+      conclusione:       rel.conclusione,
+      veicolo:           rel.vehicle,
+      claim_code:        rel.claimCode,
+      stato:             rel.status ?? 'Bozza',
+    };
+  }
+
+  private mapPraticaToRelazione(p: any): Relazione {
+    const statoMap: Record<string, 'Bozza' | 'Completata' | 'Inviata'> = {
+      'Bozza':      'Bozza',
+      'bozza':      'Bozza',
+      'Completata': 'Completata',
+      'completata': 'Completata',
+      'Inviata':    'Inviata',
+      'inviata':    'Inviata',
+    };
+    const statoRaw = p.stato ?? '';
+    return {
+      id:               String(p._id ?? ''),
+      sinistroId:       String(p.sinistro_id ?? ''),
+      claimCode:        p.claim_code ?? p.claimCode ?? '',
+      title:            p.titolo ?? p.title ?? '',
+      vehicle:          p.veicolo ?? p.vehicle ?? '',
+      tipoDanno:        p.tipo_danno ?? p.tipoDanno ?? '',
+      estimatedDamage:  p.stima_danno ?? p.estimatedDamage ?? undefined,
+      partiDanneggiate: p.parti_danneggiate ?? p.partiDanneggiate ?? [],
+      description:      p.descrizione ?? p.description ?? '',
+      conclusione:      p.conclusione ?? '',
+      status:           statoMap[statoRaw] ?? 'Bozza',
+      createdAt: p.data_inserimento
+        ? new Date(p.data_inserimento).toLocaleDateString('it-IT', {
+            day: '2-digit', month: 'long', year: 'numeric',
+          })
+        : undefined,
+    };
+  }
+
+  // ── Mapper pratiche → claim card ──────────────────────────────────────────────
+
   /**
    * Mappa una pratica (con sinistro embedded) all'interfaccia Claim.
    *
-   * FIX: L'ID viene derivato in ordine di priorità:
-   *   1. p.sinistro_id  → campo esplicito sulla pratica, SEMPRE stabile
-   *   2. s._id          → sinistro embedded (può non essere presente al refresh)
+   * L'ID viene derivato in ordine di priorità:
+   *   1. p.sinistro_id  → campo esplicito, SEMPRE stabile
+   *   2. s._id          → sinistro embedded
    *   3. p._id          → fallback sulla pratica stessa
-   *
-   * Usare p.sinistro_id come prima scelta garantisce che l'ID sia identico
-   * in ogni chiamata successiva, indipendentemente dal fatto che il sinistro
-   * sia o meno embedded nella risposta. Questo è necessario perché
-   * rejectedClaimIds/deletedClaimIds confrontano gli ID tra chiamate diverse.
    */
   mapPraticaToClaimCard(p: any): Claim {
     const s = p.sinistro ?? {};
@@ -99,6 +199,7 @@ export class Perizie {
       'aperto':            'in_valutazione',
       'nuovo':             'in_valutazione',
       'assegnato':         'assegnato',
+      'assegnata':         'assegnato',
       'in_perizia':        'in_perizia',
       'in_attesa':         'in_attesa',
       'approvato':         'approvato',
@@ -121,11 +222,11 @@ export class Perizie {
         .join(' ').trim() || s.targa
     ) ?? 'N/D';
 
-    // ── ID stabile: sempre sinistro_id prima, poi s._id, poi p._id ──────────
     const stableId = String(p.sinistro_id ?? s._id ?? p._id);
 
     return {
       id:               stableId,
+      _praticaId:       String(p._id ?? ''), // conserva il _id della pratica per eliminazione
       code:             `SN-${stableId.slice(-5).toUpperCase()}`,
       status:           status as Claim['status'],
       type:             s.tipo_sinistro ?? (s.descrizione?.substring(0, 50) ?? 'Sinistro'),
@@ -146,7 +247,8 @@ export class Perizie {
     const dataEvento = s.data_evento ? new Date(s.data_evento) : new Date();
     const statoMap: Record<string, string> = {
       'in_valutazione': 'in_valutazione', 'aperto': 'in_valutazione', 'nuovo': 'in_valutazione',
-      'assegnato': 'assegnato', 'in_perizia': 'in_perizia', 'in_attesa': 'in_attesa',
+      'assegnato': 'assegnato', 'assegnata': 'assegnato',
+      'in_perizia': 'in_perizia', 'in_attesa': 'in_attesa',
       'approvato': 'approvato', 'chiuso': 'chiuso', 'concluso': 'chiuso',
     };
     const status = statoMap[s.stato?.toLowerCase?.() ?? ''] ?? 'assegnato';
@@ -175,50 +277,7 @@ export class Perizie {
     };
   }
 
-  // ── Relazioni ─────────────────────────────────────────────────────────────────
-
-  getRelazioniPerito(peritoId: string): Observable<any[]> {
-    return this.http.get<any[]>(`${this.praticheLink}perito/${peritoId}/perizie`);
-  }
-
-  creaRelazione(sinistroId: string, peritoId: string, rel: Partial<Relazione>): Observable<any> {
-    const body = {
-      titolo:            rel.title,
-      tipo_danno:        rel.tipoDanno,
-      stima_danno:       rel.estimatedDamage,
-      parti_danneggiate: rel.partiDanneggiate,
-      descrizione:       rel.description,
-      conclusione:       rel.conclusione,
-      veicolo:           rel.vehicle,
-      claim_code:        rel.claimCode,
-      stato:             rel.status ?? 'Bozza',
-    };
-    return this.http.post<any>(
-      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`, body
-    );
-  }
-
-  aggiornaRelazione(sinistroId: string, peritoId: string, rel: Partial<Relazione>): Observable<any> {
-    const body = {
-      titolo:            rel.title,
-      tipo_danno:        rel.tipoDanno,
-      stima_danno:       rel.estimatedDamage,
-      parti_danneggiate: rel.partiDanneggiate,
-      descrizione:       rel.description,
-      conclusione:       rel.conclusione,
-      veicolo:           rel.vehicle,
-      stato:             rel.status ?? 'Bozza',
-    };
-    return this.http.put<any>(
-      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`, body
-    );
-  }
-
-  eliminaRelazione(periziaid: string): Observable<any> {
-    return this.http.delete<any>(`${this.praticheLink}perizia/${periziaid}`);
-  }
-
-  // ── Pratica / Rimborso / Intervento ──────────────────────────────────────────
+  // ── Perizia / Rimborso / Intervento ──────────────────────────────────────────
 
   askPratica(sinistroId: string, peritoId: string): Observable<Pratica> {
     return this.http.get<Pratica>(
