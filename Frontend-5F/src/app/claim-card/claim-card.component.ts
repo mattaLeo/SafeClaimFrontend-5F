@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Claim, VehicleType } from '../../perito/perito';
+import { Claim, VehicleType } from '../perito/perito';
 
 @Component({
   selector: 'app-claim-card',

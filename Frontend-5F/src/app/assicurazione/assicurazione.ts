@@ -31,7 +31,7 @@ export class Assicurazione implements OnInit, OnDestroy {
 
   pratiche: Pratica[] = [];
   polizze: Polizza[] = [];
-  clienti: any[] = []; // Gestiti solo localmente o tramite push
+  clienti: any[] = [];
   periti: any[] = [];
 
   searchTerm = '';
@@ -62,25 +62,30 @@ export class Assicurazione implements OnInit, OnDestroy {
     this.caricaPeriti();
     this.caricaPratiche();
     this.caricaPolizze();
-    // NOTA: caricaClienti rimosso perché non esiste l'endpoint
   }
 
-  // GETTER PER FILTRI (Mantenuti per Pratiche e Polizze)
   get praticheFiltrate(): Pratica[] {
     if (!this.searchTerm.trim()) return this.pratiche;
     const s = this.searchTerm.toLowerCase();
-    return this.pratiche.filter(p => 
-      (p.titolo?.toLowerCase() || '').includes(s) || 
-      (p.descrizione?.toLowerCase() || '').includes(s)
+    return this.pratiche.filter(p =>
+      (p.titolo?.toLowerCase() || '').includes(s) ||
+      (p.descrizione?.toLowerCase() || '').includes(s) ||
+      (p.sinistro_id?.toLowerCase() || '').includes(s) ||
+      (p.stato?.toLowerCase() || '').includes(s) ||
+      (p.veicolo?.toLowerCase() || '').includes(s) ||
+      (p.claim_code?.toLowerCase() || '').includes(s) ||
+      (this.getStatoLabel(p).toLowerCase().includes(s)) ||
+      (this.getPeritoNome(p.perito_id).toLowerCase().includes(s))
     );
   }
 
   get polizzeFiltrate(): Polizza[] {
     if (!this.searchTerm.trim()) return this.polizze;
     const s = this.searchTerm.toLowerCase();
-    return this.polizze.filter(p => 
-      (p.n_polizza?.toLowerCase() || '').includes(s) || 
-      (p.compagnia_assicurativa?.toLowerCase() || '').includes(s)
+    return this.polizze.filter(p =>
+      (p.n_polizza?.toLowerCase() || '').includes(s) ||
+      (p.compagnia_assicurativa?.toLowerCase() || '').includes(s) ||
+      (p.tipo_copertura?.toLowerCase() || '').includes(s)
     );
   }
 
@@ -92,8 +97,44 @@ export class Assicurazione implements OnInit, OnDestroy {
     return this.polizze.filter(pol => this.isPolizzaAttiva(pol)).length;
   }
 
+  getStatoLabel(p: Pratica): string {
+    if (!p.perito_id) return 'Da Assegnare';
+    const map: Record<string, string> = {
+      'da_assegnare': 'Da Assegnare',
+      'assegnata':    'Assegnata',
+      'in_perizia':   'In Perizia',
+      'in_attesa':    'In Attesa',
+      'chiuso':       'Chiusa',
+      'concluso':     'Conclusa',
+    };
+    return map[p.stato?.toLowerCase() ?? ''] ?? p.stato ?? 'Assegnata';
+  }
+
+  getStatoBadgeClass(p: Pratica): string {
+    if (!p.perito_id) return 'bg-amber-50 text-amber-600 border-amber-200';
+    const s = p.stato?.toLowerCase() ?? '';
+    switch (s) {
+      case 'in_perizia':
+        return 'bg-teal-50 text-teal-700 border-teal-200';
+      case 'chiuso':
+      case 'concluso':
+        return 'bg-slate-100 text-slate-500 border-slate-200';
+      case 'in_attesa':
+        return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      default:
+        return 'bg-[#EBF4F6] text-[#09637E] border-[#7AB2B2]';
+    }
+  }
+
+  getPeritoNome(peritoId?: string | null): string {
+    if (!peritoId) return 'Non assegnato';
+    const perito = this.periti.find(p => String(p.id) === String(peritoId));
+    return perito ? `${perito.nome} ${perito.cognome}` : `Perito #${peritoId}`;
+  }
+
   setTab(tab: 'pratiche' | 'polizze' | 'clienti'): void {
     this.activeTab = tab;
+    this.searchTerm = '';
   }
 
   startAutoRefresh(): void {
@@ -140,16 +181,13 @@ export class Assicurazione implements OnInit, OnDestroy {
     return this.polizzeService.isAttiva(pol);
   }
 
-  // --- GESTIONE CLIENTI (Solo locale) ---
   apriNuovoCliente(): void { this.showNuovoCliente = true; }
   chiudiNuovoCliente(): void { this.showNuovoCliente = false; }
   onClienteRegistrato(cliente: any): void {
-    // Aggiungiamo il cliente appena creato all'array locale
-    this.clienti.unshift(cliente); 
+    this.clienti.unshift(cliente);
     this.chiudiNuovoCliente();
   }
 
-  // --- ALTRI METODI ---
   apriNuovaPolizza(): void { this.showNuovaPolizza = true; }
   chiudiNuovaPolizza(): void { this.showNuovaPolizza = false; }
   onPolizzaCreata(res: any): void { this.caricaPolizze(); this.chiudiNuovaPolizza(); }

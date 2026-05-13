@@ -11,14 +11,12 @@ import { Relazione, Claim } from '../perito/perito';
 })
 export class Perizie {
 
-  // Porta 8000 → pratiche/perizie (MongoDB)
-  private praticheLink = 'https://potential-happiness-699jjrw6qvq5c4xgr-8000.app.github.dev/';
-  // Porta 7000 → sinistri (MongoDB)
-  private sinistriLink = 'https://potential-happiness-699jjrw6qvq5c4xgr-7000.app.github.dev/';
+  private praticheLink = 'https://miniature-fishstick-5g55r9g6jvp3vqxv-8000.app.github.dev/';
+  private sinistriLink = 'https://miniature-fishstick-5g55r9g6jvp3vqxv-7000.app.github.dev/';
 
   constructor(public http: HttpClient) {}
 
-  // ── Sinistri ─────────────────────────────────────────────────────────────────
+  // ── Sinistri ────────────────────────────────────────────────────────────────
 
   askSinistriPerito(peritoId: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.sinistriLink}perito/${peritoId}/sinistri`);
@@ -40,56 +38,36 @@ export class Perizie {
     return this.http.get<any>(`${this.sinistriLink}sinistro/${sinistroId}/analisi`);
   }
 
-  // ── Pratiche ──────────────────────────────────────────────────────────────────
+  // ── Pratiche ────────────────────────────────────────────────────────────────
 
   getPratichePerito(peritoId: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.praticheLink}perito/${peritoId}/pratiche`);
   }
 
-  /**
-   * Accetta una pratica assegnata: imposta stato → 'in_perizia'.
-   */
-  accettaPratica(sinistroId: string, peritoId: string): Observable<any> {
+  accettaPratica(praticaId: string, peritoId: string): Observable<any> {
     return this.http.put<any>(
-      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`,
+      `${this.praticheLink}pratica/${praticaId}/perito/${peritoId}`,
       { stato: 'in_perizia' }
     );
   }
 
-  /**
-   * Rifiuta una pratica: imposta stato → 'aperto' e resetta il perito.
-   */
-  rifiutaPratica(sinistroId: string, peritoId: string): Observable<any> {
+  rifiutaPratica(praticaId: string, peritoId: string): Observable<any> {
     return this.http.put<any>(
-      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`,
-      { stato: 'aperto', _reset_perito: true }
+      `${this.praticheLink}pratica/${praticaId}/perito/${peritoId}`,
+      { stato: 'da_assegnare', _reset_perito: true }
     );
   }
 
-  /**
-   * Elimina una pratica dal sistema (best-effort).
-   */
-  eliminaPratica(sinistroId: string, peritoId: string): Observable<any> {
+  eliminaPratica(praticaId: string, peritoId: string): Observable<any> {
     return this.http.delete<any>(
-      `${this.praticheLink}sinistro/${sinistroId}/perito/${peritoId}/pratica`
+      `${this.praticheLink}pratica/${praticaId}/perito/${peritoId}`
     ).pipe(
       catchError(() => of({ ok: false }))
     );
   }
 
-  /**
-   * Mappa una pratica (con sinistro embedded) all'interfaccia Claim.
-   *
-   * FIX: L'ID viene derivato in ordine di priorità:
-   *   1. p.sinistro_id  → campo esplicito sulla pratica, SEMPRE stabile
-   *   2. s._id          → sinistro embedded (può non essere presente al refresh)
-   *   3. p._id          → fallback sulla pratica stessa
-   *
-   * Usare p.sinistro_id come prima scelta garantisce che l'ID sia identico
-   * in ogni chiamata successiva, indipendentemente dal fatto che il sinistro
-   * sia o meno embedded nella risposta. Questo è necessario perché
-   * rejectedClaimIds/deletedClaimIds confrontano gli ID tra chiamate diverse.
-   */
+  // ── Mapping ─────────────────────────────────────────────────────────────────
+
   mapPraticaToClaimCard(p: any): Claim {
     const s = p.sinistro ?? {};
     const dataEvento = s.data_evento ? new Date(s.data_evento) : new Date();
@@ -99,6 +77,7 @@ export class Perizie {
       'aperto':            'in_valutazione',
       'nuovo':             'in_valutazione',
       'assegnato':         'assegnato',
+      'assegnata':         'assegnato',
       'in_perizia':        'in_perizia',
       'in_attesa':         'in_attesa',
       'approvato':         'approvato',
@@ -121,11 +100,12 @@ export class Perizie {
         .join(' ').trim() || s.targa
     ) ?? 'N/D';
 
-    // ── ID stabile: sempre sinistro_id prima, poi s._id, poi p._id ──────────
     const stableId = String(p.sinistro_id ?? s._id ?? p._id);
+    const praticaId = String(p._id);
 
     return {
       id:               stableId,
+      praticaId:        praticaId,
       code:             `SN-${stableId.slice(-5).toUpperCase()}`,
       status:           status as Claim['status'],
       type:             s.tipo_sinistro ?? (s.descrizione?.substring(0, 50) ?? 'Sinistro'),
@@ -141,13 +121,12 @@ export class Perizie {
     };
   }
 
-  /** Mantiene la compatibilità con il codice che usa ancora i sinistri diretti. */
   mapSinistreToClaim(s: any): Claim {
     const dataEvento = s.data_evento ? new Date(s.data_evento) : new Date();
     const statoMap: Record<string, string> = {
       'in_valutazione': 'in_valutazione', 'aperto': 'in_valutazione', 'nuovo': 'in_valutazione',
-      'assegnato': 'assegnato', 'in_perizia': 'in_perizia', 'in_attesa': 'in_attesa',
-      'approvato': 'approvato', 'chiuso': 'chiuso', 'concluso': 'chiuso',
+      'assegnato': 'assegnato', 'assegnata': 'assegnato', 'in_perizia': 'in_perizia',
+      'in_attesa': 'in_attesa', 'approvato': 'approvato', 'chiuso': 'chiuso', 'concluso': 'chiuso',
     };
     const status = statoMap[s.stato?.toLowerCase?.() ?? ''] ?? 'assegnato';
     const stima = s.stima_danno ?? s.importo ?? 0;
@@ -160,6 +139,7 @@ export class Perizie {
 
     return {
       id:               stableId,
+      praticaId:        undefined,
       code:             `SN-${stableId.slice(-5).toUpperCase()}`,
       status:           status as Claim['status'],
       type:             s.tipo_sinistro ?? s.descrizione ?? 'Sinistro',
@@ -175,7 +155,7 @@ export class Perizie {
     };
   }
 
-  // ── Relazioni ─────────────────────────────────────────────────────────────────
+  // ── Relazioni ───────────────────────────────────────────────────────────────
 
   getRelazioniPerito(peritoId: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.praticheLink}perito/${peritoId}/perizie`);
@@ -218,7 +198,7 @@ export class Perizie {
     return this.http.delete<any>(`${this.praticheLink}perizia/${periziaid}`);
   }
 
-  // ── Pratica / Rimborso / Intervento ──────────────────────────────────────────
+  // ── Pratica / Rimborso / Intervento ─────────────────────────────────────────
 
   askPratica(sinistroId: string, peritoId: string): Observable<Pratica> {
     return this.http.get<Pratica>(

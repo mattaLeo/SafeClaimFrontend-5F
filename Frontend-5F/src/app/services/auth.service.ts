@@ -7,8 +7,8 @@ import { User } from '../models/user.model';
   providedIn: 'root',
 })
 export class AuthService {
-  link = "https://potential-happiness-699jjrw6qvq5c4xgr-6000.app.github.dev/";
-  linkAssicurazione = "https://potential-happiness-699jjrw6qvq5c4xgr-5000.app.github.dev/";
+  link = "https://miniature-fishstick-5g55r9g6jvp3vqxv-6000.app.github.dev/";
+  linkAssicurazione = "https://miniature-fishstick-5g55r9g6jvp3vqxv-5000.app.github.dev/";
 
   private _currentUser?: User;
 
@@ -27,7 +27,7 @@ export class AuthService {
   login(email_in: string, psw_in: string): Observable<any> {
     return this.http.post<any>(`${this.link}login`, {
       email: email_in,
-      password_hash: psw_in
+      password: psw_in
     }).pipe(
       tap(res => {
         console.log("Risposta API Login:", res);

@@ -4,6 +4,7 @@ export type VehicleType = 'car' | 'motorcycle' | 'truck' | 'van' | 'suv';
 
 export interface Claim {
   id:               string;
+  praticaId?:       string;
   code:             string;
   status:           'in_valutazione' | 'assegnato' | 'in_perizia' | 'chiuso' | 'in_attesa' | 'approvato';
   type:             string;
@@ -74,7 +75,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { ClaimCardComponent } from '../componenti/claim-card/claim-card.component';
+import { ClaimCardComponent } from '../claim-card/claim-card.component';
 import { Perizie } from '../services/perizie.service';
 import { AuthService } from '../services/auth.service';
 import { timer, Subscription } from 'rxjs';
@@ -364,7 +365,9 @@ export class Perito implements OnInit, OnDestroy {
     if (!this.confirmActionClaim || this.isProcessingAction) return;
     const { claim, action } = this.confirmActionClaim;
 
-    if (!claim?.id) {
+    const idPerChiamata = claim.praticaId ?? claim.id;
+
+    if (!idPerChiamata) {
       this.confirmActionClaim = null;
       this.isProcessingAction = false;
       this.cdr.detectChanges();
@@ -383,17 +386,16 @@ export class Perito implements OnInit, OnDestroy {
     };
 
     if (action === 'accept') {
-      this.perizie.accettaPratica(claim.id, peritoId).subscribe({
+      this.perizie.accettaPratica(idPerChiamata, peritoId).subscribe({
         next:  () => applyLocally(() => this.updateClaimStatus(claim.id, 'in_perizia')),
         error: () => applyLocally(() => this.updateClaimStatus(claim.id, 'in_perizia')),
       });
     } else {
-      // FIX: aggiunge TUTTI gli ID possibili al set per garantire il filtro
-      // anche se il backend cambia struttura della risposta tra le chiamate.
       this.rejectedClaimIds.add(claim.id);
+      if (claim.praticaId) this.rejectedClaimIds.add(claim.praticaId);
       if (claim._altIds) { claim._altIds.forEach(alt => this.rejectedClaimIds.add(alt)); }
 
-      this.perizie.rifiutaPratica(claim.id, peritoId).subscribe({
+      this.perizie.rifiutaPratica(idPerChiamata, peritoId).subscribe({
         next:  () => applyLocally(() => this.removeClaimById(claim.id)),
         error: () => applyLocally(() => this.removeClaimById(claim.id)),
       });
